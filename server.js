@@ -4,18 +4,14 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
+
 
 const app = express();
 const server = http.createServer(app);
 
-// Mongo bağlantısı
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("🍃 MongoDB connected"))
-  .catch(err => console.error("Mongo error:", err));
 
-  const WordSchema = new mongoose.Schema({
+
+const WordSchema = new mongoose.Schema({
   term: { type: String, required: true },
   meaning: { type: String, required: true },
   hint: String,
@@ -24,29 +20,23 @@ mongoose.connect(process.env.MONGO_URI)
 
 const Word = mongoose.model("Word", WordSchema);
 
-const RoomSchema = new mongoose.Schema({
-  code: { type: String, unique: true },
-  host: String,
-  users: [
-    {
-      username: String,
-      avatar: String,
-      studied: { type: Number, default: 0 },
-      known: { type: Number, default: 0 },
-      unknown: { type: Number, default: 0 }
-    }
-  ],
-  isActive: { type: Boolean, default: true },
-  expiresAt: {
-    type: Date,
-    default: () => new Date(Date.now() + 60 * 60 * 1000),
-    index: { expires: 0 }
+async function startServer() {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("🍃 MongoDB connected");
+
+    const PORT = process.env.PORT || 3000;
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+
+  } catch (err) {
+    console.error("Mongo connection error:", err);
+    process.exit(1);
   }
-}, { timestamps: true });
+}
 
-const Room = mongoose.model("Room", RoomSchema);
-
-console.log("ENV TEST:", process.env.MONGO_URI);
+startServer();
 
 
 // CORS ve transport ayarları
@@ -113,6 +103,7 @@ app.get('/api/words', async (req, res) => {
     const words = await Word.find();
     res.json(words);
   } catch (err) {
+    console.error("WORD FETCH ERROR:", err); // LOG EKLE
     res.status(500).json({ error: "Database error" });
   }
 });

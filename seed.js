@@ -2,6 +2,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const words = require('./words');
 
+
 const WordSchema = new mongoose.Schema({
   term: { type: String, required: true },
   meaning: { type: String, required: true },
@@ -27,6 +28,7 @@ async function seed() {
     mongoose.disconnect();
   } catch (err) {
     console.error(err);
+
   }
 }
 
