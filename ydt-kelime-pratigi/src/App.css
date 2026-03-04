@@ -210,14 +210,21 @@ main {
   max-width: 450px;
   margin: 0 auto;
   position: relative;
+  perspective: 1200px;
 }
 
 .flashcard {
   width: 100%;
   height: 260px;
-  perspective: 1000px;
+  
   cursor: pointer;
   margin-bottom: 25px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.flashcard:hover {
+  transform: rotateX(4deg) rotateY(-4deg) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.45);
 }
 
 .card-inner {
@@ -524,7 +531,7 @@ button:disabled {
   position: absolute;
   top: 20px;
   left: 50%;
-  
+
   transform: translateX(-50%);
   font-size: 28px;
   font-weight: bold;
