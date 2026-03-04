@@ -230,12 +230,19 @@ useEffect(() => {
   }, [matchingGame, gameFinished, matchedPairs.length]);
 
   const filteredWords = useMemo(() => {
-    if (!searchTerm) return sortedWordsList;
-    return sortedWordsList.filter(w => 
-      w.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      w.meaning.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [sortedWordsList, searchTerm]);
+
+  const uniqueWords = Array.from(
+    new Map(sortedWordsList.map(word => [word.term, word])).values()
+  );
+
+  if (!searchTerm) return uniqueWords;
+
+  return uniqueWords.filter(w =>
+    w.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    w.meaning.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+}, [sortedWordsList, searchTerm]);
 
   const createRoom = async () => {
     const usernameInput = document.getElementById('username-input');

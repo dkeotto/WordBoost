@@ -1,3 +1,6 @@
+const unique = [...new Map(words.map(w => [w.term, w])).values()];
+res.json(unique);
+
 const wordsData = [
   { term: "abandon", meaning: "terk etmek", hint: "bırakmak", example: "They abandoned the project." },
   { term: "abate", meaning: "azalmak", hint: "dinmek", example: "The storm finally abated." },

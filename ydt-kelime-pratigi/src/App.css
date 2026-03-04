@@ -165,7 +165,7 @@ body {
   font-size: 2.5rem;
   margin-bottom: 20px;
   background: linear-gradient(45deg, #00d4ff, #7b2cbf);
-  -webkit-background-clip: text;
+   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -216,7 +216,7 @@ main {
 .flashcard {
   width: 100%;
   height: 260px;
-  
+
   cursor: pointer;
   margin-bottom: 25px;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
