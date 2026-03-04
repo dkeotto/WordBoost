@@ -1,11 +1,9 @@
-.feedback {
-  animation: pop 0.4s ease;
+.feedback.correct {
+  color: #2ed573;
 }
 
-@keyframes pop {
-  0% { transform: scale(0.5); opacity: 0; }
-  60% { transform: scale(1.2); }
-  100% { transform: scale(1); opacity: 1; }
+.feedback.wrong {
+  color: #ff4757;
 }
 
 /* Avatar Seçimi */
