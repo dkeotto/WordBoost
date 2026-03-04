@@ -339,9 +339,7 @@ useEffect(() => {
 
   const showFeedbackAnim = (type) => {
 
-  if (activeFeedbackRef.current) return;
-
-  activeFeedbackRef.current = true;
+  if (feedback) return;
 
   const correctMessages = [
     "🔥 Aferin!",
@@ -364,14 +362,11 @@ useEffect(() => {
   const list = type === "correct" ? correctMessages : wrongMessages;
   setFeedbackMessage(list[Math.floor(Math.random() * list.length)]);
 
-  feedbackCounter.current += 1;
-  const id = feedbackCounter.current;
-
-  setFeedback({ type, id });
+  setFeedback({ type });
 
   setTimeout(() => {
     setFeedback(null);
-    activeFeedbackRef.current = false;
+    
   }, 1200);
 };
 
@@ -700,8 +695,11 @@ useEffect(() => {
       )}
       
       {feedback && (
-  <div className={`feedback ${feedback.type}`}>
-    <span>{feedbackMessage}</span>
+  <div
+    className={`feedback ${feedback.type}`}
+    style={{ animationPlayState: feedback ? "running" : "paused" }}
+  >
+    {feedbackMessage}
   </div>
 )}
 </div>
