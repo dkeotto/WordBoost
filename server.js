@@ -1,12 +1,55 @@
+require('dotenv').config();
+
 const express = require('express');
+const mongoose = require('mongoose');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
+
+// Mongo bağlantısı
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("🍃 MongoDB connected"))
+  .catch(err => console.error("Mongo error:", err));
+
+  const WordSchema = new mongoose.Schema({
+  term: { type: String, required: true },
+  meaning: { type: String, required: true },
+  hint: String,
+  example: String
+}, { timestamps: true });
+
+const Word = mongoose.model("Word", WordSchema);
+
+const RoomSchema = new mongoose.Schema({
+  code: { type: String, unique: true },
+  host: String,
+  users: [
+    {
+      username: String,
+      avatar: String,
+      studied: { type: Number, default: 0 },
+      known: { type: Number, default: 0 },
+      unknown: { type: Number, default: 0 }
+    }
+  ],
+  isActive: { type: Boolean, default: true },
+  expiresAt: {
+    type: Date,
+    default: () => new Date(Date.now() + 60 * 60 * 1000),
+    index: { expires: 0 }
+  }
+}, { timestamps: true });
+
+const Room = mongoose.model("Room", RoomSchema);
+
+console.log("ENV TEST:", process.env.MONGO_URI);
+
 
 // CORS ve transport ayarları
 const io = new Server(server, {
@@ -33,33 +76,59 @@ function generateRoomCode() {
 }
 
 // API Routes
-app.post('/api/rooms', (req, res) => {
+app.post('/api/rooms', async (req, res) => {
   try {
-    const roomId = uuidv4();
+    const { username, avatar } = req.body;
+
+    if (!username) {
+      return res.status(400).json({ error: "Username gerekli" });
+    }
+
     const roomCode = generateRoomCode();
-    
-    rooms.set(roomCode, {
-      id: roomId,
+
+    const newRoom = await Room.create({
       code: roomCode,
-      createdAt: new Date(),
+      host: username,
+      users: [{
+        username,
+        avatar: avatar || "👤",
+        studied: 0,
+        known: 0,
+        unknown: 0
+      }],
       isActive: true
     });
-    
-    res.json({ success: true, roomId, roomCode });
+
+    res.json({
+      success: true,
+      roomCode: newRoom.code
+    });
+
   } catch (error) {
-    console.error('Error creating room:', error);
-    res.status(500).json({ success: false, error: 'Failed to create room' });
+    console.error(error);
+    res.status(500).json({ error: "Room oluşturulamadı" });
   }
 });
 
-app.get('/api/rooms/:code', (req, res) => {
-  const room = rooms.get(req.params.code);
+app.get('/api/words', async (req, res) => {
+  try {
+    const words = await Word.find();
+    res.json(words);
+  } catch (err) {
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+app.get('/api/rooms/:code', async (req, res) => {
+  const room = await Room.findOne({ code: req.params.code });
+
   if (room && room.isActive) {
     res.json({ success: true, room });
   } else {
     res.status(404).json({ success: false, error: 'Room not found' });
   }
 });
+// TÜM KELİMELERİ GETİR
 
 // Yardımcı fonksiyon: Oda kullanıcılarını stats'tan oluştur
 function getUsersFromStats(roomCode) {
@@ -78,92 +147,104 @@ function getUsersFromStats(roomCode) {
 // Socket.IO
 io.on('connection', (socket) => {
   console.log('✅ User connected:', socket.id);
-  
+ 
   // ODA OLUŞTURMA - Host burada belirlenir!
   socket.on('create-room', async ({ username, avatar }, callback) => {
-    try {
-      if (!username || username.trim().length < 2) {
-        callback?.({ success: false, error: 'Geçerli kullanıcı adı girin' });
-        return;
-      }
+  try {
 
-      const roomId = uuidv4();
-      const roomCode = generateRoomCode();
-      const userAvatar = avatar || '👤';
-      
-      rooms.set(roomCode, {
-        id: roomId,
-        code: roomCode,
-        createdAt: new Date(),
-        isActive: true
-      });
-      
-      roomHosts.set(roomCode, username);
-      
-      // Stats'a host'u ekle
-      const initialStats = {
-        [username]: { 
-          studied: 0, 
-          known: 0, 
-          unknown: 0,
-          avatar: userAvatar
-        }
-      };
-      roomStats.set(roomCode, initialStats);
-      
-      // Socket'i odaya ekle
-      socket.join(roomCode);
-      
-      // Kullanıcıyı kaydet
-      roomUsers.set(socket.id, { 
-        roomCode, 
-        username, 
-        isHost: true,
-        joinedAt: new Date()
-      });
-      
-      console.log(`🏠 Room created: ${roomCode} by ${username}`);
-      
-      const users = getUsersFromStats(roomCode);
-      
-      // BAŞARILI - users listesi ve stats ile birlikte dön
-      callback({ 
-        success: true, 
-        roomCode,
-        avatar: userAvatar,
-        isHost: true,
-        users: users,
-        stats: initialStats
-      });
-    } catch (error) {
-      console.error('Error creating room:', error);
-      callback?.({ success: false, error: error.message });
+    if (!username || username.trim().length < 2) {
+      callback?.({ success: false, error: 'Geçerli kullanıcı adı girin' });
+      return;
     }
-  });
+
+    const roomCode = generateRoomCode();
+    const userAvatar = avatar || '👤';
+
+    console.log("Mongo'ya room yazılıyor...");
+
+    const mongoRoom = await Room.create({
+      code: roomCode,
+      host: username,
+      users: [{
+        username,
+        avatar: userAvatar,
+        studied: 0,
+        known: 0,
+        unknown: 0
+      }],
+      isActive: true
+    });
+
+    console.log("Mongo room yazıldı:", mongoRoom.code);
+
+    roomHosts.set(roomCode, username);
+
+ const initialStats = {
+      [username]: {
+        studied: 0,
+        known: 0,
+        unknown: 0,
+        avatar: userAvatar
+      }
+    };
+
+    roomStats.set(roomCode, initialStats);
+
+    socket.join(roomCode);
+
+    roomUsers.set(socket.id, {
+      roomCode,
+      username,
+      isHost: true,
+      joinedAt: new Date()
+    });
+
+    const users = getUsersFromStats(roomCode);
+
+    callback({
+  success: true,
+  roomCode,
+  avatar: userAvatar,
+  isHost: true,
+  users,
+  stats: initialStats
+});
+
+io.to(roomCode).emit('sync-stats', {
+  stats: initialStats,
+  users
+});
+
+  } catch (error) {
+    console.error('Error creating room:', error);
+    callback?.({ success: false, error: error.message });
+  }
+});
   
   // ODAYA KATILMA
-  socket.on('join-room', ({ roomCode, username, avatar }, callback) => {
-    try {
-      console.log(`🚪 Join attempt: ${username} -> ${roomCode}`);
-      
-      // Validasyonlar
-      if (!username || username.trim().length < 2) {
-        if (callback) callback({ success: false, error: 'Geçerli kullanıcı adı girin' });
-        return;
-      }
+  socket.on('join-room', async ({ roomCode, username, avatar }, callback) => {
+    
+  try {
+    console.log(`🚪 Join attempt: ${username} -> ${roomCode}`);
 
-      if (!roomCode || roomCode.length !== 6) {
-        if (callback) callback({ success: false, error: 'Geçerli oda kodu girin (6 haneli)' });
-        return;
-      }
-      
-      const room = rooms.get(roomCode);
-      
-      if (!room || !room.isActive) {
-        console.log(`❌ Room not found: ${roomCode}`);
-        if (callback) callback({ success: false, error: 'Oda bulunamadı veya kapalı' });
-        return;
-      }
+    if (!username || username.trim().length < 2) {
+      if (callback) callback({ success: false, error: 'Geçerli kullanıcı adı girin' });
+      return;
+    }
+
+    if (!roomCode || roomCode.length !== 6) {
+      if (callback) callback({ success: false, error: 'Geçerli oda kodu girin (6 haneli)' });
+      return;
+    }
+
+    const room = await Room.findOne({ code: roomCode });
+
+    if (!room || !room.isActive) {
+      console.log(`❌ Room not found: ${roomCode}`);
+      if (callback) callback({ success: false, error: 'Oda bulunamadı veya kapalı' });
+      return;
+    }
+
       
       // Aynı kullanıcı adı kontrolü (odada aktif olanlar arasında)
       const currentRoomStats = roomStats.get(roomCode) || {};
@@ -242,33 +323,28 @@ io.on('connection', (socket) => {
   });
 
   // STATS GÜNCELLEME
-  socket.on('update-stats', ({ roomCode, username, stats: newStats }) => {
-    try {
-      const roomStat = roomStats.get(roomCode);
-      if (roomStat && roomStat[username]) {
-        // Sadece sayısal değerleri güncelle (güvenlik)
-        roomStat[username] = {
-          ...roomStat[username],
-          studied: Math.max(0, parseInt(newStats.studied) || 0),
-          known: Math.max(0, parseInt(newStats.known) || 0),
-          unknown: Math.max(0, parseInt(newStats.unknown) || 0)
-        };
-        
-        // Kullanıcı listesini oluştur
-        const users = getUsersFromStats(roomCode);
-        
-        // Tüm odadakilere gönder
-        io.to(roomCode).emit('sync-stats', { 
-          stats: roomStat,
-          users: users  // Tüm kullanıcı listesini de gönder
-        });
-        
-        console.log(`📊 Stats updated: ${username} in ${roomCode}`, roomStat[username]);
-      }
-    } catch (error) {
-      console.error('Error updating stats:', error);
+  socket.on('update-stats', ({ roomCode, username, studied, known, unknown }) => {
+  try {
+    const roomStat = roomStats.get(roomCode);
+
+    if (roomStat && roomStat[username]) {
+
+      roomStat[username].studied += studied || 0;
+      roomStat[username].known += known || 0;
+      roomStat[username].unknown += unknown || 0;
+
+      const users = getUsersFromStats(roomCode);
+
+      io.to(roomCode).emit('sync-stats', {
+        stats: roomStat,
+        users
+      });
     }
-  });
+
+  } catch (error) {
+    console.error("Stats error:", error);
+  }
+});
 
   // KELİME DEĞİŞTİRME (sadece host)
   socket.on('change-word', ({ roomCode, wordIndex }) => {
@@ -303,61 +379,75 @@ io.on('connection', (socket) => {
   });
   
   // AYRILMA İŞLEYİCİSİ
-  function handleUserLeave(socket, roomCode, username) {
-    try {
-      if (!roomCode || !username) return;
-      
-      roomUsers.delete(socket.id);
-      
-      const stats = roomStats.get(roomCode);
-      if (stats && stats[username]) {
-        delete stats[username];
-        
-        // Oda boş mu kontrol et
-        const roomEmpty = !Array.from(roomUsers.values()).some(u => u.roomCode === roomCode);
-        
-        if (roomEmpty) {
-          // Odayı temizle
-          roomStats.delete(roomCode);
-          roomHosts.delete(roomCode);
-          const room = rooms.get(roomCode);
-          if (room) {
-            room.isActive = false;
-          }
-          console.log(`🗑️ Room ${roomCode} is now empty, cleaned up`);
-        } else {
-          // Host ayrıldıysa yeni host ata (en eski üye)
-          const hostName = roomHosts.get(roomCode);
-          if (hostName === username) {
-            const remainingUsers = Array.from(roomUsers.values())
-              .filter(u => u.roomCode === roomCode)
-              .sort((a, b) => a.joinedAt - b.joinedAt);
-            
-            if (remainingUsers.length > 0) {
-              const newHost = remainingUsers[0].username;
-              roomHosts.set(roomCode, newHost);
-              console.log(`👑 New host assigned: ${newHost}`);
-            }
-          }
-          
-          // Kullanıcı listesini oluştur
-          const users = getUsersFromStats(roomCode);
-          
-          // Diğerlerine bildir
-          io.to(roomCode).emit('user-left', { username, socketId: socket.id });
-          io.to(roomCode).emit('sync-stats', { 
-            stats,
-            users: users
-          });
+    async function handleUserLeave(socket, roomCode, username) {
+  try {
+    if (!roomCode || !username) return;
+
+    roomUsers.delete(socket.id);
+
+    const stats = roomStats.get(roomCode);
+    if (stats && stats[username]) {
+      delete stats[username];
+
+      const roomEmpty = !Array.from(roomUsers.values())
+        .some(u => u.roomCode === roomCode);
+
+      if (roomEmpty) {
+
+        const room = await Room.findOne({ code: roomCode });        
+
+        if (room) {
+          room.isActive = false;
+          await room.save();
         }
-      }
-      
-      socket.leave(roomCode);
-      console.log(`👋 ${username} left room ${roomCode}`);
-    } catch (error) {
-      console.error('Error leaving room:', error);
-    }
+
+        roomHosts.set(roomCode, newHost);
+
+        console.log(`🗑️ Room ${roomCode} is now empty, cleaned up`);
+
+      } else {
+
+        const hostName = roomHosts.get(roomCode);
+
+        if (hostName === username) {
+          const remainingUsers = Array.from(roomUsers.values())
+            .filter(u => u.roomCode === roomCode)
+            .sort((a, b) => a.joinedAt - b.joinedAt);
+
+          if (remainingUsers.length > 0) {
+            const newHost = remainingUsers[0].username;
+            roomHosts.set(roomCode, newHost);
+            roomHosts.set(roomCode, username);
+
+const initialStats = {
+  [username]: {
+    studied: 0,
+    known: 0,
+    unknown: 0,
+    avatar: userAvatar
   }
+};
+            console.log(`👑 New host assigned: ${newHost}`);
+          }
+        }
+
+        const users = getUsersFromStats(roomCode);
+
+        io.to(roomCode).emit('user-left', { username, socketId: socket.id });
+        io.to(roomCode).emit('sync-stats', {
+          stats,
+          users
+        });
+      }
+    }
+
+    socket.leave(roomCode);
+    console.log(`👋 ${username} left room ${roomCode}`);
+
+  } catch (error) {
+    console.error('Error leaving room:', error);
+  }
+}
 });
 
 // Static files (production için)
@@ -376,7 +466,7 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
-
+ 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
