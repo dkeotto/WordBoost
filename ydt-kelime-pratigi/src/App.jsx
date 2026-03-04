@@ -339,8 +339,6 @@ useEffect(() => {
 
   const showFeedbackAnim = (type) => {
 
-  if (feedback) return;
-
   const correctMessages = [
     "🔥 Aferin!",
     "⚡ Süper!",
@@ -360,14 +358,15 @@ useEffect(() => {
   ];
 
   const list = type === "correct" ? correctMessages : wrongMessages;
+
   setFeedbackMessage(list[Math.floor(Math.random() * list.length)]);
 
-  setFeedback({ type });
+  const id = Date.now();   // önemli
+  setFeedback({ type, id });
 
   setTimeout(() => {
     setFeedback(null);
-    
-  }, 1200);
+  }, 700);
 };
 
 // Matching Game Functions
@@ -696,8 +695,8 @@ useEffect(() => {
       
       {feedback && (
   <div
+    key={feedback.id}
     className={`feedback ${feedback.type}`}
-    style={{ animationPlayState: feedback ? "running" : "paused" }}
   >
     {feedbackMessage}
   </div>
