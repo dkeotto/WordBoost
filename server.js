@@ -18,6 +18,23 @@ const WordSchema = new mongoose.Schema({
   example: String
 }, { timestamps: true });
 
+const RoomSchema = new mongoose.Schema({
+  code: { type: String, unique: true },
+  host: String,
+  users: [
+    {
+      username: String,
+      avatar: String,
+      studied: { type: Number, default: 0 },
+      known: { type: Number, default: 0 },
+      unknown: { type: Number, default: 0 }
+    }
+  ],
+  isActive: { type: Boolean, default: true }
+}, { timestamps: true });
+
+const Room = mongoose.model("Room", RoomSchema);
+
 const Word = mongoose.model("Word", WordSchema);
 
 async function startServer() {
@@ -156,7 +173,7 @@ io.on('connection', (socket) => {
       host: username,
       users: [{
         username,
-        avatar: userAvatar,
+        avatar: '👤',
         studied: 0,
         known: 0,
         unknown: 0
@@ -173,7 +190,7 @@ io.on('connection', (socket) => {
         studied: 0,
         known: 0,
         unknown: 0,
-        avatar: userAvatar
+        avatar: '👤'
       }
     };
 
@@ -193,7 +210,7 @@ io.on('connection', (socket) => {
     callback({
   success: true,
   roomCode,
-  avatar: userAvatar,
+  avatar: '👤',
   isHost: true,
   users,
   stats: initialStats
@@ -269,7 +286,7 @@ io.to(roomCode).emit('sync-stats', {
         studied: 0, 
         known: 0, 
         unknown: 0,
-        avatar: userAvatar
+        avatar: '👤'
       };
       
       // Odadaki tüm kullanıcıları topla (güncel stats ile)
@@ -285,7 +302,7 @@ io.to(roomCode).emit('sync-stats', {
           users,
           isHost,  // Server tarafında belirlenen değer!
           stats: stats,
-          avatar: userAvatar
+          avatar: '👤'
         });
       }
       
@@ -294,7 +311,7 @@ io.to(roomCode).emit('sync-stats', {
         username, 
         socketId: socket.id,
         isHost,
-        avatar: userAvatar,
+        avatar: '👤',
         studied: 0,
         known: 0
       });
@@ -404,7 +421,7 @@ io.to(roomCode).emit('sync-stats', {
 
           if (remainingUsers.length > 0) {
             const newHost = remainingUsers[0].username;
-            roomHosts.set(roomCode, newHost);
+
             roomHosts.set(roomCode, username);
 
 const initialStats = {
@@ -412,7 +429,7 @@ const initialStats = {
     studied: 0,
     known: 0,
     unknown: 0,
-    avatar: userAvatar
+    avatar: '👤'
   }
 };
             console.log(`👑 New host assigned: ${newHost}`);
