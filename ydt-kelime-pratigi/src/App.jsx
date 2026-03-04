@@ -688,14 +688,35 @@ useEffect(() => {
       )}
       
       {feedback && (
-        <div 
-          key={`feedback-${feedback.id}`}
-          className={`feedback ${feedback.type}`}
-        >
-          {feedback.type === 'correct' ? '✓ Doğru!' : '✗ Yanlış!'}
-        </div>
-      )}
-    </div>
+  <div 
+    key={`feedback-${feedback.id}`}
+    className={`feedback ${feedback.type}`}
+  >
+    {(() => {
+      const correctMessages = [
+        "🔥 Aferin!",
+        "⚡ Süper!",
+        "🚀 İyi gidiyorsun!",
+        "💪 Harika!",
+        "🎯 Tam isabet!",
+        "👏 Çok iyi!"
+      ];
+
+      const wrongMessages = [
+        "📚 Öğreniyoruz",
+        "💡 Çalışmaya devam",
+        "🧠 Yeni kelime öğrendin",
+        "📖 Bir dahaki sefere",
+        "🔁 Tekrar edeceğiz",
+        "✨ Sorun değil!"
+      ];
+
+      const list = feedback.type === "correct" ? correctMessages : wrongMessages;
+      return list[Math.floor(Math.random() * list.length)];
+    })()}
+  </div>
+)}
+</div>
   );
 
   const StatsPanel = () => (
