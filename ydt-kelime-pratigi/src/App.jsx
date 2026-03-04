@@ -81,7 +81,7 @@ function App() {
 const [loadingWords, setLoadingWords] = useState(true);
 
 useEffect(() => {
-  fetch('http://localhost:3000/api/words')
+  fetch('/api/words')
     .then(res => res.json())
     .then(data => {
       const shuffled = [...data].sort(() => Math.random() - 0.5);
