@@ -338,13 +338,42 @@ useEffect(() => {
   };
 
   const showFeedbackAnim = (type) => {
-  const now = Date.now();
-  if (lastFeedbackRef.current.type === type && now - lastFeedbackRef.current.time < 1000) {
-    return;
-  }
-  if (activeFeedbackRef.current) {
-    return;
-  }
+
+  if (activeFeedbackRef.current) return;
+
+  activeFeedbackRef.current = true;
+
+  const correctMessages = [
+    "🔥 Aferin!",
+    "⚡ Süper!",
+    "🚀 İyi gidiyorsun!",
+    "💪 Harika!",
+    "🎯 Tam isabet!",
+    "👏 Çok iyi!"
+  ];
+
+  const wrongMessages = [
+    "📚 Öğreniyoruz",
+    "💡 Çalışmaya devam",
+    "🧠 Yeni kelime öğrendin",
+    "📖 Bir dahaki sefere",
+    "🔁 Tekrar edeceğiz",
+    "✨ Sorun değil!"
+  ];
+
+  const list = type === "correct" ? correctMessages : wrongMessages;
+  setFeedbackMessage(list[Math.floor(Math.random() * list.length)]);
+
+  feedbackCounter.current += 1;
+  const id = feedbackCounter.current;
+
+  setFeedback({ type, id });
+
+  setTimeout(() => {
+    setFeedback(null);
+    activeFeedbackRef.current = false;
+  }, 1200);
+};
 
   const correctMessages = [
     "🔥 Aferin!",
@@ -1098,6 +1127,6 @@ if (loadingWords) {
       </main>
     </div>
   );
-}
+
 
 export default App;

@@ -1,3 +1,13 @@
+.feedback {
+  animation: pop 0.4s ease;
+}
+
+@keyframes pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 /* Avatar Seçimi */
 .avatar-selection {
   margin: 20px 0;
