@@ -523,26 +523,32 @@ button:disabled {
 }
 
 .feedback {
-  position: fixed;
-  top: 50%;
+  position: absolute;
+  top: 20px;
   left: 50%;
-  font-size: 4rem;
+  transform: translateX(-50%);
+  
+  font-size: 28px;
   font-weight: bold;
-  pointer-events: none;
-  z-index: 1000;
-  text-shadow: 0 0 30px currentColor;
-  opacity: 0;
-  will-change: transform, opacity;
+
+  animation: feedbackPop 0.6s ease-out forwards;
 }
 
-.feedback.correct {
-  color: #2ed573;
-  animation: correctPop 1s ease forwards;
-}
+@keyframes feedbackPop {
+  0% {
+    transform: translateX(-50%) scale(0.5);
+    opacity: 0;
+  }
 
-.feedback.wrong {
-  color: #ff4757;
-  animation: wrongShake 0.8s ease forwards;
+  60% {
+    transform: translateX(-50%) scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
 }
 
 /* Test */

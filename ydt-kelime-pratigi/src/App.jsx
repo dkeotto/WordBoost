@@ -701,7 +701,7 @@ useEffect(() => {
       
       {feedback && (
   <div className={`feedback ${feedback.type}`}>
-    {feedbackMessage}
+    <span>{feedbackMessage}</span>
   </div>
 )}
 </div>
