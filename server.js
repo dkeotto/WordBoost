@@ -389,8 +389,7 @@ io.to(roomCode).emit('sync-stats', {
           room.isActive = false;
           await room.save();
         }
-
-        roomHosts.set(roomCode, newHost);
+        
 
         console.log(`🗑️ Room ${roomCode} is now empty, cleaned up`);
 
@@ -455,9 +454,5 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
- 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📁 Client path: ${clientPath}`);
-});
+
+
