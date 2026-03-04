@@ -375,46 +375,7 @@ useEffect(() => {
   }, 1200);
 };
 
-  const correctMessages = [
-    "🔥 Aferin!",
-    "⚡ Süper!",
-    "🚀 İyi gidiyorsun!",
-    "💪 Harika!",
-    "🎯 Tam isabet!",
-    "👏 Çok iyi!"
-  ];
-
-  const wrongMessages = [
-    "📚 Öğreniyoruz",
-    "💡 Çalışmaya devam",
-    "🧠 Yeni kelime öğrendin",
-    "📖 Bir dahaki sefere",
-    "🔁 Tekrar edeceğiz",
-    "✨ Sorun değil!"
-  ];
-
-  const list = type === "correct" ? correctMessages : wrongMessages;
-  setFeedbackMessage(list[Math.floor(Math.random() * list.length)]);
-
-  lastFeedbackRef.current = { time: now, type };
-
-  feedbackCounter.current += 1;
-  const id = feedbackCounter.current;
-  setFeedback({ type, id });
-  activeFeedbackRef.current = { id, type };
-
-  setTimeout(() => {
-    setFeedback(prev => {
-      if (prev && prev.id === id) {
-        activeFeedbackRef.current = null;
-        return null;
-      }
-      return prev;
-    });
-  }, 1200);
-};
-
-  // Matching Game Functions
+// Matching Game Functions
   const startMatchingGame = () => {
     const selectedWords = [...words].sort(() => Math.random() - 0.5).slice(0, 8);
     const cards = [];
@@ -1127,6 +1088,6 @@ if (loadingWords) {
       </main>
     </div>
   );
-
+}
 
 export default App;
