@@ -700,10 +700,7 @@ useEffect(() => {
       )}
       
       {feedback && (
-  <div
-    key={`feedback-${feedback.id}`}
-    className={`feedback ${feedback.type}`}
-  >
+  <div className={`feedback ${feedback.type}`}>
     {feedbackMessage}
   </div>
 )}
