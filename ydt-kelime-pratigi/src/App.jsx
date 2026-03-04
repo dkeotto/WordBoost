@@ -109,6 +109,7 @@ useEffect(() => {
   const [feedback, setFeedback] = useState(null);
   const lastFeedbackRef = useRef({ time: 0, type: null });
   const activeFeedbackRef = useRef(null);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
   
   const [testMode, setTestMode] = useState(false);
   const [testWords, setTestWords] = useState([]);
@@ -337,31 +338,52 @@ useEffect(() => {
   };
 
   const showFeedbackAnim = (type) => {
-    const now = Date.now();
-    if (lastFeedbackRef.current.type === type && now - lastFeedbackRef.current.time < 1000) {
-      return;
-    }
-    if (activeFeedbackRef.current) {
-      return;
-    }
+  const now = Date.now();
+  if (lastFeedbackRef.current.type === type && now - lastFeedbackRef.current.time < 1000) {
+    return;
+  }
+  if (activeFeedbackRef.current) {
+    return;
+  }
 
-    lastFeedbackRef.current = { time: now, type };
+  const correctMessages = [
+    "🔥 Aferin!",
+    "⚡ Süper!",
+    "🚀 İyi gidiyorsun!",
+    "💪 Harika!",
+    "🎯 Tam isabet!",
+    "👏 Çok iyi!"
+  ];
 
-    feedbackCounter.current += 1;
-    const id = feedbackCounter.current;
-    setFeedback({ type, id });
-    activeFeedbackRef.current = { id, type };
+  const wrongMessages = [
+    "📚 Öğreniyoruz",
+    "💡 Çalışmaya devam",
+    "🧠 Yeni kelime öğrendin",
+    "📖 Bir dahaki sefere",
+    "🔁 Tekrar edeceğiz",
+    "✨ Sorun değil!"
+  ];
 
-    setTimeout(() => {
-      setFeedback(prev => {
-        if (prev && prev.id === id) {
-          activeFeedbackRef.current = null;
-          return null;
-        }
-        return prev;
-      });
-    }, 1200);
-  };
+  const list = type === "correct" ? correctMessages : wrongMessages;
+  setFeedbackMessage(list[Math.floor(Math.random() * list.length)]);
+
+  lastFeedbackRef.current = { time: now, type };
+
+  feedbackCounter.current += 1;
+  const id = feedbackCounter.current;
+  setFeedback({ type, id });
+  activeFeedbackRef.current = { id, type };
+
+  setTimeout(() => {
+    setFeedback(prev => {
+      if (prev && prev.id === id) {
+        activeFeedbackRef.current = null;
+        return null;
+      }
+      return prev;
+    });
+  }, 1200);
+};
 
   // Matching Game Functions
   const startMatchingGame = () => {
@@ -688,32 +710,11 @@ useEffect(() => {
       )}
       
       {feedback && (
-  <div 
+  <div
     key={`feedback-${feedback.id}`}
     className={`feedback ${feedback.type}`}
   >
-    {(() => {
-      const correctMessages = [
-        "🔥 Aferin!",
-        "⚡ Süper!",
-        "🚀 İyi gidiyorsun!",
-        "💪 Harika!",
-        "🎯 Tam isabet!",
-        "👏 Çok iyi!"
-      ];
-
-      const wrongMessages = [
-        "📚 Öğreniyoruz",
-        "💡 Çalışmaya devam",
-        "🧠 Yeni kelime öğrendin",
-        "📖 Bir dahaki sefere",
-        "🔁 Tekrar edeceğiz",
-        "✨ Sorun değil!"
-      ];
-
-      const list = feedback.type === "correct" ? correctMessages : wrongMessages;
-      return list[Math.floor(Math.random() * list.length)];
-    })()}
+    {feedbackMessage}
   </div>
 )}
 </div>
