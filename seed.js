@@ -2,10 +2,6 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const words = require('./words');
 
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("Mongo connected"))
-  .catch(err => console.error(err));
-
 const WordSchema = new mongoose.Schema({
   term: { type: String, required: true },
   meaning: { type: String, required: true },
@@ -17,6 +13,9 @@ const Word = mongoose.model("Word", WordSchema);
 
 async function seed() {
   try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("Mongo connected");
+
     console.log("Eski kelimeler siliniyor...");
     await Word.deleteMany({});
 
@@ -24,10 +23,10 @@ async function seed() {
     await Word.insertMany(words);
 
     console.log(`🔥 ${words.length} kelime Mongo'ya eklendi!`);
-    process.exit();
+
+    mongoose.disconnect();
   } catch (err) {
     console.error(err);
-    process.exit(1);
   }
 }
 
