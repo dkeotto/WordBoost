@@ -365,8 +365,8 @@ useEffect(() => {
   setFeedback({ type, id });
 
   setTimeout(() => {
-    setFeedback(null);
-  }, 700);
+  setFeedback(null);
+}, 500);
 };
 
 // Matching Game Functions
