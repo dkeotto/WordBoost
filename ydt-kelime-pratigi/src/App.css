@@ -688,31 +688,42 @@ button:disabled {
 }
 
 .feedback {
-  margin-top: 15px;
-  font-size: 22px;
-  font-weight: bold;
-  padding: 10px 22px;
-  border-radius: 12px;
+  position: absolute;
+  left: 50%;
+  bottom: 120px;
+
+  transform: translateX(-50%) scale(0.8);
+
   display: inline-block;
-  text-align: center;
-  animation: feedbackPop 0.35s ease-out;
+
+  padding: 16px 32px;
+  border-radius: 14px;
+
+  font-size: 1.3rem;
+  font-weight: 600;
+
+  opacity: 0;
+
+  animation: feedbackPop 0.6s ease forwards;
 }
 
 @keyframes feedbackPop {
+
   0% {
-    transform: translateX(-50%) scale(0.7);
+    transform: translateX(-50%) scale(0.6);
     opacity: 0;
   }
 
-  70% {
-    transform: translateX(-50%) scale(1.05);
+  50% {
+    transform: translateX(-50%) scale(1.1);
     opacity: 1;
   }
 
   100% {
     transform: translateX(-50%) scale(1);
-    opacity: 1;
+    opacity: 0;
   }
+
 }
 /* Test */
 .test-mode {
