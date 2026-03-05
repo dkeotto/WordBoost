@@ -984,13 +984,13 @@ useEffect(() => {
     <div className="word-list">
       <h2>Tüm Kelimeler ({filteredWords.length}) - Alfabetik</h2>
       <div className="search-box">
-        <input 
-          id="search-input"
-          type="text"
-          placeholder="Kelime veya anlam ara..."
-          defaultValue={searchTerm}
-          style={{width: '100%', maxWidth: '400px', padding: '15px 20px'}}
-        />
+        <input
+  type="text"
+  placeholder="Kelime veya anlam ara..."
+  value={searchTerm}
+  onChange={(e) => setSearchTerm(e.target.value)}
+  style={{width: '100%', maxWidth: '400px', padding: '15px 20px'}}
+/>
         <button onClick={handleSearch} style={{marginLeft: '10px', padding: '15px 20px'}}>Ara</button>
       </div>
       <div className="word-grid">
