@@ -79,8 +79,9 @@ function App() {
     }
   };
 const [user, setUser] = useState(null);
-const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
 const [showLogin, setShowLogin] = useState(false);
+const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 const [currentView, setCurrentView] = useState('practice');
 const [words, setWords] = useState([]);
 const [loadingWords, setLoadingWords] = useState(true);
@@ -670,11 +671,11 @@ useEffect(() => {
       </button>
       {user ? (
   <button
-  className="profile-btn"
-  onClick={() => setShowLogoutConfirm(true)}
->
-  👤 {user.username}
-</button>
+    className="profile-btn"
+    onClick={() => setShowLogoutConfirm(true)}
+  >
+    👤 {user.username}
+  </button>
 ) : (
   <button onClick={() => setShowLogin(true)}>
     🔐 Login
@@ -1103,17 +1104,17 @@ if (loadingWords) {
         <Navigation />
 
       {showLogin && (
-        <LoginModal
-          onLogin={(u) => {
-  setUser(u);
-  localStorage.setItem("wb_user", JSON.stringify(u));
-  setShowLogin(false);
-  <button
-  className="guest-btn"
-  onClick={() => {
-    onLogin({ username: "Guest" });
-    
-    {showLogoutConfirm && (
+  <LoginModal
+    onLogin={(u) => {
+      setUser(u);
+      localStorage.setItem("wb_user", JSON.stringify(u));
+      setShowLogin(false);
+    }}
+    onClose={() => setShowLogin(false)}
+  />
+)}
+
+{showLogoutConfirm && (
   <div className="logout-overlay">
 
     <div className="logout-modal">
@@ -1143,17 +1144,9 @@ if (loadingWords) {
 
     </div>
 
+
   </div>
 )}
-  }}
-  
->
-  Continue as Guest
-</button>
-}}
-          onClose={() => setShowLogin(false)}
-        />
-      )}
 
     </header>
 
