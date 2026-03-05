@@ -169,7 +169,13 @@ useEffect(() => {
   const [wrongWords, setWrongWords] = useState(() => loadFromStorage('wrongWords', []));
   const [buttonCooldown, setButtonCooldown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const searchInputRef = useRef(null);
+  useEffect(() => {
+  if (searchInputRef.current) {
+    searchInputRef.current.focus();
+  }
+}, [searchTerm]);
+
   const feedbackCounter = useRef(0);
   const [feedback, setFeedback] = useState(null);
   const lastFeedbackRef = useRef({ time: 0, type: null });
@@ -1034,45 +1040,9 @@ const filteredWords = useMemo(() => {
     );
   };
 
-  const WordListView = () => {
+  
 
-  return (
-    <div className="word-list">
-      <h2>Tüm Kelimeler ({words.length}) - Alfabetik</h2>
-
-      <div className="search-box">
-        <input
-          type="text"
-          placeholder="Kelime veya anlam ara..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      <div className="word-grid">
-  {filteredWords.map((word, idx) => (
-    <div key={idx} className="word-card">
-
-      <button
-        className="fav-btn"
-        onClick={() => toggleFavorite(word)}
-      >
-        {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
-      </button>
-
-      <h4>{word.term}</h4>
-      <p className="meaning">{word.meaning}</p>
-      <p className="hint">{word.hint}</p>
-
-    </div>
-  ))}
-</div>
-    </div>
-  );
-
-};
-
-  const WrongWordsView = () => (
+      const WrongWordsView = () => (
     <div className="wrong-words">
       <h2>Yanlış Bilinen Kelimeler ({wrongWords.length})</h2>
       {wrongWords.length === 0 ? (
@@ -1225,7 +1195,16 @@ if (loadingWords) {
       {testMode && testFinished && <TestResultsView />}
       {currentView === 'favorites' && <FavoritesView />}
       {currentView === 'matching-game' && <MatchingGameView />}
-      {currentView === 'word-list' && <WordListView />}
+      {currentView === 'word-list' && (
+  <WordListView
+    words={words}
+    searchTerm={searchTerm}
+    setSearchTerm={setSearchTerm}
+    filteredWords={filteredWords}
+    favorites={favorites}
+    toggleFavorite={toggleFavorite}
+  />
+)}
       {currentView === 'wrong-words' && <WrongWordsView />}
       {currentView === 'room-menu' && <RoomMenuView />}
       {currentView === 'room' && <RoomView />}
@@ -1233,6 +1212,41 @@ if (loadingWords) {
 
   </div>
 );
+}
+function WordListView({ words, searchTerm, setSearchTerm, filteredWords, favorites, toggleFavorite }) {
+  return (
+    <div className="word-list">
+      <h2>Tüm Kelimeler ({words.length}) - Alfabetik</h2>
+
+      <div className="search-box">
+        <input
+          type="text"
+          placeholder="Kelime veya anlam ara..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <div className="word-grid">
+        {filteredWords.map((word, idx) => (
+          <div key={idx} className="word-card">
+
+            <button
+              className="fav-btn"
+              onClick={() => toggleFavorite(word)}
+            >
+              {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
+            </button>
+
+            <h4>{word.term}</h4>
+            <p className="meaning">{word.meaning}</p>
+            <p className="hint">{word.hint}</p>
+
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default App;
