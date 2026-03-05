@@ -14,6 +14,7 @@ const WordSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+console.log("Connected to:", process.env.MONGO_URI);
 
 
 const Word = mongoose.model("Word", WordSchema);
