@@ -17,6 +17,8 @@ socket.io.on('upgradeError', (err) => {
   console.warn('Socket.IO upgrade error:', err);
 });
 
+
+
 const playSound = (type) => {
   try {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -79,6 +81,25 @@ function App() {
     }
   };
 const [user, setUser] = useState(null);
+
+const [favorites, setFavorites] = useState(() => {
+  const saved = localStorage.getItem("ydt_favorites");
+  return saved ? JSON.parse(saved) : [];
+});
+useEffect(() => {
+  localStorage.setItem("ydt_favorites", JSON.stringify(favorites));
+}, [favorites]);
+const toggleFavorite = (word) => {
+  setFavorites(prev => {
+    const exists = prev.find(w => w.term === word.term);
+
+    if (exists) {
+      return prev.filter(w => w.term !== word.term);
+    }
+
+    return [...prev, word];
+  });
+};
 
 const [showLogin, setShowLogin] = useState(false);
 const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -642,13 +663,7 @@ useEffect(() => {
     setCurrentView('practice');
   };
 
-  const handleSearch = () => {
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-      setSearchTerm(searchInput.value);
-    }
-  };
-
+  
   const Navigation = () => (
     <nav className="nav">
       <button className={currentView === 'practice' && !testMode ? 'active' : ''} onClick={() => {setCurrentView('practice'); setTestMode(false); setMatchingGame(false);}}>
@@ -661,14 +676,21 @@ useEffect(() => {
         🎮 Eşleştirme
       </button>
       <button className={currentView === 'word-list' ? 'active' : ''} onClick={() => setCurrentView('word-list')}>
-        📚 Tüm Kelimeler ({filteredWords.length})
+        📚 Tüm Kelimeler ({sortedWordsList.length})
       </button>
       <button className={currentView === 'wrong-words' ? 'active' : ''} onClick={() => setCurrentView('wrong-words')}>
         ❌ Yanlışlar ({wrongWords.length})
       </button>
+      
       <button className={currentView === 'room-menu' || isInRoom ? 'active' : ''} onClick={() => isInRoom ? setCurrentView('room') : setCurrentView('room-menu')}>
         👥 Oda {isInRoom && '(Aktif)'}
       </button>
+      <button
+  className={currentView === 'favorites' ? 'active' : ''}
+  onClick={() => setCurrentView('favorites')}
+>
+  ⭐ Favoriler ({favorites.length})
+</button>
       {user ? (
   <button
     className="profile-btn"
@@ -680,6 +702,7 @@ useEffect(() => {
   <button onClick={() => setShowLogin(true)}>
     🔐 Login
   </button>
+  
 )}
       </nav>
   );
@@ -991,15 +1014,24 @@ useEffect(() => {
   onChange={(e) => setSearchTerm(e.target.value)}
   style={{width: '100%', maxWidth: '400px', padding: '15px 20px'}}
 />
-        <button onClick={handleSearch} style={{marginLeft: '10px', padding: '15px 20px'}}>Ara</button>
+
       </div>
       <div className="word-grid">
         {filteredWords.map((word, idx) => (
           <div key={idx} className="word-card">
-            <h4>{word.term}</h4>
-            <p className="meaning">{word.meaning}</p>
-            <p className="hint">{word.hint}</p>
-          </div>
+
+  <button
+    className="fav-btn"
+    onClick={() => toggleFavorite(word)}
+  >
+    {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
+  </button>
+
+  <h4>{word.term}</h4>
+  <p className="meaning">{word.meaning}</p>
+  <p className="hint">{word.hint}</p>
+
+</div>
         ))}
       </div>
     </div>
