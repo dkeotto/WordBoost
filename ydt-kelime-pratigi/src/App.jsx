@@ -97,12 +97,21 @@ const FavoritesView = () => (
       ) : (
         <div className="word-grid">
           {favorites.map((word, idx) => (
-            <div key={idx} className="word-card">
-              <h4>{word.term}</h4>
-              <p className="meaning">{word.meaning}</p>
-              <p className="hint">{word.hint}</p>
-            </div>
-          ))}
+  <div key={idx} className="word-card">
+
+    <button
+      className="fav-btn"
+      onClick={() => toggleFavorite(word)}
+    >
+      ⭐
+    </button>
+
+    <h4>{word.term}</h4>
+    <p className="meaning">{word.meaning}</p>
+    <p className="hint">{word.hint}</p>
+
+  </div>
+))}
         </div>
       )}
     </div>

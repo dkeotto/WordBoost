@@ -364,6 +364,32 @@ main {
   justify-content: center;
 }
 
+.fav-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+
+  background: none;
+  border: none;
+
+  font-size: 20px;
+  cursor: pointer;
+
+  padding: 0;
+  width: auto;
+  height: auto;
+
+  color: gold;
+}
+
+.fav-btn:hover {
+  transform: scale(1.2);
+}
+
+.word-card {
+  position: relative;
+}
+
 /* Flashcard */
 .flashcard-container {
   width: 100%;
