@@ -86,27 +86,28 @@ const [favorites, setFavorites] = useState(() => {
   const saved = localStorage.getItem("ydt_favorites");
   return saved ? JSON.parse(saved) : [];
   
-  const FavoritesView = () => (
-  <div className="word-list">
-    <h2>⭐ Favoriler ({favorites.length})</h2>
-
-    {favorites.length === 0 ? (
-      <p className="empty">Henüz favori kelime yok.</p>
-    ) : (
-      <div className="word-grid">
-        {favorites.map((word, idx) => (
-          <div key={idx} className="word-card">
-            <h4>{word.term}</h4>
-            <p className="meaning">{word.meaning}</p>
-            <p className="hint">{word.hint}</p>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-);
-
 });
+
+const FavoritesView = () => (
+    <div className="word-list">
+      <h2>⭐ Favoriler ({favorites.length})</h2>
+
+      {favorites.length === 0 ? (
+        <p className="empty">Henüz favori kelime yok.</p>
+      ) : (
+        <div className="word-grid">
+          {favorites.map((word, idx) => (
+            <div key={idx} className="word-card">
+              <h4>{word.term}</h4>
+              <p className="meaning">{word.meaning}</p>
+              <p className="hint">{word.hint}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
 useEffect(() => {
   localStorage.setItem("ydt_favorites", JSON.stringify(favorites));
 }, [favorites]);
