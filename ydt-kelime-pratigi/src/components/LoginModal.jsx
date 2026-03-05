@@ -3,10 +3,8 @@ import { useState } from "react";
 export default function LoginModal({ onLogin, onClose }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(true);
-  const [error, setError] = useState("");
 
-  async function handleLogin() {
+  const handleLogin = async () => {
     const res = await fetch("/api/login", {
       method: "POST",
       headers: {
@@ -17,27 +15,34 @@ export default function LoginModal({ onLogin, onClose }) {
 
     const data = await res.json();
 
-    if (!data.success) {
-      setError(data.error || "Login failed");
-      return;
-    }
-
-    if (remember) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+    if (data.success) {
+      onLogin(data.user);
     } else {
-      sessionStorage.setItem("token", data.token);
+      alert(data.error || "Login başarısız");
     }
+  };
 
-    onLogin(data.user);
-  }
+  const handleRegister = async () => {
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ username, password })
+    });
 
-  function guest() {
-    onLogin({ username: "Guest", guest: true });
-  }
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Hesap oluşturuldu! Giriş yapabilirsiniz.");
+    } else {
+      alert(data.error || "Register başarısız");
+    }
+  };
 
   return (
-    <div className="modal-overlay">
+    <div className="login-overlay">
+
       <div className="login-modal">
 
         <h2>WordBoost</h2>
@@ -55,30 +60,28 @@ export default function LoginModal({ onLogin, onClose }) {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <label className="remember">
-          <input
-            type="checkbox"
-            checked={remember}
-            onChange={() => setRemember(!remember)}
-          />
-          Beni hatırla
-        </label>
+        <div className="login-buttons">
 
-        {error && <div className="error">{error}</div>}
+          <button onClick={handleLogin}>Login</button>
 
-        <button className="login-btn" onClick={handleLogin}>
-          Login
-        </button>
+          <button onClick={handleRegister}>
+            Register
+          </button>
 
-        <button className="guest-btn" onClick={guest}>
-          Continue as Guest
-        </button>
+          <button
+            onClick={() => onLogin({ username: "Guest" })}
+          >
+            Continue as Guest
+          </button>
 
-        <button className="close-btn" onClick={onClose}>
-          ✕
-        </button>
+          <button className="close-btn" onClick={onClose}>
+            ✕
+          </button>
+
+        </div>
 
       </div>
+
     </div>
   );
 }
