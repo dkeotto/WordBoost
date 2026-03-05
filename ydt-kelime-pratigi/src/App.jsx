@@ -72,6 +72,20 @@ const generateOptions = (correctWord, allWords) => {
 };
 
 function App() {
+  const loadFromStorage = (key, defaultValue) => {
+    try {
+      const saved = localStorage.getItem(`ydt_${key}`);
+      return saved ? JSON.parse(saved) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  };
+const [user, setUser] = useState(null);
+
+const [favorites, setFavorites] = useState(() => {
+  const saved = localStorage.getItem("ydt_favorites");
+  return saved ? JSON.parse(saved) : [];
+  
   const FavoritesView = () => (
   <div className="word-list">
     <h2>⭐ Favoriler ({favorites.length})</h2>
@@ -91,19 +105,7 @@ function App() {
     )}
   </div>
 );
-  const loadFromStorage = (key, defaultValue) => {
-    try {
-      const saved = localStorage.getItem(`ydt_${key}`);
-      return saved ? JSON.parse(saved) : defaultValue;
-    } catch {
-      return defaultValue;
-    }
-  };
-const [user, setUser] = useState(null);
 
-const [favorites, setFavorites] = useState(() => {
-  const saved = localStorage.getItem("ydt_favorites");
-  return saved ? JSON.parse(saved) : [];
 });
 useEffect(() => {
   localStorage.setItem("ydt_favorites", JSON.stringify(favorites));
