@@ -661,7 +661,7 @@ useEffect(() => {
         🎮 Eşleştirme
       </button>
       <button className={currentView === 'word-list' ? 'active' : ''} onClick={() => setCurrentView('word-list')}>
-        📚 Tüm Kelimeler ({sortedWordsList.length})
+        📚 Tüm Kelimeler ({filteredWords.length})
       </button>
       <button className={currentView === 'wrong-words' ? 'active' : ''} onClick={() => setCurrentView('wrong-words')}>
         ❌ Yanlışlar ({wrongWords.length})
