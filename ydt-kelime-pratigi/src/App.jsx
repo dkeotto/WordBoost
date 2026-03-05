@@ -1055,6 +1055,25 @@ useEffect(() => {
       )}
     </div>
   );
+  const FavoritesView = () => (
+  <div className="word-list">
+    <h2>⭐ Favoriler ({favorites.length})</h2>
+
+    {favorites.length === 0 ? (
+      <p className="empty">Henüz favori kelime yok.</p>
+    ) : (
+      <div className="word-grid">
+        {favorites.map((word, idx) => (
+          <div key={idx} className="word-card">
+            <h4>{word.term}</h4>
+            <p className="meaning">{word.meaning}</p>
+            <p className="hint">{word.hint}</p>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
 
   const RoomMenuView = () => (
     <div className="room-menu">
@@ -1187,6 +1206,7 @@ if (loadingWords) {
       {!testMode && currentView === 'test-setup' && <TestSetupView />}
       {testMode && !testFinished && <TestView />}
       {testMode && testFinished && <TestResultsView />}
+      {currentView === 'favorites' && <FavoritesView />}
       {currentView === 'matching-game' && <MatchingGameView />}
       {currentView === 'word-list' && <WordListView />}
       {currentView === 'wrong-words' && <WrongWordsView />}
