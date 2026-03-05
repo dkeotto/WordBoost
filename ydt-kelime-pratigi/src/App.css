@@ -1,9 +1,15 @@
 .feedback.correct {
+  background: rgba(46, 213, 115, 0.2);
   color: #2ed573;
+  border: 2px solid #2ed573;
+  box-shadow: 0 0 12px rgba(46,213,115,0.4);
 }
 
 .feedback.wrong {
+  background: rgba(255, 71, 87, 0.2);
   color: #ff4757;
+  border: 2px solid #ff4757;
+  box-shadow: 0 0 12px rgba(255,71,87,0.4);
 }
 
 /* Avatar Seçimi */
