@@ -1,6 +1,9 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { io } from 'socket.io-client';
-import './App.css';
+import { useState, useEffect, useMemo, useRef } from "react";
+import LoginModal from "./components/LoginModal";
+import { io } from "socket.io-client";
+import "./App.css";
+
+
 
 const SOCKET_URL = window.location.origin;
 const socket = io(SOCKET_URL, {
@@ -75,11 +78,19 @@ function App() {
       return defaultValue;
     }
   };
-
-  const [currentView, setCurrentView] = useState('practice');
- const [words, setWords] = useState([]);
+const [user, setUser] = useState(null);
+const [showLogin, setShowLogin] = useState(false);
+const [currentView, setCurrentView] = useState('practice');
+const [words, setWords] = useState([]);
 const [loadingWords, setLoadingWords] = useState(true);
 
+useEffect(() => {
+  const savedUser = localStorage.getItem("wb_user");
+
+  if (savedUser) {
+    setUser(JSON.parse(savedUser));
+  }
+}, []);
 useEffect(() => {
   fetch('/api/words')
     .then(res => res.json())
@@ -217,6 +228,9 @@ useEffect(() => {
       socket.off('error');
     };
   }, []);
+
+  // Login 
+  
 
   // Matching Game Timer
   useEffect(() => {
@@ -653,7 +667,22 @@ useEffect(() => {
       <button className={currentView === 'room-menu' || isInRoom ? 'active' : ''} onClick={() => isInRoom ? setCurrentView('room') : setCurrentView('room-menu')}>
         👥 Oda {isInRoom && '(Aktif)'}
       </button>
-    </nav>
+      {user ? (
+  <button
+    className="profile-btn"
+    onClick={() => {
+      setUser(null);
+      localStorage.removeItem("wb_user");
+    }}
+  >
+    👤 {user.username} (Logout)
+  </button>
+) : (
+  <button onClick={() => setShowLogin(true)}>
+    🔐 Login
+  </button>
+)}
+      </nav>
   );
 
   const Flashcard = ({ word }) => (
@@ -1073,22 +1102,43 @@ if (loadingWords) {
         <h1>YDT Kelime Pratiği</h1>
 
         
-        
         <Navigation />
-      </header>
-      <main>
-        {!testMode && currentView === 'practice' && <PracticeView />}
-        {!testMode && currentView === 'test-setup' && <TestSetupView />}
-        {testMode && !testFinished && <TestView />}
-        {testMode && testFinished && <TestResultsView />}
-        {currentView === 'matching-game' && <MatchingGameView />}
-        {currentView === 'word-list' && <WordListView />}
-        {currentView === 'wrong-words' && <WrongWordsView />}
-        {currentView === 'room-menu' && <RoomMenuView />}
-        {currentView === 'room' && <RoomView />}
-      </main>
-    </div>
-  );
+
+      {showLogin && (
+        <LoginModal
+          onLogin={(u) => {
+  setUser(u);
+  localStorage.setItem("wb_user", JSON.stringify(u));
+  setShowLogin(false);
+  <button
+  className="guest-btn"
+  onClick={() => {
+    onLogin({ username: "Guest" });
+  }}
+>
+  Continue as Guest
+</button>
+}}
+          onClose={() => setShowLogin(false)}
+        />
+      )}
+
+    </header>
+
+    <main>
+      {!testMode && currentView === 'practice' && <PracticeView />}
+      {!testMode && currentView === 'test-setup' && <TestSetupView />}
+      {testMode && !testFinished && <TestView />}
+      {testMode && testFinished && <TestResultsView />}
+      {currentView === 'matching-game' && <MatchingGameView />}
+      {currentView === 'word-list' && <WordListView />}
+      {currentView === 'wrong-words' && <WrongWordsView />}
+      {currentView === 'room-menu' && <RoomMenuView />}
+      {currentView === 'room' && <RoomView />}
+    </main>
+
+  </div>
+);
 }
 
 export default App;

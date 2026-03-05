@@ -534,13 +534,13 @@ button:disabled {
 }
 
 .feedback {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-
-  transform: translateX(-50%);
-  font-size: 28px;
+  margin-top: 15px;
+  font-size: 22px;
   font-weight: bold;
+  padding: 10px 22px;
+  border-radius: 12px;
+  display: inline-block;
+  text-align: center;
   animation: feedbackPop 0.35s ease-out;
 }
 
