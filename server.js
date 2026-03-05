@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const http = require('http');
@@ -17,6 +19,29 @@ const WordSchema = new mongoose.Schema({
   hint: String,
   example: String
 }, { timestamps: true });
+
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+const UserSchema = new mongoose.Schema({
+  username: { type: String, unique: true },
+  password: String,
+
+  stats: {
+    studied: { type: Number, default: 0 },
+    known: { type: Number, default: 0 },
+    unknown: { type: Number, default: 0 }
+  },
+
+  streak: { type: Number, default: 0 },
+  lastStudyDate: Date,
+
+  badges: [String],
+
+  createdAt: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model("User", UserSchema);
 
 const RoomSchema = new mongoose.Schema({
   code: { type: String, unique: true },
@@ -81,6 +106,110 @@ function generateRoomCode() {
 }
 
 // API Routes
+app.post('/api/register', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username ve password gerekli" });
+    }
+
+    const existing = await User.findOne({ username });
+
+    if (existing) {
+      return res.status(400).json({ error: "Username zaten kullanılıyor" });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      username,
+      password: hashed
+    });
+
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      "SECRET_KEY",
+      { expiresIn: "30d" }
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        username: user.username,
+        stats: user.stats,
+        streak: user.streak,
+        badges: user.badges
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Register error" });
+  }
+});
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(400).json({ error: "Kullanıcı bulunamadı" });
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+
+    if (!valid) {
+      return res.status(400).json({ error: "Şifre yanlış" });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      "SECRET_KEY",
+      { expiresIn: "30d" }
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        username: user.username,
+        stats: user.stats,
+        streak: user.streak,
+        badges: user.badges
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Login error" });
+  }
+});
+app.get('/api/profile', async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+
+    if (!token) {
+      return res.status(401).json({ error: "Token gerekli" });
+    }
+
+    const decoded = jwt.verify(token, "SECRET_KEY");
+
+    const user = await User.findById(decoded.id);
+
+    res.json({
+      username: user.username,
+      stats: user.stats,
+      streak: user.streak,
+      badges: user.badges
+    });
+
+  } catch (err) {
+    res.status(401).json({ error: "Auth error" });
+  }
+});
 app.post('/api/rooms', async (req, res) => {
   try {
     const { username, avatar } = req.body;
