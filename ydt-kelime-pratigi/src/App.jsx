@@ -297,11 +297,11 @@ useEffect(() => {
     }
   }, [matchingGame, gameFinished, matchedPairs.length]);
 
-  const filteredWords = useMemo(() => {
+  const uniqueWords = useMemo(() => {
+  return [...new Map(words.map(w => [w.term, w])).values()];
+}, [words]);
 
-  const uniqueWords = Array.from(
-    new Map(sortedWordsList.map(word => [word.term, word])).values()
-  );
+const filteredWords = useMemo(() => {
 
   if (!searchTerm) return uniqueWords;
 
@@ -310,7 +310,7 @@ useEffect(() => {
     w.meaning.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-}, [sortedWordsList, searchTerm]);
+}, [uniqueWords, searchTerm]);
 
   const createRoom = async () => {
     const usernameInput = document.getElementById('username-input');
@@ -707,7 +707,7 @@ useEffect(() => {
         🎮 Eşleştirme
       </button>
       <button className={currentView === 'word-list' ? 'active' : ''} onClick={() => setCurrentView('word-list')}>
-        📚 Tüm Kelimeler ({sortedWordsList.length})
+        📚 Tüm Kelimeler ({words.length})
       </button>
       <button className={currentView === 'wrong-words' ? 'active' : ''} onClick={() => setCurrentView('wrong-words')}>
         ❌ Yanlışlar ({wrongWords.length})
@@ -1034,39 +1034,43 @@ useEffect(() => {
     );
   };
 
-  const WordListView = () => (
+  const WordListView = () => {
+
+  return (
     <div className="word-list">
-      <h2>Tüm Kelimeler ({filteredWords.length}) - Alfabetik</h2>
+      <h2>Tüm Kelimeler ({words.length}) - Alfabetik</h2>
+
       <div className="search-box">
         <input
-  type="text"
-  placeholder="Kelime veya anlam ara..."
-  value={searchTerm}
-  onChange={(e) => setSearchTerm(e.target.value)}
-  style={{width: '100%', maxWidth: '400px', padding: '15px 20px'}}
-/>
-
+          type="text"
+          placeholder="Kelime veya anlam ara..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
+
       <div className="word-grid">
-        {filteredWords.map((word, idx) => (
-          <div key={idx} className="word-card">
+  {filteredWords.map((word, idx) => (
+    <div key={idx} className="word-card">
 
-  <button
-    className="fav-btn"
-    onClick={() => toggleFavorite(word)}
-  >
-    {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
-  </button>
+      <button
+        className="fav-btn"
+        onClick={() => toggleFavorite(word)}
+      >
+        {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
+      </button>
 
-  <h4>{word.term}</h4>
-  <p className="meaning">{word.meaning}</p>
-  <p className="hint">{word.hint}</p>
+      <h4>{word.term}</h4>
+      <p className="meaning">{word.meaning}</p>
+      <p className="hint">{word.hint}</p>
 
+    </div>
+  ))}
 </div>
-        ))}
-      </div>
     </div>
   );
+
+};
 
   const WrongWordsView = () => (
     <div className="wrong-words">
