@@ -119,6 +119,53 @@
   margin-top: 5px;
 }
 
+.logout-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 999;
+}
+
+.logout-modal {
+  background: linear-gradient(135deg,#1a1f3a,#2c2f6b);
+  padding: 35px;
+  border-radius: 18px;
+  text-align: center;
+
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.logout-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 15px;
+}
+
+.logout-buttons button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+
+  background: linear-gradient(135deg,#00d4ff,#7b2cbf);
+  color: white;
+}
+
+.cancel-btn {
+  background: #ff4757 !important;
+}
+
 /* Avatar Seçimi */
 .avatar-selection {
   margin: 20px 0;

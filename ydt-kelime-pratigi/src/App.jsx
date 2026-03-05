@@ -79,6 +79,7 @@ function App() {
     }
   };
 const [user, setUser] = useState(null);
+const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 const [showLogin, setShowLogin] = useState(false);
 const [currentView, setCurrentView] = useState('practice');
 const [words, setWords] = useState([]);
@@ -669,14 +670,11 @@ useEffect(() => {
       </button>
       {user ? (
   <button
-    className="profile-btn"
-    onClick={() => {
-      setUser(null);
-      localStorage.removeItem("wb_user");
-    }}
-  >
-    👤 {user.username} (Logout)
-  </button>
+  className="profile-btn"
+  onClick={() => setShowLogoutConfirm(true)}
+>
+  👤 {user.username}
+</button>
 ) : (
   <button onClick={() => setShowLogin(true)}>
     🔐 Login
@@ -1114,7 +1112,41 @@ if (loadingWords) {
   className="guest-btn"
   onClick={() => {
     onLogin({ username: "Guest" });
+    
+    {showLogoutConfirm && (
+  <div className="logout-overlay">
+
+    <div className="logout-modal">
+
+      <h3>Çıkış yapmak istediğine emin misin?</h3>
+
+      <div className="logout-buttons">
+
+        <button
+          onClick={() => {
+            setUser(null);
+            localStorage.removeItem("wb_user");
+            setShowLogoutConfirm(false);
+          }}
+        >
+          Evet, çıkış yap
+        </button>
+
+        <button
+          className="cancel-btn"
+          onClick={() => setShowLogoutConfirm(false)}
+        >
+          Vazgeç
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+)}
   }}
+  
 >
   Continue as Guest
 </button>

@@ -45,7 +45,7 @@ export default function LoginModal({ onLogin, onClose }) {
 
       <div className="login-modal">
 
-        <h2>WordBoost</h2>
+        <h2>🦊 WordBoost</h2>
 
         <input
           placeholder="Username"
