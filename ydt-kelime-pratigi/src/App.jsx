@@ -1229,7 +1229,7 @@ function WordListView({ words, searchTerm, setSearchTerm, filteredWords, favorit
 
       <div className="word-grid">
         {filteredWords.map((word, idx) => (
-          <div key={idx} className="word-card">
+          <div key={word.term} className="word-card">
 
             <button
               className="fav-btn"
