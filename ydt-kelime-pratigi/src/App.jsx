@@ -72,6 +72,9 @@ const generateOptions = (correctWord, allWords) => {
 };
 
 function App() {
+
+  const [selectedLevel,setSelectedLevel] = useState("ALL")
+
   const loadFromStorage = (key, defaultValue) => {
     try {
       const saved = localStorage.getItem(`ydt_${key}`);
@@ -309,14 +312,24 @@ useEffect(() => {
 
 const filteredWords = useMemo(() => {
 
-  if (!searchTerm) return uniqueWords;
+ let result = uniqueWords;
 
-  return uniqueWords.filter(w =>
-    w.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    w.meaning.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+ // LEVEL FILTER
+ if (selectedLevel !== "ALL") {
+   result = result.filter(w => w.level === selectedLevel);
+ }
 
-}, [uniqueWords, searchTerm]);
+ // SEARCH FILTER
+ if (searchTerm) {
+   result = result.filter(w =>
+     w.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     w.meaning.toLowerCase().includes(searchTerm.toLowerCase())
+   );
+ }
+
+ return result;
+
+}, [uniqueWords, searchTerm, selectedLevel]);
 
   const createRoom = async () => {
     const usernameInput = document.getElementById('username-input');
@@ -1197,13 +1210,13 @@ if (loadingWords) {
       {currentView === 'matching-game' && <MatchingGameView />}
       {currentView === 'word-list' && (
   <WordListView
-    words={words}
-    searchTerm={searchTerm}
-    setSearchTerm={setSearchTerm}
-    filteredWords={filteredWords}
-    favorites={favorites}
-    toggleFavorite={toggleFavorite}
-  />
+ words={uniqueWords}
+ searchTerm={searchTerm}
+ setSearchTerm={setSearchTerm}
+ filteredWords={filteredWords}
+ selectedLevel={selectedLevel}
+ setSelectedLevel={setSelectedLevel}
+/>
 )}
       {currentView === 'wrong-words' && <WrongWordsView />}
       {currentView === 'room-menu' && <RoomMenuView />}
@@ -1213,19 +1226,36 @@ if (loadingWords) {
   </div>
 );
 }
-function WordListView({ words, searchTerm, setSearchTerm, filteredWords, favorites, toggleFavorite }) {
+function WordListView({ words, searchTerm, setSearchTerm, filteredWords, selectedLevel, setSelectedLevel }) {
   return (
     <div className="word-list">
       <h2>Tüm Kelimeler ({words.length}) - Alfabetik</h2>
 
       <div className="search-box">
-        <input
-          type="text"
-          placeholder="Kelime veya anlam ara..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
+
+  <input
+    type="text"
+    placeholder="Kelime veya anlam ara..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+  />
+
+  <select
+    value={selectedLevel}
+    onChange={(e)=>setSelectedLevel(e.target.value)}
+  >
+
+    <option value="ALL">All</option>
+    <option value="A1">A1</option>
+    <option value="A2">A2</option>
+    <option value="B1">B1</option>
+    <option value="B2">B2</option>
+    <option value="C1">C1</option>
+    <option value="C2">C2</option>
+
+  </select>
+
+</div>
 
       <div className="word-grid">
         {filteredWords.map((word, idx) => (
@@ -1238,7 +1268,10 @@ function WordListView({ words, searchTerm, setSearchTerm, filteredWords, favorit
               {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
             </button>
 
-            <h4>{word.term}</h4>
+            <h4>
+ {word.term}
+ <span className="level">{word.level}</span>
+</h4>
             <p className="meaning">{word.meaning}</p>
             <p className="hint">{word.hint}</p>
 
