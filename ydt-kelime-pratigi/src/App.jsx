@@ -141,6 +141,7 @@ const [currentView, setCurrentView] = useState('practice');
 const [words, setWords] = useState([]);
 const [loadingWords, setLoadingWords] = useState(true);
 
+
 useEffect(() => {
   const savedUser = localStorage.getItem("wb_user");
 
@@ -1214,6 +1215,8 @@ if (loadingWords) {
  searchTerm={searchTerm}
  setSearchTerm={setSearchTerm}
  filteredWords={filteredWords}
+ favorites={favorites}
+ toggleFavorite={toggleFavorite}
  selectedLevel={selectedLevel}
  setSelectedLevel={setSelectedLevel}
 />
@@ -1226,7 +1229,16 @@ if (loadingWords) {
   </div>
 );
 }
-function WordListView({ words, searchTerm, setSearchTerm, filteredWords, selectedLevel, setSelectedLevel }) {
+function WordListView({
+  words,
+  searchTerm,
+  setSearchTerm,
+  filteredWords,
+  selectedLevel,
+  setSelectedLevel,
+  favorites,
+  toggleFavorite
+}) {
   return (
     <div className="word-list">
       <h2>Tüm Kelimeler ({words.length}) - Alfabetik</h2>
