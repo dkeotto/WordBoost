@@ -72,6 +72,25 @@ const generateOptions = (correctWord, allWords) => {
 };
 
 function App() {
+  const FavoritesView = () => (
+  <div className="word-list">
+    <h2>⭐ Favoriler ({favorites.length})</h2>
+
+    {favorites.length === 0 ? (
+      <p className="empty">Henüz favori kelime yok.</p>
+    ) : (
+      <div className="word-grid">
+        {favorites.map((word, idx) => (
+          <div key={idx} className="word-card">
+            <h4>{word.term}</h4>
+            <p className="meaning">{word.meaning}</p>
+            <p className="hint">{word.hint}</p>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
   const loadFromStorage = (key, defaultValue) => {
     try {
       const saved = localStorage.getItem(`ydt_${key}`);
@@ -1055,25 +1074,7 @@ useEffect(() => {
       )}
     </div>
   );
-  const FavoritesView = () => (
-  <div className="word-list">
-    <h2>⭐ Favoriler ({favorites.length})</h2>
-
-    {favorites.length === 0 ? (
-      <p className="empty">Henüz favori kelime yok.</p>
-    ) : (
-      <div className="word-grid">
-        {favorites.map((word, idx) => (
-          <div key={idx} className="word-card">
-            <h4>{word.term}</h4>
-            <p className="meaning">{word.meaning}</p>
-            <p className="hint">{word.hint}</p>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-);
+  
 
   const RoomMenuView = () => (
     <div className="room-menu">
