@@ -289,6 +289,20 @@
      justify-content: center;
   }
 
+  /* Listeler başlığını mobilde göster */
+  .dropdown-title {
+    display: flex;
+    color: var(--secondary-color);
+    margin-bottom: 5px;
+    font-size: 1.1rem;
+    width: 80%;
+    justify-content: center;
+  }
+  
+  .dropdown-content {
+    margin-top: 5px;
+  }
+
   .navbar-logo h1 {
     font-size: 1.5rem;
   }

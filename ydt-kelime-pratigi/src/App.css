@@ -859,9 +859,16 @@ button:disabled {
     background: #1E1E1E; /* Arka plan geri geldi */
   }
 
-  /* Re-add background for specific blocks if needed, but 'ince uzun' usually means too much margin/padding */
-  .test-mode, .test-results, .test-setup {
-    margin-bottom: 2rem;
+  .test-options {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    width: 100%; /* Butonların tam genişlikte olmasını sağlar */
+  }
+
+  .option-btn {
+    width: 100%;
+    padding: 1.2rem; /* Mobilde biraz daha kompakt */
+    font-size: 1rem;
   }
   
   .config-item {
