@@ -7,13 +7,16 @@
 }
 
 :root {
-  --primary-color: #4ecca3;
-  --secondary-color: #e94560;
-  --accent-color: #0f3460;
-  --bg-dark: #1a1a2e;
-  --bg-light: #16213e;
-  --text-main: #eeeeee;
-  --text-muted: #aaddff;
+  /* Yeni Renk Paleti: Turuncu, Sarı, Siyah */
+  --primary-color: #FF9F1C;   /* Canlı Turuncu */
+  --secondary-color: #FFD700; /* Altın Sarısı */
+  --accent-color: #FF4500;    /* Koyu Turuncu/Kırmızımsı */
+  --bg-dark: #121212;         /* Tam Siyah */
+  --bg-light: #1E1E1E;        /* Koyu Gri (Kartlar için) */
+  --text-main: #FFFFFF;       /* Beyaz */
+  --text-muted: #B0B0B0;      /* Gri */
+  --success-color: #2ECC71;
+  --error-color: #E74C3C;
 }
 
 body {
@@ -21,19 +24,22 @@ body {
   color: var(--text-main);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
+  display: block; /* Flex'i iptal et, normal akış olsun */
+  width: 100%;
 }
 
 .app {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
 }
 
 main {
   flex: 1;
   width: 100%;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 0 auto; /* Ortala */
   padding: 2rem;
   display: flex;
   flex-direction: column;
@@ -59,9 +65,12 @@ main {
 }
 
 .practice h2 {
-  font-size: 2rem;
-  color: var(--primary-color);
+  font-size: 2.5rem;
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   text-align: center;
+  margin-bottom: 1rem;
 }
 
 .flashcard-container {
@@ -79,7 +88,7 @@ main {
   transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
   cursor: pointer;
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
 .flashcard.flipped {
@@ -106,31 +115,35 @@ main {
   justify-content: center;
   border-radius: 20px;
   padding: 2rem;
-  background: linear-gradient(135deg, #1f4068, #162447);
-  border: 1px solid rgba(255,255,255,0.1);
+  /* Koyu Gri Kart Arka Planı */
+  background: linear-gradient(135deg, #1E1E1E, #252525);
+  border: 1px solid rgba(255, 159, 28, 0.2); /* Hafif turuncu kenarlık */
 }
 
 .card-back {
   transform: rotateY(180deg);
-  background: linear-gradient(135deg, #162447, #1f4068);
+  background: linear-gradient(135deg, #252525, #1E1E1E);
+  border-color: var(--primary-color);
 }
 
 .card-front h2 {
   font-size: 3rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  color: #fff;
+  color: var(--primary-color);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
 .card-back h3 {
   font-size: 2rem;
-  color: var(--primary-color);
+  color: var(--secondary-color);
 }
 
 .hint-text {
   font-size: 0.9rem;
   opacity: 0.6;
   margin-top: 1rem;
+  color: var(--text-muted);
 }
 
 /* Controls & Buttons */
@@ -140,32 +153,34 @@ main {
   max-width: 600px;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 1.5rem; /* Butonlar arası boşluk arttırıldı */
 }
 
 .answer-buttons {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem; /* Butonlar arası boşluk arttırıldı */
   flex: 1;
   justify-content: center;
 }
 
 button {
-  padding: 12px 24px;
+  padding: 14px 28px;
   border: none;
   border-radius: 12px;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  background-color: var(--accent-color);
+  background-color: #333;
   color: white;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.3);
   filter: brightness(1.1);
 }
 
@@ -180,20 +195,19 @@ button:disabled {
 }
 
 .btn-known {
-  background-color: var(--primary-color);
-  color: #1a1a2e;
+  background: linear-gradient(45deg, #27ae60, #2ecc71); /* Yeşil tonu koruyalım ki "Biliyorum" anlaşılır olsun */
   flex: 1;
 }
 
 .btn-unknown {
-  background-color: var(--secondary-color);
-  color: white;
+  background: linear-gradient(45deg, #c0392b, #e74c3c); /* Kırmızı tonu koruyalım */
   flex: 1;
 }
 
 .btn-prev, .btn-next {
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
+  min-width: 120px;
 }
 
 /* Extra Info Buttons (Hint/Example) */
@@ -206,34 +220,40 @@ button:disabled {
 
 .info-btn {
   background-color: transparent;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(255, 159, 28, 0.3);
+  color: var(--text-muted);
   font-size: 0.9rem;
   padding: 8px 16px;
+  text-transform: none;
 }
 
 .info-btn.active {
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgba(255, 159, 28, 0.1);
   border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .extra-info-display {
   margin-top: 1rem;
   width: 100%;
-  background: rgba(0,0,0,0.2);
+  background: rgba(255, 159, 28, 0.05);
   padding: 1rem;
   border-radius: 10px;
   text-align: center;
   animation: fadeIn 0.3s ease;
+  border: 1px solid rgba(255, 159, 28, 0.1);
 }
 
 /* Stats Panel */
 .stats {
   display: flex;
   gap: 2rem;
-  background: rgba(255,255,255,0.05);
+  background: rgba(30, 30, 30, 0.6);
   padding: 1rem 2rem;
   border-radius: 15px;
   backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
 .stat {
@@ -248,8 +268,8 @@ button:disabled {
   font-weight: 700;
 }
 
-.stat.known strong { color: var(--primary-color); }
-.stat.unknown strong { color: var(--secondary-color); }
+.stat.known strong { color: var(--success-color); }
+.stat.unknown strong { color: var(--error-color); }
 
 .reset-btn {
   padding: 5px 10px;
@@ -262,48 +282,95 @@ button:disabled {
 /* Word Grid & Lists */
 .word-list {
   width: 100%;
+  max-width: 1000px; /* Listeyi biraz daraltıp ortalayalım */
+  margin: 0 auto;
+}
+
+/* Search Bar Styling */
+.search-box {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  max-width: 700px;
+  margin: 0 auto 3rem auto;
+  background: rgba(30, 30, 30, 0.8);
+  padding: 15px;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.search-box input {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 10px rgba(255, 159, 28, 0.2);
+}
+
+.search-box select {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
 }
 
 .word-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
   margin-top: 2rem;
 }
 
 .word-card {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #1E1E1E;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   padding: 1.5rem;
-  border-radius: 12px;
+  border-radius: 16px;
   position: relative;
-  transition: transform 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
 .word-card:hover {
-  transform: translateY(-5px);
-  background: rgba(255,255,255,0.08);
+  transform: translateY(-8px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  border-color: rgba(255, 159, 28, 0.3);
 }
 
 .word-card h4 {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   color: var(--primary-color);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
+  font-weight: 700;
 }
 
 .fav-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 15px;
+  right: 15px;
   background: none;
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   padding: 5px;
   box-shadow: none;
+  color: var(--secondary-color);
 }
 
 .fav-btn:hover {
-  transform: scale(1.1);
+  transform: scale(1.2);
   background: none;
   box-shadow: none;
 }
@@ -313,64 +380,61 @@ button:disabled {
   width: 100%;
   max-width: 800px;
   text-align: center;
-  background: rgba(30, 30, 40, 0.5);
-  padding: 2rem;
-  border-radius: 20px;
+  background: #1E1E1E;
+  padding: 3rem;
+  border-radius: 25px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .test-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-top: 2rem;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
 }
 
 .option-btn {
   padding: 1.5rem;
   font-size: 1.1rem;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.03);
   border: 2px solid transparent;
+  color: var(--text-muted);
 }
 
 .option-btn:hover:not(:disabled) {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+  color: white;
 }
 
 .option-btn.correct {
-  background: rgba(78, 204, 163, 0.2);
-  border-color: var(--primary-color);
-  color: var(--primary-color);
+  background: rgba(46, 204, 113, 0.2);
+  border-color: #2ecc71;
+  color: #2ecc71;
 }
 
 .option-btn.wrong {
-  background: rgba(233, 69, 96, 0.2);
-  border-color: var(--secondary-color);
-  color: var(--secondary-color);
+  background: rgba(231, 76, 60, 0.2);
+  border-color: #e74c3c;
+  color: #e74c3c;
 }
 
-/* Room & Game Styles */
-.room-menu {
-  text-align: center;
-  max-width: 500px;
-}
-
-.input-group {
-  margin: 2rem 0;
-}
-
-.input-group input, .actions input {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: white;
-  border-radius: 8px;
+/* Matching Game Styles - FIXES */
+.matching-game {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .matching-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  gap: 1.5rem;
   margin-top: 2rem;
+  width: 100%;
 }
 
 .matching-card {
@@ -378,21 +442,69 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1f4068, #162447);
-  font-size: 1rem;
-  padding: 0.5rem;
-  border-radius: 10px;
+  background: #1E1E1E; /* Koyu gri kart */
+  font-size: 1.1rem;
+  padding: 1rem;
+  border-radius: 15px;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+  color: var(--text-main);
+  font-weight: 600;
+  text-align: center;
+}
+
+.matching-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--primary-color);
+  box-shadow: 0 8px 20px rgba(255, 159, 28, 0.2);
 }
 
 .matching-card.selected {
-  border: 2px solid var(--primary-color);
-  box-shadow: 0 0 15px rgba(78, 204, 163, 0.3);
+  border: 3px solid var(--primary-color);
+  background: rgba(255, 159, 28, 0.1);
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255, 159, 28, 0.4);
 }
 
 .matching-card.matched {
-  background: rgba(78, 204, 163, 0.2);
-  opacity: 0.5;
+  background: rgba(46, 204, 113, 0.1);
+  border-color: #2ecc71;
+  opacity: 0.6;
   cursor: default;
+  transform: scale(0.95);
+}
+
+.matching-card.matched .check-mark {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  color: #2ecc71;
+  font-size: 1.2rem;
+}
+
+.game-stats {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  background: #1E1E1E;
+  padding: 1rem 2rem;
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.game-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.game-stat strong {
+  font-size: 1.4rem;
+  color: var(--primary-color);
 }
 
 /* Animations */
@@ -406,21 +518,154 @@ button:disabled {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 3rem;
-  font-weight: bold;
-  z-index: 10;
+  font-size: 4rem;
+  font-weight: 800;
+  z-index: 100;
   animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   pointer-events: none;
-  text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+  white-space: nowrap;
 }
 
-.feedback.correct { color: var(--primary-color); }
-.feedback.wrong { color: var(--secondary-color); }
+.feedback.correct { color: var(--success-color); }
+.feedback.wrong { color: var(--error-color); }
 
 @keyframes popIn {
   0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-  50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+  50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Logout & Login Modal Styles                                        */
+/* ------------------------------------------------------------------ */
+.logout-overlay, .login-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+}
+
+.logout-modal {
+  background: #1E1E1E;
+  padding: 2rem;
+  border-radius: 20px;
+  text-align: center;
+  border: 1px solid rgba(255, 159, 28, 0.3);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  max-width: 400px;
+  width: 90%;
+  animation: popIn 0.3s ease;
+}
+
+.logout-modal h3 {
+  color: var(--text-main);
+  margin-bottom: 2rem;
+  font-size: 1.2rem;
+}
+
+.logout-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.logout-buttons button {
+  padding: 10px 20px;
+  font-size: 0.9rem;
+}
+
+.logout-buttons .cancel-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-muted);
+}
+
+.logout-buttons .cancel-btn:hover {
+  border-color: var(--text-main);
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Login Modal */
+.login-modal {
+  background: #1E1E1E;
+  padding: 2.5rem;
+  border-radius: 20px;
+  text-align: center;
+  border: 1px solid rgba(255, 159, 28, 0.3);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  max-width: 400px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  position: relative;
+  animation: popIn 0.3s ease;
+}
+
+.login-modal h2 {
+  color: var(--primary-color);
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.login-modal input {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 1rem;
+}
+
+.login-modal input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.login-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.login-buttons button {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+}
+
+.login-buttons button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent !important;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  width: auto !important;
+  padding: 5px !important;
+  box-shadow: none !important;
+}
+
+.close-btn:hover {
+  color: white;
+  transform: rotate(90deg);
 }
 
 /* ------------------------------------------------------------------ */
@@ -428,7 +673,6 @@ button:disabled {
 /* ------------------------------------------------------------------ */
 
 @media screen and (max-width: 768px) {
-  /* Genel düzen */
   .app {
     padding: 0;
   }
@@ -436,26 +680,25 @@ button:disabled {
   main {
     padding: 15px;
     margin-top: 10px;
-    border-radius: 0;
-    background: transparent;
   }
 
   /* Flashcard */
   .flashcard-container {
     max-width: 100%;
+    padding: 0 10px;
   }
 
   .flashcard {
-    height: 280px; /* Mobilde biraz daha kısa */
+    height: 300px;
     margin-bottom: 20px;
   }
 
   .card-front h2 {
-    font-size: 2rem;
+    font-size: 2.2rem;
   }
 
   .card-back h3 {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 
   /* Butonlar */
@@ -463,6 +706,7 @@ button:disabled {
     flex-direction: column;
     gap: 10px;
     width: 100%;
+    padding: 0 10px;
   }
 
   .info-btn {
@@ -474,12 +718,13 @@ button:disabled {
     flex-direction: column;
     width: 100%;
     gap: 15px;
+    padding: 0 10px;
   }
 
   .answer-buttons {
     width: 100%;
     justify-content: space-between;
-    gap: 10px;
+    gap: 15px;
   }
 
   .answer-buttons button {
@@ -498,8 +743,9 @@ button:disabled {
   .stats {
     gap: 10px;
     justify-content: space-between;
-    width: 100%;
+    width: 95%;
     padding: 1rem;
+    margin-bottom: 1rem;
   }
 
   .stat {
@@ -524,23 +770,25 @@ button:disabled {
   /* Kelime Listesi */
   .word-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 15px;
   }
 
   .search-box {
     flex-direction: column;
     align-items: stretch;
+    width: 95%;
+    gap: 10px;
+    margin-bottom: 2rem;
   }
   
   .search-box input, .search-box select {
     width: 100%;
-    margin-bottom: 10px;
   }
 
   /* Test Modu */
   .test-options {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 15px;
   }
 
   .option-btn {
@@ -548,39 +796,24 @@ button:disabled {
     font-size: 1rem;
   }
 
-  /* Oda İçi */
-  .room-header h3 {
-    font-size: 1.2rem;
-  }
-
-  .code {
-    font-size: 1.5rem;
-  }
-
-  .users li {
-    font-size: 0.9rem;
-    padding: 8px 12px;
-  }
-
   /* Matching Game Mobile */
   .matching-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
+    padding: 0 10px;
   }
 
   .matching-card {
-    min-height: 80px;
-    font-size: 0.8rem;
+    min-height: 90px;
+    font-size: 0.9rem;
+    padding: 5px;
   }
 
   .game-stats {
     gap: 15px;
     font-size: 0.9rem;
-  }
-
-  .game-stat {
+    width: 95%;
     padding: 10px;
-    min-width: 0;
   }
 }
 
@@ -591,7 +824,7 @@ button:disabled {
   }
 
   .flashcard {
-    height: 240px;
+    height: 260px;
   }
   
   .card-front h2 {

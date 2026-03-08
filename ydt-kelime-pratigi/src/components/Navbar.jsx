@@ -30,7 +30,7 @@ const Navbar = ({
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-logo" onClick={() => handleNavClick('practice', () => { setTestMode(false); setMatchingGame(false); })}>
-          <h1>YDT Kelime</h1>
+          <h1>WordBoost</h1>
         </div>
 
         <div className={`menu-icon ${isMenuOpen ? 'open' : ''}`} onClick={toggleMenu}>
