@@ -193,27 +193,33 @@ main {
 /* Controls & Buttons */
 .controls {
   display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 600px;
-  justify-content: space-between;
   align-items: center;
   gap: 1.5rem;
-  flex-wrap: wrap; /* Allow wrapping on small screens */
 }
 
 .answer-buttons {
   display: flex;
   gap: 1.5rem;
-  flex: 1;
+  width: 100%;
+  justify-content: center;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
   justify-content: center;
 }
 
 button {
-  padding: 14px 28px;
+  padding: 16px 32px;
   border: none;
   border-radius: 12px;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.1rem;
   cursor: pointer;
   transition: all 0.2s ease;
   background-color: #333;
@@ -224,8 +230,8 @@ button {
 }
 
 button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
   filter: brightness(1.1);
 }
 
@@ -242,19 +248,17 @@ button:disabled {
 .btn-known {
   background: linear-gradient(45deg, #27ae60, #2ecc71);
   flex: 1;
-  min-width: 120px;
 }
 
 .btn-unknown {
   background: linear-gradient(45deg, #c0392b, #e74c3c);
   flex: 1;
-  min-width: 120px;
 }
 
 .btn-prev, .btn-next {
   background-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
-  min-width: 100px;
+  flex: 1;
 }
 
 /* Extra Info Buttons */
@@ -437,13 +441,50 @@ button:disabled {
   border-radius: 25px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.5);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.test-input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin: 1rem 0;
+}
+
+.test-input input {
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0,0,0,0.3);
+  color: white;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.start-test-btn {
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  font-size: 1.2rem;
+  padding: 18px 36px;
+  color: #000;
+}
+
+.test-info {
+  margin-top: 1rem;
+  text-align: left;
+  background: rgba(255,255,255,0.05);
+  padding: 1.5rem;
+  border-radius: 15px;
 }
 
 .test-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
-  margin-top: 2.5rem;
+  margin-top: 1.5rem;
 }
 
 .option-btn {
@@ -496,7 +537,7 @@ button:disabled {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #1E1E1E;
+  background: #252525;
   font-size: 1.1rem;
   padding: 1rem;
   border-radius: 15px;
@@ -515,6 +556,7 @@ button:disabled {
   transform: translateY(-5px);
   border-color: var(--primary-color);
   box-shadow: 0 8px 20px rgba(255, 159, 28, 0.2);
+  background: #2a2a2a;
 }
 
 .matching-card.selected {
@@ -690,9 +732,8 @@ button:disabled {
 }
 
 @keyframes popInCenter {
-  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-  40% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+  0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
 .feedback {
@@ -700,13 +741,14 @@ button:disabled {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 3rem;
-  font-weight: 800;
+  font-size: 4rem;
+  font-weight: 900;
   z-index: 100;
-  animation: popInCenter 0.8s ease-out forwards;
+  animation: popInCenter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   pointer-events: none;
-  text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+  text-shadow: 0 5px 25px rgba(0,0,0,0.9);
   white-space: nowrap;
+  letter-spacing: 2px;
 }
 
 .feedback.correct { color: var(--success-color); }

@@ -835,12 +835,14 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
   <Flashcard word={words[currentWordIndex]} />
 )}
       <div className="controls">
-        <button className="btn-prev" onClick={prevWord} disabled={currentWordIndex === 0 || buttonCooldown}>← Önceki</button>
         <div className="answer-buttons">
           <button className="btn-unknown" onClick={() => handleAnswer(false)} disabled={buttonCooldown}>✗ Bilmiyorum</button>
           <button className="btn-known" onClick={() => handleAnswer(true)} disabled={buttonCooldown}>✓ Biliyorum</button>
         </div>
-        <button className="btn-next" onClick={nextWord} disabled={currentWordIndex === words.length - 1 || buttonCooldown}>Sonraki →</button>
+        <div className="nav-buttons">
+          <button className="btn-prev" onClick={prevWord} disabled={currentWordIndex === 0 || buttonCooldown}>← Önceki</button>
+          <button className="btn-next" onClick={nextWord} disabled={currentWordIndex === words.length - 1 || buttonCooldown}>Sonraki →</button>
+        </div>
       </div>
     </div>
   );

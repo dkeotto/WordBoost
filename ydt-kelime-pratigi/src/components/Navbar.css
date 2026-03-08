@@ -27,10 +27,11 @@
 .navbar-logo {
   cursor: pointer;
   z-index: 1002;
+  margin-right: 40px; /* Logo ve menü arasını açmak için */
 }
 
 .navbar-logo h1 {
-  font-size: 1.8rem;
+  font-size: 2rem;
   background: linear-gradient(45deg, #FF9F1C, #FFD700);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -38,13 +39,14 @@
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
+  text-shadow: 0 2px 10px rgba(255, 159, 28, 0.2);
 }
 
 .nav-menu {
   display: flex;
   list-style: none;
   text-align: center;
-  gap: 15px; /* Increased gap */
+  gap: 20px; /* Increased gap */
   margin: 0;
   padding: 0;
   align-items: center;
@@ -124,8 +126,8 @@
   display: none;
   position: absolute;
   top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0; /* Align to left instead of center */
+  transform: none; /* Remove centering transform */
   background: #1E1E1E;
   min-width: 220px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.8);
@@ -139,7 +141,7 @@
 
 .dropdown:hover .dropdown-content {
   display: flex;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.2s ease;
 }
 
 .dropdown-content .nav-link {
@@ -156,8 +158,8 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Hamburger Menu Icon */
