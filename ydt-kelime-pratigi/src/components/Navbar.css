@@ -2,17 +2,16 @@
 .navbar {
   background: rgba(18, 18, 18, 0.95);
   backdrop-filter: blur(10px);
-  height: 80px; /* Sabit yükseklik */
+  height: 80px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 1rem;
-  position: sticky;
-  top: 0;
-  z-index: 999;
+  position: relative; /* Changed from sticky because .header wrapper is sticky */
+  width: 100%;
   border-bottom: 1px solid rgba(255, 165, 0, 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  width: 100%;
+  z-index: 1001; /* Ensure it stays above content */
 }
 
 .navbar-container {
@@ -27,6 +26,7 @@
 
 .navbar-logo {
   cursor: pointer;
+  z-index: 1002;
 }
 
 .navbar-logo h1 {
@@ -44,7 +44,7 @@
   display: flex;
   list-style: none;
   text-align: center;
-  gap: 15px;
+  gap: 15px; /* Increased gap */
   margin: 0;
   padding: 0;
   align-items: center;
@@ -59,14 +59,14 @@
   display: flex;
   align-items: center;
   text-decoration: none;
-  padding: 0.6rem 1.2rem;
+  padding: 0.6rem 1rem;
   height: 100%;
   cursor: pointer;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 12px;
   transition: all 0.3s ease;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -107,9 +107,9 @@
 /* Dropdown Menu */
 .dropdown-title {
   color: rgba(255, 255, 255, 0.9);
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1rem;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.95rem;
   display: flex;
   align-items: center;
   transition: color 0.3s;
@@ -147,6 +147,7 @@
   justify-content: flex-start;
   text-align: left;
   border: none;
+  padding: 0.8rem;
 }
 
 .dropdown-content .nav-link:hover {
@@ -164,6 +165,7 @@
   display: none;
   flex-direction: column;
   cursor: pointer;
+  z-index: 1002;
 }
 
 .bar1, .bar2, .bar3 {
@@ -175,7 +177,6 @@
   border-radius: 5px;
 }
 
-/* Rotate bars when menu is open */
 .menu-icon.open .bar1 {
   transform: rotate(-45deg) translate(-5px, 6px);
   background-color: #FF9F1C;
@@ -196,7 +197,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    position: absolute;
+    position: fixed; /* Fixed to cover screen if needed */
     top: 80px;
     left: -100%;
     opacity: 0;
@@ -205,27 +206,32 @@
     padding: 20px 0;
     border-bottom: 1px solid rgba(255, 159, 28, 0.2);
     box-shadow: 0 10px 20px rgba(0,0,0,0.8);
-    height: auto;
+    height: calc(100vh - 80px); /* Full height minus navbar */
+    overflow-y: auto;
+    justify-content: flex-start;
+    gap: 20px;
   }
 
   .nav-menu.active {
     left: 0;
     opacity: 1;
-    z-index: 1;
+    z-index: 1000;
   }
 
   .nav-item {
     width: 100%;
     display: flex;
     justify-content: center;
-    margin: 5px 0;
+    flex-direction: column;
+    align-items: center;
   }
 
   .nav-link {
     width: 80%;
     justify-content: center;
-    padding: 1rem;
+    padding: 1.2rem;
     font-size: 1.1rem;
+    background: rgba(255,255,255,0.05);
   }
 
   .menu-icon {
@@ -237,7 +243,7 @@
 
   /* Mobile Dropdown Fix */
   .dropdown:hover .dropdown-content {
-    display: none;
+    display: none; /* Disable hover on mobile */
   }
   
   .dropdown-content {
@@ -251,10 +257,19 @@
     width: 100%;
     align-items: center;
     margin-top: 10px;
+    display: flex; /* Always show content for now or handle with JS, but simpler to just show */
   }
   
   .dropdown-title {
     display: none;
+  }
+  
+  /* Show dropdown items directly in mobile menu */
+  .dropdown-content .nav-link {
+     width: 80%;
+     background: rgba(255, 159, 28, 0.1);
+     margin-bottom: 10px;
+     justify-content: center;
   }
 
   .navbar-logo h1 {

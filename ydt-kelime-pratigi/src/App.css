@@ -1,4 +1,3 @@
-
 /* Reset & Base Styles */
 * {
   box-sizing: border-box;
@@ -7,9 +6,9 @@
 }
 
 :root {
-  /* Yeni Renk Paleti: Turuncu, Sarı, Siyah */
+  /* Yeni Renk Paleti: Turuncu, Koyu Sarı, Siyah */
   --primary-color: #FF9F1C;   /* Canlı Turuncu */
-  --secondary-color: #FFD700; /* Altın Sarısı */
+  --secondary-color: #FFB300; /* Koyu Sarı (Daha koyu Amber) */
   --accent-color: #FF4500;    /* Koyu Turuncu/Kırmızımsı */
   --bg-dark: #121212;         /* Tam Siyah */
   --bg-light: #1E1E1E;        /* Koyu Gri (Kartlar için) */
@@ -24,8 +23,9 @@ body {
   color: var(--text-main);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
-  display: block; /* Flex'i iptal et, normal akış olsun */
+  display: block;
   width: 100%;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .app {
@@ -33,24 +33,27 @@ body {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
+  position: relative;
 }
 
 main {
   flex: 1;
   width: 100%;
   max-width: 1200px;
-  margin: 0 auto; /* Ortala */
-  padding: 2rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
-/* Header & Navbar Space */
+/* Header Wrapper */
 .header {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
   width: 100%;
 }
 
@@ -78,6 +81,48 @@ main {
   max-width: 600px;
   perspective: 1000px;
   margin: 20px auto;
+  position: relative; /* Feedback ve butonlar için referans */
+}
+
+.flashcard-fav-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  font-size: 1.5rem;
+  color: var(--secondary-color);
+  z-index: 50;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.flashcard-fav-btn:hover {
+  transform: scale(1.1);
+  background: rgba(0,0,0,0.8);
+  border-color: var(--secondary-color);
+}
+
+.flashcard-level {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: var(--primary-color);
+  color: black;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 12px;
+  z-index: 50;
+  font-size: 1rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
 .flashcard {
@@ -115,9 +160,8 @@ main {
   justify-content: center;
   border-radius: 20px;
   padding: 2rem;
-  /* Koyu Gri Kart Arka Planı */
   background: linear-gradient(135deg, #1E1E1E, #252525);
-  border: 1px solid rgba(255, 159, 28, 0.2); /* Hafif turuncu kenarlık */
+  border: 1px solid rgba(255, 159, 28, 0.2);
 }
 
 .card-back {
@@ -153,12 +197,13 @@ main {
   max-width: 600px;
   justify-content: space-between;
   align-items: center;
-  gap: 1.5rem; /* Butonlar arası boşluk arttırıldı */
+  gap: 1.5rem;
+  flex-wrap: wrap; /* Allow wrapping on small screens */
 }
 
 .answer-buttons {
   display: flex;
-  gap: 1.5rem; /* Butonlar arası boşluk arttırıldı */
+  gap: 1.5rem;
   flex: 1;
   justify-content: center;
 }
@@ -195,27 +240,30 @@ button:disabled {
 }
 
 .btn-known {
-  background: linear-gradient(45deg, #27ae60, #2ecc71); /* Yeşil tonu koruyalım ki "Biliyorum" anlaşılır olsun */
+  background: linear-gradient(45deg, #27ae60, #2ecc71);
   flex: 1;
+  min-width: 120px;
 }
 
 .btn-unknown {
-  background: linear-gradient(45deg, #c0392b, #e74c3c); /* Kırmızı tonu koruyalım */
+  background: linear-gradient(45deg, #c0392b, #e74c3c);
   flex: 1;
+  min-width: 120px;
 }
 
 .btn-prev, .btn-next {
   background-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
-  min-width: 120px;
+  min-width: 100px;
 }
 
-/* Extra Info Buttons (Hint/Example) */
+/* Extra Info Buttons */
 .extra-info-buttons {
   display: flex;
   justify-content: center;
   gap: 1rem;
   margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
 .info-btn {
@@ -254,6 +302,8 @@ button:disabled {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .stat {
@@ -282,7 +332,7 @@ button:disabled {
 /* Word Grid & Lists */
 .word-list {
   width: 100%;
-  max-width: 1000px; /* Listeyi biraz daraltıp ortalayalım */
+  max-width: 1000px;
   margin: 0 auto;
 }
 
@@ -298,10 +348,12 @@ button:disabled {
   border-radius: 15px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  flex-wrap: wrap;
 }
 
 .search-box input {
   flex: 1;
+  min-width: 200px;
   padding: 12px 20px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -329,7 +381,7 @@ button:disabled {
 
 .word-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 2rem;
   margin-top: 2rem;
 }
@@ -420,7 +472,7 @@ button:disabled {
   color: #e74c3c;
 }
 
-/* Matching Game Styles - FIXES */
+/* Matching Game Styles */
 .matching-game {
   width: 100%;
   max-width: 1000px;
@@ -439,10 +491,12 @@ button:disabled {
 
 .matching-card {
   aspect-ratio: 1;
+  min-height: 120px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #1E1E1E; /* Koyu gri kart */
+  background: #1E1E1E;
   font-size: 1.1rem;
   padding: 1rem;
   border-radius: 15px;
@@ -494,6 +548,8 @@ button:disabled {
   padding: 1rem 2rem;
   border-radius: 15px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .game-stat {
@@ -507,10 +563,136 @@ button:disabled {
   color: var(--primary-color);
 }
 
+/* Room Menu & UI Styles */
+.room-menu {
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  background: #1E1E1E;
+  padding: 2rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 159, 28, 0.2);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.room-menu .input-group {
+  margin: 2rem 0;
+  width: 100%;
+}
+
+.room-menu .actions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+}
+
+.room-menu .or {
+  margin: 10px 0;
+  font-weight: bold;
+  color: var(--secondary-color);
+}
+
+.room-menu input {
+  width: 100%;
+  padding: 15px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.room-menu button {
+  width: 100%;
+}
+
+/* Room Detail View */
+.room {
+  width: 100%;
+  max-width: 800px;
+  background: #1E1E1E;
+  padding: 2rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 159, 28, 0.2);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.room-header {
+  text-align: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.room-header h3 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.room-header .code {
+  color: var(--primary-color);
+  font-family: monospace;
+  font-size: 2rem;
+  letter-spacing: 2px;
+  background: rgba(255, 159, 28, 0.1);
+  padding: 0 10px;
+  border-radius: 5px;
+}
+
+.users h4 {
+  margin-bottom: 1rem;
+  color: var(--text-muted);
+}
+
+.users ul {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.users li {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 10px;
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+.users li.me {
+  border-color: var(--primary-color);
+  background: rgba(255, 159, 28, 0.1);
+}
+
+.room-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.room-actions button {
+  min-width: 150px;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popInStatic {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes popInCenter {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  40% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
 }
 
 .feedback {
@@ -518,10 +700,10 @@ button:disabled {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 4rem;
+  font-size: 3rem;
   font-weight: 800;
   z-index: 100;
-  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: popInCenter 0.8s ease-out forwards;
   pointer-events: none;
   text-shadow: 0 4px 20px rgba(0,0,0,0.8);
   white-space: nowrap;
@@ -530,39 +712,32 @@ button:disabled {
 .feedback.correct { color: var(--success-color); }
 .feedback.wrong { color: var(--error-color); }
 
-@keyframes popIn {
-  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-  50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-}
-
-/* ------------------------------------------------------------------ */
-/* Logout & Login Modal Styles                                        */
-/* ------------------------------------------------------------------ */
+/* Logout & Login Modal Styles */
 .logout-overlay, .login-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 2000;
-  backdrop-filter: blur(5px);
+  z-index: 9999; /* Highest z-index */
+  backdrop-filter: blur(8px);
 }
 
-.logout-modal {
+.logout-modal, .login-modal {
   background: #1E1E1E;
-  padding: 2rem;
+  padding: 2.5rem;
   border-radius: 20px;
   text-align: center;
   border: 1px solid rgba(255, 159, 28, 0.3);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.9);
   max-width: 400px;
   width: 90%;
-  animation: popIn 0.3s ease;
+  animation: popInStatic 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
 }
 
 .logout-modal h3 {
@@ -575,6 +750,7 @@ button:disabled {
   display: flex;
   gap: 1rem;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .logout-buttons button {
@@ -594,36 +770,22 @@ button:disabled {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* Login Modal */
-.login-modal {
-  background: #1E1E1E;
-  padding: 2.5rem;
-  border-radius: 20px;
-  text-align: center;
-  border: 1px solid rgba(255, 159, 28, 0.3);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-  max-width: 400px;
-  width: 90%;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  position: relative;
-  animation: popIn 0.3s ease;
-}
-
+/* Login Modal Specifics */
 .login-modal h2 {
   color: var(--primary-color);
   font-size: 2rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .login-modal input {
-  padding: 12px;
-  border-radius: 8px;
+  padding: 14px;
+  border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.3);
   color: white;
   font-size: 1rem;
+  width: 100%;
+  margin-bottom: 15px;
 }
 
 .login-modal input:focus {
@@ -634,26 +796,21 @@ button:disabled {
 .login-buttons {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   margin-top: 10px;
 }
 
 .login-buttons button {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   font-size: 1rem;
   background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
 }
 
-.login-buttons button:hover {
-  filter: brightness(1.1);
-  transform: translateY(-2px);
-}
-
 .close-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 15px;
+  right: 15px;
   background: transparent !important;
   border: none;
   font-size: 1.5rem;
@@ -661,6 +818,7 @@ button:disabled {
   width: auto !important;
   padding: 5px !important;
   box-shadow: none !important;
+  min-width: auto !important;
 }
 
 .close-btn:hover {
@@ -668,70 +826,40 @@ button:disabled {
   transform: rotate(90deg);
 }
 
-/* ------------------------------------------------------------------ */
-/* Responsive Optimizations (Mobile)                                  */
-/* ------------------------------------------------------------------ */
-
+/* Responsive Optimizations (Mobile) */
 @media screen and (max-width: 768px) {
-  .app {
-    padding: 0;
-  }
-  
   main {
-    padding: 15px;
-    margin-top: 10px;
+    padding: 1rem 0.5rem;
   }
 
-  /* Flashcard */
+  /* Flashcard Mobile */
   .flashcard-container {
-    max-width: 100%;
     padding: 0 10px;
   }
 
   .flashcard {
     height: 300px;
-    margin-bottom: 20px;
   }
 
-  .card-front h2 {
-    font-size: 2.2rem;
-  }
+  .card-front h2 { font-size: 2rem; }
+  .card-back h3 { font-size: 1.5rem; }
 
-  .card-back h3 {
-    font-size: 1.6rem;
-  }
-
-  /* Butonlar */
-  .extra-info-buttons {
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-    padding: 0 10px;
-  }
-
-  .info-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
+  /* Controls Mobile */
   .controls {
     flex-direction: column;
     width: 100%;
     gap: 15px;
-    padding: 0 10px;
   }
 
   .answer-buttons {
     width: 100%;
     justify-content: space-between;
-    gap: 15px;
+    gap: 10px;
   }
 
   .answer-buttons button {
     flex: 1;
-    min-width: 0;
-    padding: 15px;
-    font-size: 1rem;
+    padding: 15px 10px;
   }
 
   .btn-prev, .btn-next {
@@ -739,27 +867,28 @@ button:disabled {
     padding: 15px;
   }
 
-  /* İstatistikler */
+  /* Extra Info Mobile */
+  .extra-info-buttons {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .info-btn {
+    width: 100%;
+  }
+
+  /* Stats Mobile */
   .stats {
     gap: 10px;
-    justify-content: space-between;
-    width: 95%;
-    padding: 1rem;
-    margin-bottom: 1rem;
+    padding: 15px;
+    width: 100%;
+    border-radius: 10px;
   }
 
   .stat {
-    flex: 1;
-    padding: 5px;
-    min-width: 0;
-  }
-
-  .stat strong {
-    font-size: 1.2rem;
-  }
-  
-  .stat span {
-    font-size: 0.7rem;
+    flex: 1 1 45%;
+    min-width: 80px;
   }
 
   .reset-btn {
@@ -767,40 +896,24 @@ button:disabled {
     margin-top: 10px;
   }
 
-  /* Kelime Listesi */
+  /* Search & Lists Mobile */
+  .search-box {
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+  }
+  
+  .search-box input, .search-box select { width: 100%; }
+
   .word-grid {
     grid-template-columns: 1fr;
     gap: 15px;
-  }
-
-  .search-box {
-    flex-direction: column;
-    align-items: stretch;
-    width: 95%;
-    gap: 10px;
-    margin-bottom: 2rem;
-  }
-  
-  .search-box input, .search-box select {
-    width: 100%;
-  }
-
-  /* Test Modu */
-  .test-options {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-
-  .option-btn {
-    padding: 15px;
-    font-size: 1rem;
   }
 
   /* Matching Game Mobile */
   .matching-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
-    padding: 0 10px;
   }
 
   .matching-card {
@@ -809,29 +922,39 @@ button:disabled {
     padding: 5px;
   }
 
-  .game-stats {
-    gap: 15px;
-    font-size: 0.9rem;
-    width: 95%;
-    padding: 10px;
+  /* Room Mobile */
+  .room, .room-menu {
+    padding: 1.5rem;
+    width: 100%;
+  }
+  
+  .room-header .code {
+    font-size: 1.5rem;
+  }
+  
+  .users ul {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .room-actions {
+    flex-direction: column;
+  }
+  
+  .room-actions button {
+    width: 100%;
   }
 }
 
-/* Küçük ekranlar (iPhone SE gibi) için ek düzeltmeler */
+/* Small Mobile */
 @media screen and (max-width: 480px) {
   .matching-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .flashcard {
-    height: 260px;
-  }
+  .flashcard { height: 260px; }
+  .card-front h2 { font-size: 1.6rem; }
   
-  .card-front h2 {
-    font-size: 1.8rem;
-  }
-
-  .stat strong {
-    font-size: 1.1rem;
+  .test-options {
+    grid-template-columns: 1fr;
   }
 }

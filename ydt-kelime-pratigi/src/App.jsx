@@ -718,6 +718,18 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
 
   const Flashcard = ({ word }) => (
     <div className="flashcard-container">
+      {/* Favori ve Level Göstergeleri */}
+      <div className="flashcard-level">{word.level || "?"}</div>
+      <button 
+        className="flashcard-fav-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleFavorite(word);
+        }}
+      >
+        {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
+      </button>
+
       <div className={`flashcard ${isFlipped ? 'flipped' : ''}`} onClick={flipCard}>
         <div className="card-inner">
           <div className="card-front">
@@ -761,14 +773,14 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
       )}
       
       {feedback && (
-  <div
-    key={feedback.id}
-    className={`feedback ${feedback.type}`}
-  >
-    {feedbackMessage}
-  </div>
-)}
-</div>
+        <div
+          key={feedback.id}
+          className={`feedback ${feedback.type}`}
+        >
+          {feedbackMessage}
+        </div>
+      )}
+    </div>
   );
 
   const StatsPanel = () => (
@@ -1121,52 +1133,6 @@ if (loadingWords) {
           setTestMode={setTestMode}
           setMatchingGame={setMatchingGame}
         />
-
-      {showLogin && (
-  <LoginModal
-    onLogin={(u) => {
-      setUser(u);
-      localStorage.setItem("wb_user", JSON.stringify(u));
-      setShowLogin(false);
-    }}
-    onClose={() => setShowLogin(false)}
-  />
-)}
-
-{showLogoutConfirm && (
-  <div className="logout-overlay">
-
-    <div className="logout-modal">
-
-      <h3>Çıkış yapmak istediğine emin misin?</h3>
-
-      <div className="logout-buttons">
-
-        <button
-          onClick={() => {
-            setUser(null);
-            localStorage.removeItem("wb_user");
-            setShowLogoutConfirm(false);
-          }}
-        >
-          Evet, çıkış yap
-        </button>
-
-        <button
-          className="cancel-btn"
-          onClick={() => setShowLogoutConfirm(false)}
-        >
-          Vazgeç
-        </button>
-
-      </div>
-
-    </div>
-
-
-  </div>
-)}
-
     </header>
 
     <main>
@@ -1177,21 +1143,57 @@ if (loadingWords) {
       {currentView === 'favorites' && <FavoritesView />}
       {currentView === 'matching-game' && <MatchingGameView />}
       {currentView === 'word-list' && (
-  <WordListView
- words={uniqueWords}
- searchTerm={searchTerm}
- setSearchTerm={setSearchTerm}
- filteredWords={filteredWords}
- favorites={favorites}
- toggleFavorite={toggleFavorite}
- selectedLevel={selectedLevel}
- setSelectedLevel={setSelectedLevel}
-/>
-)}
+        <WordListView
+          words={uniqueWords}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          filteredWords={filteredWords}
+          favorites={favorites}
+          toggleFavorite={toggleFavorite}
+          selectedLevel={selectedLevel}
+          setSelectedLevel={setSelectedLevel}
+        />
+      )}
       {currentView === 'wrong-words' && <WrongWordsView />}
       {currentView === 'room-menu' && <RoomMenuView />}
       {currentView === 'room' && <RoomView />}
     </main>
+
+    {showLogin && (
+      <LoginModal
+        onLogin={(u) => {
+          setUser(u);
+          localStorage.setItem("wb_user", JSON.stringify(u));
+          setShowLogin(false);
+        }}
+        onClose={() => setShowLogin(false)}
+      />
+    )}
+
+    {showLogoutConfirm && (
+      <div className="logout-overlay">
+        <div className="logout-modal">
+          <h3>Çıkış yapmak istediğine emin misin?</h3>
+          <div className="logout-buttons">
+            <button
+              onClick={() => {
+                setUser(null);
+                localStorage.removeItem("wb_user");
+                setShowLogoutConfirm(false);
+              }}
+            >
+              Evet, çıkış yap
+            </button>
+            <button
+              className="cancel-btn"
+              onClick={() => setShowLogoutConfirm(false)}
+            >
+              Vazgeç
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
   </div>
 );
