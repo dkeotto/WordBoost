@@ -34,9 +34,15 @@
 }
 
 .navbar-logo-img {
-  height: 40px;
+  height: 70px; /* Büyütüldü */
   width: auto;
   object-fit: contain;
+  filter: drop-shadow(0 0 5px rgba(255, 159, 28, 0.5)); /* Hafif turuncu parlama */
+  transition: transform 0.3s ease;
+}
+
+.navbar-logo:hover .navbar-logo-img {
+  transform: scale(1.1);
 }
 
 .navbar-logo h1 {
