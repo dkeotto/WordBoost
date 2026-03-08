@@ -299,14 +299,20 @@
   /* Listeler başlığını mobilde göster */
   .dropdown-title {
     display: flex;
-    flex-direction: row;
+    flex-direction: column; /* Alt alta: Üstte yazı, altta ok */
     align-items: center;
     color: var(--secondary-color);
     margin-bottom: 10px;
     font-size: 1.1rem;
     width: 100%;
     justify-content: center;
-    gap: 8px;
+    gap: 2px;
+  }
+
+  .title-content {
+    display: flex;
+    align-items: center; /* Yazı ve ikon yan yana */
+    gap: 5px;
   }
   
   .dropdown-title::after {
@@ -314,7 +320,8 @@
     display: block;
     font-size: 0.8rem;
     transition: transform 0.3s;
-    color: white; /* Ok rengini beyaz yap */
+    color: white;
+    margin-top: 2px; /* Ok ile yazı arasına ufak boşluk */
   }
   
   /* Dropdown içeriğiyle başlık arasına boşluk */

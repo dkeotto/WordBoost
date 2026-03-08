@@ -83,7 +83,12 @@ main {
   max-width: 600px;
   perspective: 1000px;
   margin: 20px auto;
-  position: relative; /* Feedback ve butonlar için referans */
+  position: relative;
+  transition: transform 0.3s ease; /* Konteyner hareket edecek */
+}
+
+.flashcard-container:hover {
+  transform: translateY(-5px); /* Her şey birlikte yukarı kalkar */
 }
 
 .flashcard-fav-btn {
@@ -132,7 +137,7 @@ main {
   height: 350px;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1), box-shadow 0.3s;
   cursor: pointer;
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -142,8 +147,8 @@ main {
   transform: rotateY(180deg);
 }
 
-.flashcard:hover {
-  transform: translateY(-5px); /* Sadece yukarı kalkma hover */
+/* Kart gölgesi hover'da artsın (konteyner hover olunca) */
+.flashcard-container:hover .flashcard {
   box-shadow: 0 15px 40px rgba(255, 159, 28, 0.2);
   border-color: rgba(255, 159, 28, 0.4);
 }

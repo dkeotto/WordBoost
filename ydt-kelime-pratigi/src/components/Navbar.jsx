@@ -76,8 +76,10 @@ const Navbar = ({
           
           <li className="nav-item dropdown">
              <span className="dropdown-title">
-               <span style={{marginRight: '5px'}}>📚</span> 
-               Listeler
+               <div className="title-content">
+                 <span style={{marginRight: '5px'}}>📚</span> 
+                 Listeler
+               </div>
              </span>
              <div className="dropdown-content">
                 <button 
