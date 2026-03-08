@@ -27,7 +27,16 @@
 .navbar-logo {
   cursor: pointer;
   z-index: 1002;
-  margin-right: 40px; /* Logo ve menü arasını açmak için */
+  margin-right: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navbar-logo-img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
 }
 
 .navbar-logo h1 {

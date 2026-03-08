@@ -30,6 +30,7 @@ const Navbar = ({
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-logo" onClick={() => handleNavClick('practice', () => { setTestMode(false); setMatchingGame(false); })}>
+          <img src="/wb-logo.png" alt="WB" className="navbar-logo-img" onError={(e) => e.target.style.display = 'none'} />
           <h1>WordBoost</h1>
         </div>
 

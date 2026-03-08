@@ -812,23 +812,26 @@ button:disabled {
 }
 
 .feedback {
-  position: fixed; /* Changed to fixed for better mobile centering */
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 4rem; /* Reduced size */
+  font-size: 3rem;
   font-weight: 900;
   z-index: 2000;
   animation: popInCenter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   pointer-events: none;
   text-shadow: 0 5px 25px rgba(0,0,0,0.9);
-  white-space: nowrap;
-  letter-spacing: 2px;
-  width: 100%;
+  white-space: normal;
+  word-wrap: break-word;
+  letter-spacing: 1px;
+  width: 90%;
+  max-width: 400px;
   text-align: center;
   display: flex;
   justify-content: center;
   align-items: center;
+  line-height: 1.2;
 }
 
 /* Responsive Fixes */
@@ -839,12 +842,28 @@ button:disabled {
   }
   
   .feedback {
-    font-size: 2.5rem; /* Smaller for mobile */
-    width: 90%;
+    font-size: 2rem;
+    width: 95%;
   }
   
-  .test-mode, .test-results, .test-setup {
+  .test-mode, .test-results, .test-setup, .practice, .room, .room-menu {
     padding: 1.5rem;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0; /* Full width on mobile looks better without radius sometimes, or keep it small */
+    box-shadow: none; /* Simplify on mobile */
+    border: none;
+    background: transparent; /* Or keep background but make it full */
+  }
+
+  /* Re-add background for specific blocks if needed, but 'ince uzun' usually means too much margin/padding */
+  .test-mode, .test-results, .test-setup {
+    background: #1E1E1E;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 2rem;
   }
   
   .config-item {
