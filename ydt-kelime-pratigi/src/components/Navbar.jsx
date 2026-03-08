@@ -75,7 +75,10 @@ const Navbar = ({
           </li>
           
           <li className="nav-item dropdown">
-             <span className="dropdown-title">📚 Listeler ▼</span>
+             <span className="dropdown-title">
+               <span style={{marginRight: '5px'}}>📚</span> 
+               Listeler
+             </span>
              <div className="dropdown-content">
                 <button 
                   className={`nav-link ${currentView === 'word-list' ? 'active' : ''}`}

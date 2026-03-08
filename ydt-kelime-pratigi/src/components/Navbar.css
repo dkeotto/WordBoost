@@ -133,6 +133,13 @@
   font-weight: 600;
 }
 
+.dropdown-title::after {
+  content: "▼";
+  font-size: 0.7em;
+  margin-left: 8px;
+  color: white;
+}
+
 .dropdown-title:hover {
   color: #FF9F1C;
 }
@@ -292,21 +299,22 @@
   /* Listeler başlığını mobilde göster */
   .dropdown-title {
     display: flex;
-    flex-direction: row; /* Yan yana hizala */
+    flex-direction: row;
     align-items: center;
     color: var(--secondary-color);
     margin-bottom: 10px;
     font-size: 1.1rem;
     width: 100%;
     justify-content: center;
-    gap: 8px; /* İkon ve yazı arasına boşluk */
+    gap: 8px;
   }
   
   .dropdown-title::after {
-    content: "▼"; /* Oku geri getir */
-    display: block; /* Görünür yap */
+    content: "▼";
+    display: block;
     font-size: 0.8rem;
     transition: transform 0.3s;
+    color: white; /* Ok rengini beyaz yap */
   }
   
   /* Dropdown içeriğiyle başlık arasına boşluk */
