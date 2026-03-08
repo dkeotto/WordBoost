@@ -542,6 +542,8 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     return baseScore + timeBonus + moveBonus;
   };
 
+  const [testType, setTestType] = useState('EN-TR'); // 'EN-TR' or 'TR-EN'
+
   const startTest = (wordsList = null) => {
     const testCountInput = document.getElementById('test-count-input');
     const countValue = testCountInput ? parseInt(testCountInput.value) : 10;
@@ -944,24 +946,63 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
   const TestSetupView = () => (
     <div className="test-setup">
       <h2>🎯 Test Modu</h2>
-      <p className="description">Kaç kelime ile test etmek istersin?</p>
+      <p className="description">Kendini test etmeye hazır mısın?</p>
+      
       {error && <div className="error">{error}</div>}
-      <div className="test-input">
-        <input 
-          id="test-count-input"
-          type="number"
-          defaultValue={10}
-          min={5}
-          max={words.length}
-          style={{width: '100px', textAlign: 'center', padding: '15px', fontSize: '1.2rem'}}
-        />
-        <span>kelime (5-{words.length})</span>
+      
+      <div className="test-config-container">
+        <div className="config-item">
+          <label>Soru Sayısı</label>
+          <div className="test-input">
+            <input 
+              id="test-count-input"
+              type="number"
+              defaultValue={10}
+              min={5}
+              max={words.length}
+            />
+            <span>/ {words.length}</span>
+          </div>
+        </div>
+
+        <div className="config-item">
+          <label>Test Türü</label>
+          <div className="test-type-selector">
+            <button 
+              className={`type-btn ${testType === 'EN-TR' ? 'active' : ''}`}
+              onClick={() => setTestType('EN-TR')}
+            >
+              🇬🇧 ➔ 🇹🇷
+              <span>İngilizce - Türkçe</span>
+            </button>
+            <button 
+              className={`type-btn ${testType === 'TR-EN' ? 'active' : ''}`}
+              onClick={() => setTestType('TR-EN')}
+            >
+              🇹🇷 ➔ 🇬🇧
+              <span>Türkçe - İngilizce</span>
+            </button>
+          </div>
+        </div>
       </div>
-      <button className="start-test-btn" onClick={() => startTest()}>Testi Başlat</button>
+
+      <button className="start-test-btn" onClick={() => startTest()}>
+        TESTİ BAŞLAT
+      </button>
+      
       <div className="test-info">
-        <p>• Her soru için 4 şık gösterilecek</p>
-        <p>• Doğru anlamı seçmen gerekiyor</p>
-        <p>• Sonuçları ve yanlışları görebileceksin</p>
+        <div className="info-item">
+          <span className="icon">📝</span>
+          <span>4 şıklı sorular</span>
+        </div>
+        <div className="info-item">
+          <span className="icon">⏱️</span>
+          <span>Süre sınırı yok</span>
+        </div>
+        <div className="info-item">
+          <span className="icon">📊</span>
+          <span>Detaylı analiz</span>
+        </div>
       </div>
     </div>
   );
@@ -969,6 +1010,9 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
   const TestView = () => {
     const currentWord = testWords[testIndex];
     const progress = ((testIndex + 1) / testWords.length) * 100;
+    
+    // Determine question and options based on testType
+    const questionText = testType === 'EN-TR' ? currentWord.term : currentWord.meaning;
     
     return (
       <div className="test-mode">
@@ -981,23 +1025,28 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
         </div>
         
         <div className="test-question">
-          <h3>"{currentWord.term}"</h3>
+          <span className="lang-badge">{testType === 'EN-TR' ? '🇬🇧 İNGİLİZCE' : '🇹🇷 TÜRKÇE'}</span>
+          <h3>"{questionText}"</h3>
           <p>kelimesinin anlamı nedir?</p>
         </div>
         
         <div className="test-options">
-          {testOptions.map((option, idx) => (
-            <button
-              key={idx}
-              className={`option-btn ${showResult ? 
-                (option.term === currentWord.term ? 'correct' : 
-                 selectedOption?.term === option.term ? 'wrong' : '') : ''}`}
-              onClick={() => handleTestAnswer(option)}
-              disabled={showResult}
-            >
-              {option.meaning}
-            </button>
-          ))}
+          {testOptions.map((option, idx) => {
+            const optionText = testType === 'EN-TR' ? option.meaning : option.term;
+            
+            return (
+              <button
+                key={idx}
+                className={`option-btn ${showResult ? 
+                  (option.term === currentWord.term ? 'correct' : 
+                   selectedOption?.term === option.term ? 'wrong' : '') : ''}`}
+                onClick={() => handleTestAnswer(option)}
+                disabled={showResult}
+              >
+                {optionText}
+              </button>
+            );
+          })}
         </div>
         
         {showResult && (
