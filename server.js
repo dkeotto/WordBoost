@@ -253,7 +253,7 @@ app.post('/api/rooms', async (req, res) => {
 
 app.get('/api/words', async (req, res) => {
   try {
-    const words = await Word.find();
+    const words = await Word.find().sort({ term: 1 });
     res.json(words);
   } catch (err) {
     console.error("WORD FETCH ERROR:", err); // LOG EKLE
