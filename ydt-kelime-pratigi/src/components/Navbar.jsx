@@ -59,7 +59,7 @@ const Navbar = ({
           <li className="nav-item">
             <button 
               className={`nav-link ${currentView === 'matching-game' ? 'active' : ''}`}
-              onClick={() => handleNavClick('matching-game', () => { setMatchingGame(true); })}
+              onClick={() => handleNavClick('matching-game', () => { setMatchingGame(false); })}
             >
               🎮 Eşleştirme
             </button>

@@ -849,66 +849,94 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
 
   const MatchingGameView = () => (
     <div className="matching-game">
-      <h2>🎮 Eşleştirme Oyunu</h2>
-      
-      {!gameFinished ? (
-        <>
-          <div className="game-stats">
-            <div className="game-stat">
-              <span>⏱️ Süre</span>
-              <strong>{formatTime(gameTime)}</strong>
+      {!matchingGame ? (
+        <div className="game-start-screen">
+          <h2>🎮 Eşleştirme Oyunu</h2>
+          <p>8 çift kelimeyi en kısa sürede eşleştir!</p>
+          
+          <div className="game-rules">
+            <div className="rule-item">
+              <span className="icon">⏱️</span>
+              <span>Zamana Karşı Yarış</span>
             </div>
-            <div className="game-stat">
-              <span>🎯 Hamle</span>
-              <strong>{moves}</strong>
+            <div className="rule-item">
+              <span className="icon">🧠</span>
+              <span>Hafızanı Test Et</span>
             </div>
-            <div className="game-stat">
-              <span>✓ Eşleşme</span>
-              <strong>{matchedPairs.length}/8</strong>
+            <div className="rule-item">
+              <span className="icon">🏆</span>
+              <span>En Yüksek Skoru Yap</span>
             </div>
           </div>
 
-          <div className="matching-grid">
-            {matchingCards.map((card) => {
-              const isSelected = selectedCards.find(c => c.id === card.id);
-              const isMatched = matchedPairs.includes(card.pairId);
-              
-              return (
-                <button
-                  key={card.id}
-                  className={`matching-card ${isSelected ? 'selected' : ''} ${isMatched ? 'matched' : ''} ${card.type}`}
-                  onClick={() => handleCardClick(card)}
-                  disabled={isMatched || selectedCards.length === 2}
-                >
-                  <span className="card-content">{card.content}</span>
-                  {isMatched && <span className="check-mark">✓</span>}
-                </button>
-              );
-            })}
-          </div>
-        </>
-      ) : (
-        <div className="game-results">
-          <h3>🎉 Tebrikler!</h3>
-          <div className="final-stats">
-            <div className="final-stat">
-              <span>⏱️ Süre</span>
-              <strong>{formatTime(gameTime)}</strong>
-            </div>
-            <div className="final-stat">
-              <span>🎯 Hamle</span>
-              <strong>{moves}</strong>
-            </div>
-            <div className="final-stat">
-              <span>🏆 Skor</span>
-              <strong className="score-highlight">{calculateScore()}</strong>
-            </div>
-          </div>
-          <div className="game-buttons">
-            <button onClick={startMatchingGame}>🔄 Yeniden Oyna</button>
-            <button className="btn-secondary" onClick={() => setCurrentView('practice')}>Çalışmaya Dön</button>
-          </div>
+          <button className="start-game-btn" onClick={startMatchingGame}>
+            OYUNU BAŞLAT
+          </button>
         </div>
+      ) : (
+        <>
+          <h2>🎮 Eşleştirme Oyunu</h2>
+          
+          {!gameFinished ? (
+            <>
+              <div className="game-stats">
+                <div className="game-stat">
+                  <span>⏱️ Süre</span>
+                  <strong>{formatTime(gameTime)}</strong>
+                </div>
+                <div className="game-stat">
+                  <span>🎯 Hamle</span>
+                  <strong>{moves}</strong>
+                </div>
+                <div className="game-stat">
+                  <span>✓ Eşleşme</span>
+                  <strong>{matchedPairs.length}/8</strong>
+                </div>
+              </div>
+
+              <div className="matching-grid">
+                {matchingCards.map((card) => {
+                  const isSelected = selectedCards.find(c => c.id === card.id);
+                  const isMatched = matchedPairs.includes(card.pairId);
+                  
+                  return (
+                    <button
+                      key={card.id}
+                      className={`matching-card ${isSelected ? 'selected' : ''} ${isMatched ? 'matched' : ''} ${card.type}`}
+                      onClick={() => handleCardClick(card)}
+                      disabled={isMatched || selectedCards.length === 2}
+                    >
+                      <span className="card-content">{card.content}</span>
+                      {isMatched && <span className="check-mark">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="game-results">
+              <h3>🎉 Tebrikler!</h3>
+              <div className="final-stats">
+                <div className="final-stat">
+                  <span>⏱️ Süre</span>
+                  <strong>{formatTime(gameTime)}</strong>
+                </div>
+                <div className="final-stat">
+                  <span>🎯 Hamle</span>
+                  <strong>{moves}</strong>
+                </div>
+                <div className="final-stat">
+                  <span>🏆 Skor</span>
+                  <strong className="score-highlight">{calculateScore()}</strong>
+                </div>
+              </div>
+              <div className="game-buttons">
+                <button onClick={startMatchingGame}>🔄 Yeniden Oyna</button>
+                <button className="btn-secondary" onClick={() => { setMatchingGame(false); setCurrentView('practice'); }}>Çalışmaya Dön</button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -245,7 +245,8 @@
 
   /* Mobile Dropdown Fix */
   .dropdown:hover .dropdown-content {
-    display: none; /* Disable hover on mobile */
+    display: flex; /* Keep visible on hover/tap */
+    animation: none; /* Disable animation on hover */
   }
   
   .dropdown-content {
@@ -259,7 +260,6 @@
     width: 100%;
     align-items: center;
     margin-top: 10px;
-    display: flex; /* Always show content for now or handle with JS, but simpler to just show */
   }
   
   .dropdown-title {
