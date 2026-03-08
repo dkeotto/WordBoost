@@ -20,8 +20,8 @@
   align-items: center;
   height: 100%;
   width: 100%;
-  max-width: 1200px;
-  padding: 0 20px;
+  max-width: 100%; /* Sınırı kaldırarak tam genişlik sağladım */
+  padding: 0 40px; /* Kenarlardan biraz boşluk bıraktım */
 }
 
 .navbar-logo {
