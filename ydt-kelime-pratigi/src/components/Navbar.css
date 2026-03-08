@@ -292,11 +292,18 @@
   /* Listeler başlığını mobilde göster */
   .dropdown-title {
     display: flex;
+    flex-direction: column;
+    align-items: center;
     color: var(--secondary-color);
-    margin-bottom: 5px;
+    margin-bottom: 15px; /* Alt boşluğu artırdım */
     font-size: 1.1rem;
-    width: 80%;
+    width: 100%;
     justify-content: center;
+    gap: 5px; /* İkon ve yazı arasına boşluk */
+  }
+  
+  .dropdown-title::after {
+    display: none; /* Üçgen oku kaldır, zaten başlık olarak kullanıyoruz */
   }
   
   .dropdown-content {

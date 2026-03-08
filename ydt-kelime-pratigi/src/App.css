@@ -138,8 +138,14 @@ main {
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-.flashcard.flipped {
-  transform: rotateY(180deg);
+.flashcard:hover {
+  box-shadow: 0 15px 40px rgba(255, 159, 28, 0.2); /* Turuncu gölge */
+  transform: translateY(-5px); /* Hafif yukarı kalkma */
+  border-color: rgba(255, 159, 28, 0.4);
+}
+
+.flashcard.flipped:hover {
+  transform: rotateY(180deg) translateY(-5px); /* Döndürülmüşken de yukarı kalksın */
 }
 
 .card-inner {
