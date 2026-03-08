@@ -292,22 +292,28 @@
   /* Listeler başlığını mobilde göster */
   .dropdown-title {
     display: flex;
-    flex-direction: column;
+    flex-direction: row; /* Yan yana hizala */
     align-items: center;
     color: var(--secondary-color);
-    margin-bottom: 15px; /* Alt boşluğu artırdım */
+    margin-bottom: 10px;
     font-size: 1.1rem;
     width: 100%;
     justify-content: center;
-    gap: 5px; /* İkon ve yazı arasına boşluk */
+    gap: 8px; /* İkon ve yazı arasına boşluk */
   }
   
   .dropdown-title::after {
-    display: none; /* Üçgen oku kaldır, zaten başlık olarak kullanıyoruz */
+    content: "▼"; /* Oku geri getir */
+    display: block; /* Görünür yap */
+    font-size: 0.8rem;
+    transition: transform 0.3s;
   }
   
+  /* Dropdown içeriğiyle başlık arasına boşluk */
   .dropdown-content {
     margin-top: 5px;
+    width: 100%; /* İçeriği tam genişlik yap */
+    align-items: center; /* İçindeki butonları ortala */
   }
 
   .navbar-logo h1 {
