@@ -328,7 +328,7 @@ const filteredWords = useMemo(() => {
    );
  }
 
- return result;
+return result.sort((a,b)=>a.term.localeCompare(b.term));
 
 }, [uniqueWords, searchTerm, selectedLevel]);
 
