@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import LoginModal from "./components/LoginModal";
+import Navbar from "./components/Navbar";
 import { io } from "socket.io-client";
 import "./App.css";
 
@@ -171,6 +172,7 @@ useEffect(() => {
   const [showExample, setShowExample] = useState(false);
   const [stats, setStats] = useState(() => loadFromStorage('stats', { studied: 0, known: 0, unknown: 0 }));
   const [wrongWords, setWrongWords] = useState(() => loadFromStorage('wrongWords', []));
+  const wrongWordsCount = wrongWords.length; // Add this derived state
   const [buttonCooldown, setButtonCooldown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const searchInputRef = useRef(null);
@@ -714,50 +716,6 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     setCurrentView('practice');
   };
 
-  
-  const Navigation = () => (
-    <nav className="nav">
-      <button className={currentView === 'practice' && !testMode ? 'active' : ''} onClick={() => {setCurrentView('practice'); setTestMode(false); setMatchingGame(false);}}>
-        📝 Kelime Çalışması
-      </button>
-      <button className={currentView === 'test-setup' || (testMode && !testFinished) ? 'active' : ''} onClick={() => {setCurrentView('test-setup'); setTestMode(false); setMatchingGame(false);}}>
-        🎯 Test Modu
-      </button>
-      <button className={currentView === 'matching-game' ? 'active' : ''} onClick={startMatchingGame}>
-        🎮 Eşleştirme
-      </button>
-      <button className={currentView === 'word-list' ? 'active' : ''} onClick={() => setCurrentView('word-list')}>
-        📚 Tüm Kelimeler ({words.length})
-      </button>
-      <button className={currentView === 'wrong-words' ? 'active' : ''} onClick={() => setCurrentView('wrong-words')}>
-        ❌ Yanlışlar ({wrongWords.length})
-      </button>
-      
-      <button className={currentView === 'room-menu' || isInRoom ? 'active' : ''} onClick={() => isInRoom ? setCurrentView('room') : setCurrentView('room-menu')}>
-        👥 Oda {isInRoom && '(Aktif)'}
-      </button>
-      <button
-  className={currentView === 'favorites' ? 'active' : ''}
-  onClick={() => setCurrentView('favorites')}
->
-  ⭐ Favoriler ({favorites.length})
-</button>
-      {user ? (
-  <button
-    className="profile-btn"
-    onClick={() => setShowLogoutConfirm(true)}
-  >
-    👤 {user.username}
-  </button>
-) : (
-  <button onClick={() => setShowLogin(true)}>
-    🔐 Login
-  </button>
-  
-)}
-      </nav>
-  );
-
   const Flashcard = ({ word }) => (
     <div className="flashcard-container">
       <div className={`flashcard ${isFlipped ? 'flipped' : ''}`} onClick={flipCard}>
@@ -1150,10 +1108,19 @@ if (loadingWords) {
   return (
     <div className="app">
       <header className="header">
-        <h1>YDT Kelime Pratiği</h1>
-
-        
-        <Navigation />
+        <Navbar 
+          currentView={currentView} 
+          setCurrentView={setCurrentView}
+          user={user}
+          onLogoutClick={() => setShowLogoutConfirm(true)}
+          onLoginClick={() => setShowLogin(true)}
+          isInRoom={isInRoom}
+          wordsCount={words.length}
+          wrongWordsCount={wrongWordsCount}
+          favoritesCount={favorites.length}
+          setTestMode={setTestMode}
+          setMatchingGame={setMatchingGame}
+        />
 
       {showLogin && (
   <LoginModal
