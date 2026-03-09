@@ -1516,6 +1516,7 @@ button:disabled {
   margin-bottom: 10px;
 }
 
+/* Edit Button Fix */
 .edit-btn {
   position: absolute;
   top: 20px;
@@ -1524,6 +1525,7 @@ button:disabled {
   font-size: 0.9rem;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
+  z-index: 1001; /* Ensure it's above avatar builder */
 }
 
 .profile-stats {
@@ -1867,9 +1869,8 @@ button:disabled {
 /* Avatar Builder Styles */
 .avatar-builder {
   position: absolute;
-  top: 130px;
-  left: 0; /* Align left with avatar */
-  transform: none; /* Remove center transform */
+  top: 10px; /* Align top with avatar */
+  left: 140px; /* Move to the right of avatar */
   background: #2a2a2a;
   padding: 15px;
   border-radius: 16px;
@@ -1877,7 +1878,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 280px; /* Slightly smaller */
+  width: 300px;
   z-index: 1000;
   box-shadow: 0 10px 40px rgba(0,0,0,0.9);
   animation: popInStatic 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1885,9 +1886,11 @@ button:disabled {
 
 @media screen and (max-width: 768px) {
   .avatar-builder {
+    top: 130px; /* Below avatar on mobile */
     left: 50%;
-    transform: translateX(-50%); /* Center on mobile */
-    width: 300px;
+    transform: translateX(-50%);
+    width: 90%; /* Full width on mobile */
+    max-width: 350px;
   }
 }
 

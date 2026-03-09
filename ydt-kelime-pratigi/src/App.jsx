@@ -324,8 +324,8 @@ const ProfileView = () => {
               <p className="bio">{user.bio || "Henüz biyografi eklenmemiş."}</p>
             )}
             
-            {/* Boşluk bırak (Avatar Builder üstüne gelmesin) */}
-            {isEditing && <div style={{height: '250px'}}></div>} 
+            {/* Boşluk bırak (Avatar Builder üstüne gelmesin) - KALDIRILDI */}
+            {/* {isEditing && <div style={{height: '250px'}}></div>} */}
           </div>
           
           <button className="edit-btn" onClick={() => isEditing ? handleSave() : setIsEditing(true)}>

@@ -66,12 +66,19 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model("User", UserSchema);
 
 // PASSPORT GOOGLE STRATEGY
+const BASE_URL = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.replace(/\/$/, '') 
+  : 'http://localhost:3000';
+
+console.log("🔹 Google Callback URL:", `${BASE_URL}/auth/google/callback`);
+
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "GOOGLE_CLIENT_ID_BURAYA",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "GOOGLE_CLIENT_SECRET_BURAYA",
-    callbackURL: "/auth/google/callback"
+    callbackURL: `${BASE_URL}/auth/google/callback`,
+    passReqToCallback: true
   },
-  async (accessToken, refreshToken, profile, done) => {
+  async (req, accessToken, refreshToken, profile, done) => {
     try {
       // Önce Google ID ile ara
       let user = await User.findOne({ googleId: profile.id });
