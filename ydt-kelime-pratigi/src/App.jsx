@@ -718,10 +718,29 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     setCurrentView('practice');
   };
 
+  const speakWord = (word) => {
+    const utterance = new SpeechSynthesisUtterance(word.term);
+    utterance.lang = 'en-US';
+    window.speechSynthesis.cancel(); // Önceki okumayı durdur
+    window.speechSynthesis.speak(utterance);
+  };
+
   const Flashcard = ({ word }) => (
     <div className="flashcard-container">
       {/* Favori ve Level Göstergeleri */}
       <div className="flashcard-level">{word.level || "?"}</div>
+      
+      <button 
+        className="flashcard-speak-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          speakWord(word);
+        }}
+        title="Telaffuz"
+      >
+        🔊
+      </button>
+
       <button 
         className="flashcard-fav-btn"
         onClick={(e) => {
@@ -1231,6 +1250,7 @@ if (loadingWords) {
           toggleFavorite={toggleFavorite}
           selectedLevel={selectedLevel}
           setSelectedLevel={setSelectedLevel}
+          speakWord={speakWord}
         />
       )}
       {currentView === 'wrong-words' && <WrongWordsView />}
@@ -1285,7 +1305,8 @@ function WordListView({
   selectedLevel,
   setSelectedLevel,
   favorites,
-  toggleFavorite
+  toggleFavorite,
+  speakWord
 }) {
   return (
     <div className="word-list">
@@ -1326,6 +1347,17 @@ function WordListView({
               onClick={() => toggleFavorite(word)}
             >
               {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
+            </button>
+
+            <button
+              className="list-speak-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                speakWord(word);
+              }}
+              title="Telaffuz"
+            >
+              🔊
             </button>
 
             <h4>

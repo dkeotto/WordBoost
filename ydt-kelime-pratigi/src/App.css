@@ -91,6 +91,48 @@ main {
   transform: translateY(-5px); /* Her şey birlikte yukarı kalkar */
 }
 
+/* Butonların havada kalmaması için container içine taşıdık gibi davranacağız */
+.flashcard-fav-btn, .flashcard-level, .flashcard-speak-btn {
+  /* Z-index ayarı ile kartın üstünde kalmalarını garantile */
+  z-index: 50; 
+  /* Kartla birlikte hareket etmeleri için transition ekle */
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* Container hover olduğunda butonlar da yukarı kalksın */
+.flashcard-container:hover .flashcard-fav-btn,
+.flashcard-container:hover .flashcard-level,
+.flashcard-container:hover .flashcard-speak-btn {
+  transform: translateY(-5px);
+}
+
+.flashcard-speak-btn {
+  position: absolute;
+  top: 15px;
+  right: 70px; /* Favori butonunun solunda */
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  font-size: 1.5rem;
+  color: var(--secondary-color);
+  z-index: 50;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.flashcard-speak-btn:hover {
+  transform: scale(1.1);
+  background: rgba(0,0,0,0.8);
+  border-color: var(--secondary-color);
+}
+
 .flashcard-fav-btn {
   position: absolute;
   top: 15px;
