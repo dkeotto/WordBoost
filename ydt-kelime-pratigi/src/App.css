@@ -486,6 +486,24 @@ button:disabled {
   box-shadow: none;
 }
 
+.list-speak-btn {
+  position: absolute;
+  top: 55px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  padding: 5px;
+  box-shadow: none;
+  color: var(--secondary-color);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.list-speak-btn:hover {
+  transform: scale(1.2);
+}
+
 /* Test Mode Styles */
 .test-mode, .test-results, .test-setup {
   width: 100%;
