@@ -1053,6 +1053,66 @@ button:disabled {
   background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
 }
 
+/* Social Login Buttons */
+.social-login-separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 10px 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.social-login-separator::before,
+.social-login-separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.social-login-separator span {
+  padding: 0 10px;
+}
+
+.btn-google {
+  background: white !important;
+  color: #333 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.btn-google:hover {
+  background: #f1f1f1 !important;
+}
+
+.btn-apple {
+  background: black !important;
+  color: white !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.btn-apple:hover {
+  background: #1a1a1a !important;
+}
+
+.btn-guest {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: var(--text-muted) !important;
+}
+
+.btn-guest:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: white !important;
+}
+
 .close-btn {
   position: absolute;
   top: 15px;
