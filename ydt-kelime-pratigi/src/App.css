@@ -421,7 +421,7 @@ button:disabled {
 }
 
 .level-selector-embedded select {
-  background: rgba(255,255,255,0.05);
+  background: #333;
   border: 1px solid rgba(255,255,255,0.1);
   color: white;
   padding: 8px 15px;
@@ -430,6 +430,11 @@ button:disabled {
   font-size: 0.9rem;
   flex: 1;
   max-width: 200px;
+}
+
+.level-selector-embedded select option {
+  background: #333;
+  color: white;
 }
 
 .level-selector-embedded select:hover {

@@ -433,9 +433,15 @@ const ProfileView = () => {
       }
     };
 
-    const openProfile = (username) => {
+    const openProfile = (targetUsername) => {
+      // Eğer kendi ismine tıkladıysa, kendi düzenlenebilir profiline git
+      if (user && user.username === targetUsername) {
+        setCurrentView('profile');
+        return;
+      }
+
       setLoading(true);
-      fetch(`/api/users/${username}`)
+      fetch(`/api/users/${targetUsername}`)
         .then(res => res.json())
         .then(data => {
           setSelectedUser(data);
