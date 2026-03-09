@@ -101,7 +101,7 @@ const logout = () => {
     window.location.reload(); 
   };
 
-  const AvatarBuilder = ({ initialSeed, setEditForm, handleFileChange }) => {
+  const AvatarBuilder = ({ initialSeed, setEditForm, handleFileChange, onClose }) => {
   const [seed, setSeed] = useState(initialSeed);
   const [bg, setBg] = useState("b6e3f4");
   
@@ -128,39 +128,47 @@ const logout = () => {
   ];
 
   return (
-    <div className="avatar-builder">
-      <div className="builder-controls">
-        <button onClick={() => updateAvatar(Math.random().toString(36))} title="Rastgele" className="random-btn">🎲 Karıştır</button>
-        <div className="color-picker-container">
-          <p className="color-label">Arkaplan Rengi:</p>
-          <div className="color-picker">
-            {colors.map(color => (
-              <div 
-                key={color} 
-                className={`color-dot ${bg === color ? 'selected' : ''}`} 
-                style={{background: `#${color}`}}
-                onClick={() => {
-                  setBg(color);
-                  setEditForm(prev => ({
-                    ...prev, 
-                    avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}&backgroundColor=${color}`
-                  }));
-                }}
-              />
-            ))}
+    <div className="avatar-builder-overlay" onClick={(e) => {
+      if (e.target.className === 'avatar-builder-overlay') onClose();
+    }}>
+      <div className="avatar-builder">
+        <div className="builder-header">
+          <span>Avatar Oluşturucu</span>
+          <button className="close-builder-btn" onClick={onClose}>×</button>
+        </div>
+        <div className="builder-controls">
+          <button onClick={() => updateAvatar(Math.random().toString(36))} title="Rastgele" className="random-btn">🎲 Karıştır</button>
+          <div className="color-picker-container">
+            <p className="color-label">Arkaplan Rengi:</p>
+            <div className="color-picker">
+              {colors.map(color => (
+                <div 
+                  key={color} 
+                  className={`color-dot ${bg === color ? 'selected' : ''}`} 
+                  style={{background: `#${color}`}}
+                  onClick={() => {
+                    setBg(color);
+                    setEditForm(prev => ({
+                      ...prev, 
+                      avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}&backgroundColor=${color}`
+                    }));
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="upload-section">
-         <label className="upload-text-btn">
-           📂 Kendi Fotoğrafını Yükle
-           <input 
-             type="file" 
-             accept="image/*" 
-             onChange={handleFileChange}
-             style={{display: 'none'}} 
-           />
-         </label>
+        <div className="upload-section">
+           <label className="upload-text-btn">
+             📂 Kendi Fotoğrafını Yükle
+             <input 
+               type="file" 
+               accept="image/*" 
+               onChange={handleFileChange}
+               style={{display: 'none'}} 
+             />
+           </label>
+        </div>
       </div>
     </div>
   );
@@ -178,6 +186,8 @@ const ProfileView = () => {
       if (url.includes("avataaars")) return "avataaars";
       return "adventurer";
     };
+
+    const [showAvatarBuilder, setShowAvatarBuilder] = useState(false);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({
@@ -252,7 +262,13 @@ const ProfileView = () => {
           localStorage.setItem("wb_user", JSON.stringify(updatedUser));
           setIsEditing(false);
         } else {
-          alert("Kaydetme başarısız: " + (data.error || "Bilinmeyen hata"));
+          // Token hatası ise
+          if (data.error && (data.error.includes("Token") || data.error.includes("auth"))) {
+             alert("Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.");
+             logout();
+          } else {
+             alert("Kaydetme başarısız: " + (data.error || "Bilinmeyen hata"));
+          }
         }
       })
       .catch(err => {
@@ -315,18 +331,45 @@ const ProfileView = () => {
     return (
       <div className="profile-view">
         <div className={`profile-header ${isEditing ? 'editing' : ''}`}>
-          <div className={`profile-avatar-container ${isEditing ? 'editing' : ''}`}>
-            <img 
-              src={isEditing ? editForm.avatar : user.avatar} 
-              alt="Avatar" 
-              className="profile-avatar-img"
-              onError={(e) => e.target.src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.username}&backgroundColor=b6e3f4,c0aede,d1d4f9`}
-            />
-            {isEditing && (
+          <div className="profile-avatar-container">
+            <div style={{position: 'relative', display: 'inline-block'}}>
+              <img 
+                src={isEditing ? editForm.avatar : user.avatar} 
+                alt="Avatar" 
+                className="profile-avatar-img"
+                onError={(e) => e.target.src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.username}&backgroundColor=b6e3f4,c0aede,d1d4f9`}
+              />
+              {isEditing && (
+                <button 
+                  className="edit-avatar-btn"
+                  onClick={() => setShowAvatarBuilder(true)}
+                  style={{
+                    position: 'absolute',
+                    bottom: '0',
+                    right: '0',
+                    background: '#ff9f1c',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  ✏️
+                </button>
+              )}
+            </div>
+            
+            {showAvatarBuilder && (
               <AvatarBuilder 
                 initialSeed={user.username} 
                 setEditForm={setEditForm} 
-                handleFileChange={handleFileChange} 
+                handleFileChange={handleFileChange}
+                onClose={() => setShowAvatarBuilder(false)}
               />
             )}
           </div>
