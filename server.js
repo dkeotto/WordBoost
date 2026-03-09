@@ -367,7 +367,7 @@ app.post('/api/profile/update', async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Update error" });
+    res.status(500).json({ error: "Update error: " + err.message });
   }
 });
 
