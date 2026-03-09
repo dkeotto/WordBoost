@@ -429,9 +429,9 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     }, 500);
   };
 
-  const triggerCooldown = () => {
+  const triggerCooldown = (duration = 800) => {
     setButtonCooldown(true);
-    setTimeout(() => setButtonCooldown(false), 500);
+    setTimeout(() => setButtonCooldown(false), duration);
   };
 
   const showFeedbackAnim = (type) => {
@@ -463,7 +463,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
 
   setTimeout(() => {
   setFeedback(null);
-}, 500);
+}, 800);
 };
 
 // Matching Game Functions
@@ -659,7 +659,11 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
   const handleAnswer = (isKnown) => {
     if (buttonCooldown) return;
     
-    triggerCooldown();
+    // Geçiş süresi ve cooldown'ı eşitle (800ms)
+    // Böylece kelime değişmeden tekrar tıklanamaz
+    const transitionDuration = 800;
+    triggerCooldown(transitionDuration);
+    
     const currentWord = words[currentWordIndex];
     
     if (isInRoom && roomCode) {
@@ -696,7 +700,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     
     setTimeout(() => {
       nextWord();
-    }, 1000);
+    }, transitionDuration);
   };
 
   const flipCard = () => setIsFlipped(!isFlipped);

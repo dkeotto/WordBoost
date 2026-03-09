@@ -907,6 +907,14 @@ button:disabled {
   line-height: 1.2;
 }
 
+@media screen and (max-width: 768px) {
+  .feedback {
+    font-size: 1.8rem;
+    max-width: 90%;
+    padding: 0 10px;
+  }
+}
+
 /* Responsive Fixes */
 @media screen and (max-width: 768px) {
   .test-options {
