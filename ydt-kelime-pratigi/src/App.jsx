@@ -721,6 +721,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
   const speakWord = (word) => {
     const utterance = new SpeechSynthesisUtterance(word.term);
     utterance.lang = 'en-US';
+    utterance.rate = 0.8; // Hızı biraz yavaşlat (Varsayılan 1)
     window.speechSynthesis.cancel(); // Önceki okumayı durdur
     window.speechSynthesis.speak(utterance);
   };
