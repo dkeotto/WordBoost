@@ -75,11 +75,12 @@ console.log("🔹 Google Callback URL:", `${BASE_URL}/auth/google/callback`);
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "GOOGLE_CLIENT_ID_BURAYA",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "GOOGLE_CLIENT_SECRET_BURAYA",
-    callbackURL: `${BASE_URL}/auth/google/callback`,
+    callbackURL: "/auth/google/callback",
     passReqToCallback: true
   },
   async (req, accessToken, refreshToken, profile, done) => {
     try {
+      console.log("🔹 Google Profile:", profile.displayName, profile.id);
       // Önce Google ID ile ara
       let user = await User.findOne({ googleId: profile.id });
 
@@ -137,7 +138,7 @@ app.get('/auth/google',
 );
 
 app.get('/auth/google/callback', 
-  passport.authenticate('google', { failureRedirect: '/login-failed' }),
+  passport.authenticate('google', { failureRedirect: process.env.FRONTEND_URL || '/' }),
   (req, res) => {
     // Başarılı giriş -> JWT oluştur ve frontend'e yönlendir
     const token = jwt.sign(
@@ -153,6 +154,25 @@ app.get('/auth/google/callback',
     res.redirect(`${frontendUrl}/?token=${token}&username=${req.user.username}`);
   }
 );
+
+// DELETE PROFILE
+app.delete('/api/profile', async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+
+    const decoded = jwt.verify(token, "SECRET_KEY");
+    const user = await User.findById(decoded.id);
+
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+    await User.findByIdAndDelete(decoded.id);
+    res.json({ success: true, message: "Hesap silindi" });
+
+  } catch (err) {
+    res.status(500).json({ error: "Delete error: " + err.message });
+  }
+});
 
 // BADGE CONSTANTS
 const BADGES = {

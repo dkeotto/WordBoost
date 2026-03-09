@@ -194,6 +194,26 @@ const ProfileView = () => {
       return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}&backgroundColor=${bg}`;
     };
 
+    const handleDeleteAccount = async () => {
+      if (!confirm("Hesabını kalıcı olarak silmek istediğine emin misin? Bu işlem geri alınamaz!")) return;
+      
+      try {
+        const res = await fetch('/api/profile', {
+          method: 'DELETE',
+          headers: { 'Authorization': user.token }
+        });
+        
+        if (res.ok) {
+          logout();
+        } else {
+          alert("Silme işlemi başarısız oldu.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Hata oluştu.");
+      }
+    };
+
     const handleSave = () => {
       // Token Check
       if (!user || !user.token) {
@@ -304,33 +324,47 @@ const ProfileView = () => {
           </div>
           
           <div className="profile-info">
-            {isEditing ? (
-              <input 
-                value={editForm.nickname} 
-                onChange={e => setEditForm({...editForm, nickname: e.target.value})}
-                placeholder="Takma Ad"
-              />
-            ) : (
-              <h2>{user.nickname} <span className="username">(@{user.username})</span></h2>
-            )}
+            <div className="profile-header-top">
+              {isEditing ? (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
+                   <label style={{fontSize: '0.8rem', color: '#888'}}>Takma Ad</label>
+                   <input 
+                    value={editForm.nickname} 
+                    onChange={e => setEditForm({...editForm, nickname: e.target.value})}
+                    placeholder="Takma Ad"
+                    style={{maxWidth: '200px'}}
+                  />
+                </div>
+              ) : (
+                <h2>{user.nickname} <span className="username">(@{user.username})</span></h2>
+              )}
+
+              <div style={{display: 'flex', alignItems: 'center'}}>
+                {isEditing && (
+                  <button className="delete-btn" onClick={handleDeleteAccount} title="Hesabı Sil">
+                    🗑️
+                  </button>
+                )}
+                <button className="edit-btn" onClick={() => isEditing ? handleSave() : setIsEditing(true)}>
+                  {isEditing ? "💾 Kaydet" : "✏️ Düzenle"}
+                </button>
+              </div>
+            </div>
             
             {isEditing ? (
-              <textarea 
-                value={editForm.bio} 
-                onChange={e => setEditForm({...editForm, bio: e.target.value})}
-                placeholder="Hakkında bir şeyler yaz..."
-              />
+              <div style={{marginTop: '10px'}}>
+                <label style={{fontSize: '0.8rem', color: '#888', marginBottom: '5px', display:'block'}}>Biyografi</label>
+                <textarea 
+                  value={editForm.bio} 
+                  onChange={e => setEditForm({...editForm, bio: e.target.value})}
+                  placeholder="Hakkında bir şeyler yaz..."
+                  style={{width: '100%', minHeight: '100px'}}
+                />
+              </div>
             ) : (
               <p className="bio">{user.bio || "Henüz biyografi eklenmemiş."}</p>
             )}
-            
-            {/* Boşluk bırak (Avatar Builder üstüne gelmesin) - KALDIRILDI */}
-            {/* {isEditing && <div style={{height: '250px'}}></div>} */}
           </div>
-          
-          <button className="edit-btn" onClick={() => isEditing ? handleSave() : setIsEditing(true)}>
-            {isEditing ? "Kaydet" : "✏️ Düzenle"}
-          </button>
         </div>
 
         <div className="profile-stats">
