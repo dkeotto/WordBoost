@@ -136,23 +136,35 @@ app.get('/auth/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-app.get('/auth/google/callback', 
-  passport.authenticate('google', { failureRedirect: FRONTEND_URL }),
-  (req, res) => {
-    // Başarılı giriş -> JWT oluştur ve frontend'e yönlendir
-    const token = jwt.sign(
-      { id: req.user._id, username: req.user.username },
-      "SECRET_KEY",
-      { expiresIn: "30d" }
-    );
-    
-    // Frontend URL'i (Development: http://localhost:5173, Production: /)
-    // const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    
-    // Token'ı query parametresi olarak gönderiyoruz
-    res.redirect(`${FRONTEND_URL}/?token=${token}&username=${req.user.username}`);
-  }
-);
+app.get('/auth/google/callback', (req, res, next) => {
+  passport.authenticate('google', (err, user, info) => {
+    if (err) {
+      console.error("Google Auth Error:", err);
+      // Hata durumunda frontend'e yönlendir
+      return res.redirect(`${FRONTEND_URL}/?error=auth_error`);
+    }
+    if (!user) {
+      // Kullanıcı iptal ettiyse veya kullanıcı bulunamadıysa
+      return res.redirect(`${FRONTEND_URL}/?error=auth_cancel`);
+    }
+
+    req.logIn(user, (loginErr) => {
+      if (loginErr) {
+        console.error("Login Error:", loginErr);
+        return res.redirect(`${FRONTEND_URL}/?error=login_error`);
+      }
+
+      // Başarılı giriş
+      const token = jwt.sign(
+        { id: user._id, username: user.username },
+        "SECRET_KEY",
+        { expiresIn: "30d" }
+      );
+
+      res.redirect(`${FRONTEND_URL}/?token=${token}&username=${user.username}`);
+    });
+  })(req, res, next);
+});
 
 // DELETE PROFILE
 app.delete('/api/profile', async (req, res) => {

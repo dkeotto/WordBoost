@@ -689,6 +689,17 @@ useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     const usernameParam = params.get('username');
+    const errorParam = params.get('error');
+
+    if (errorParam) {
+      if (errorParam === 'auth_cancel') {
+        alert("Giriş iptal edildi.");
+      } else {
+        alert("Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin.");
+      }
+      window.history.replaceState({}, document.title, "/");
+      return;
+    }
 
     if (token && usernameParam) {
       // Save token
