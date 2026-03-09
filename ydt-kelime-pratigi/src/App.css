@@ -1456,6 +1456,11 @@ button:disabled {
   gap: 2rem;
   border: 1px solid rgba(255, 159, 28, 0.2);
   position: relative;
+  transition: all 0.3s ease;
+}
+
+.profile-header.editing {
+  align-items: flex-start;
 }
 
 .profile-avatar {
@@ -1699,12 +1704,135 @@ button:disabled {
 .lb-item .streak { color: #FF4500; font-weight: bold; }
 .lb-item .score { color: var(--secondary-color); font-weight: bold; }
 
+/* Mobile Responsive */
 @media screen and (max-width: 768px) {
-  .profile-header { flex-direction: column; text-align: center; }
-  .profile-stats { grid-template-columns: 1fr; }
-  .lb-header, .lb-item { grid-template-columns: 40px 1fr 70px 70px; font-size: 0.9rem; padding: 10px; }
-  .lb-header span:nth-child(3), .lb-item span:nth-child(3) { display: none; } /* Hide streak on mobile if tight */
-  .lb-header, .lb-item { grid-template-columns: 40px 1fr 80px; } /* Adjust columns */
+  /* Layout */
+  .app {
+    padding: 10px;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .nav-menu {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .nav-link {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+
+  /* Flashcard */
+  .flashcard-container {
+    width: 100%;
+    height: auto;
+    min-height: 300px;
+  }
+
+  .flashcard {
+    height: 300px;
+  }
+
+  .card-front h2 {
+    font-size: 2rem;
+  }
+
+  .card-back h3 {
+    font-size: 1.2rem;
+  }
+
+  /* Stats */
+  .stats-container {
+    padding: 1rem;
+  }
+
+  .stats {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .stat strong {
+    font-size: 1.2rem;
+  }
+
+  /* Profile */
+  .profile-header { 
+    flex-direction: column; 
+    text-align: center; 
+    padding: 1rem;
+  }
+  
+  .profile-stats { 
+    grid-template-columns: 1fr; 
+    gap: 10px;
+  }
+
+  .badges-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+
+  /* Leaderboard */
+  .lb-header, .lb-item { 
+    grid-template-columns: 30px 1fr 60px 60px; 
+    font-size: 0.8rem; 
+    padding: 10px; 
+    gap: 5px;
+  }
+  
+  .lb-header span:nth-child(3), .lb-item span:nth-child(3) { 
+    display: none; /* Mobilde streak gizle */
+  } 
+  
+  .lb-header, .lb-item { 
+    grid-template-columns: 30px 1fr 60px; 
+  }
+
+  .user-col .nick {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Controls */
+  .controls {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .answer-buttons, .nav-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .answer-buttons button, .nav-buttons button {
+    flex: 1;
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+
+  /* Game */
+  .matching-grid {
+    grid-template-columns: repeat(3, 1fr); /* 3 sütun */
+    gap: 5px;
+  }
+
+  .matching-card {
+    height: 70px;
+    font-size: 0.8rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .matching-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 sütun */
+  }
 }
 
 /* Avatar Images */
@@ -1739,77 +1867,133 @@ button:disabled {
 /* Avatar Builder */
 .avatar-builder {
   position: absolute;
-  bottom: -60px;
+  top: 130px; /* Avatarın hemen altında */
   left: 50%;
   transform: translateX(-50%);
-  background: #333;
-  padding: 10px;
-  border-radius: 15px;
-  border: 1px solid rgba(255,255,255,0.2);
+  background: #2a2a2a;
+  padding: 15px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 159, 28, 0.3);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  width: max-content;
-  z-index: 100;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  gap: 12px;
+  width: 320px; /* Genişlik sabitlendi */
+  z-index: 1000;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  animation: popInStatic 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .builder-controls {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column; /* Dikey yerleşim */
+  gap: 15px;
 }
 
-.builder-controls button {
-  padding: 5px 10px;
-  font-size: 1.2rem;
-  background: rgba(255,255,255,0.1);
+.random-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
   border-radius: 8px;
-  width: auto;
-  box-shadow: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.random-btn:hover {
+  background: rgba(255, 159, 28, 0.2);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.color-picker-container {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.color-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: block;
 }
 
 .color-picker {
-  display: flex;
-  gap: 5px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr); /* 8 sütun */
+  gap: 8px;
+  justify-items: center;
 }
 
 .color-dot {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid transparent;
-  transition: transform 0.2s;
+  border: 2px solid rgba(255,255,255,0.1);
+  transition: transform 0.2s, border-color 0.2s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 
-.color-dot:hover { transform: scale(1.2); }
-.color-dot.selected { border-color: white; transform: scale(1.1); }
+.color-dot:hover { 
+  transform: scale(1.2); 
+  z-index: 10;
+}
+
+.color-dot.selected { 
+  border-color: white; 
+  transform: scale(1.2); 
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
 
 .upload-section {
   border-top: 1px solid rgba(255,255,255,0.1);
-  padding-top: 5px;
+  padding-top: 12px;
 }
 
 .upload-text-btn {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: 0.9rem;
+  color: #ccc;
   cursor: pointer;
-  display: block;
-  text-align: center;
-  padding: 5px;
-  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
   transition: background 0.2s;
+  background: rgba(255,255,255,0.05);
+  width: 100%;
+  border: 1px dashed rgba(255,255,255,0.2);
 }
 
 .upload-text-btn:hover {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.1);
   color: white;
+  border-color: var(--primary-color);
 }
 
 .profile-avatar-container {
   position: relative;
   width: 120px;
   height: 120px;
-  margin-bottom: 60px; /* Yer aç */
+  margin-bottom: 20px; /* Default margin */
+  z-index: 100;
+  transition: margin-bottom 0.3s ease;
+}
+
+.profile-avatar-container.editing {
+  margin-bottom: 400px; /* Increase space for builder */
+}
+
+@media screen and (max-width: 768px) {
+  .profile-avatar-container.editing {
+    margin-bottom: 420px; /* Slightly more space on mobile */
+  }
 }
