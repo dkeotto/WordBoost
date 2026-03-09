@@ -1864,12 +1864,12 @@ button:disabled {
   vertical-align: middle;
 }
 
-/* Avatar Builder */
+/* Avatar Builder Styles */
 .avatar-builder {
   position: absolute;
-  top: 130px; /* Avatarın hemen altında */
-  left: 50%;
-  transform: translateX(-50%);
+  top: 130px;
+  left: 0; /* Align left with avatar */
+  transform: none; /* Remove center transform */
   background: #2a2a2a;
   padding: 15px;
   border-radius: 16px;
@@ -1877,10 +1877,18 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 320px; /* Genişlik sabitlendi */
+  width: 280px; /* Slightly smaller */
   z-index: 1000;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.9);
   animation: popInStatic 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@media screen and (max-width: 768px) {
+  .avatar-builder {
+    left: 50%;
+    transform: translateX(-50%); /* Center on mobile */
+    width: 300px;
+  }
 }
 
 .builder-controls {
@@ -1983,17 +1991,9 @@ button:disabled {
   position: relative;
   width: 120px;
   height: 120px;
-  margin-bottom: 20px; /* Default margin */
+  margin-bottom: 20px;
   z-index: 100;
-  transition: margin-bottom 0.3s ease;
+  /* transition removed */
 }
 
-.profile-avatar-container.editing {
-  margin-bottom: 400px; /* Increase space for builder */
-}
-
-@media screen and (max-width: 768px) {
-  .profile-avatar-container.editing {
-    margin-bottom: 420px; /* Slightly more space on mobile */
-  }
-}
+/* Removed .profile-avatar-container.editing expansion */
