@@ -352,40 +352,88 @@ button:disabled {
 }
 
 /* Stats Panel */
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background: #1E1E1E;
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 600px;
+}
+
 .stats {
   display: flex;
-  gap: 2rem;
-  background: rgba(30, 30, 30, 0.6);
-  padding: 1rem 2rem;
-  border-radius: 15px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  flex-wrap: wrap;
-  justify-content: center;
+  justify-content: space-around;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
 }
 
 .stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+}
+
+.stat span {
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }
 
 .stat strong {
   font-size: 1.5rem;
-  font-weight: 700;
+  color: white;
 }
 
-.stat.known strong { color: var(--success-color); }
-.stat.unknown strong { color: var(--error-color); }
+.stat.known strong { color: var(--secondary-color); }
+.stat.unknown strong { color: #ff4757; }
 
 .reset-btn {
-  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--text-muted);
   font-size: 0.8rem;
+  padding: 5px 10px;
+}
+
+.reset-btn:hover {
+  border-color: white;
+  color: white;
+}
+
+.level-selector-embedded {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 15px;
+  width: 100%;
+}
+
+.level-selector-embedded label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.level-selector-embedded select {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  flex: 1;
+  max-width: 200px;
+}
+
+.level-selector-embedded select:hover {
   background: rgba(255,255,255,0.1);
-  margin-left: 1rem;
-  align-self: center;
 }
 
 /* Word Grid & Lists */

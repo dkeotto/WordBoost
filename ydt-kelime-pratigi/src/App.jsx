@@ -1311,24 +1311,26 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
   );
 
   const StatsPanel = () => (
-    <div className="stats">
-      <div className="stat">
-        <span>Çalışılan</span>
-        <strong>{stats.studied}</strong>
+    <div className="stats-container">
+      <div className="stats">
+        <div className="stat">
+          <span>Çalışılan</span>
+          <strong>{stats.studied}</strong>
+        </div>
+        <div className="stat known">
+          <span>Biliyorum</span>
+          <strong>{stats.known}</strong>
+        </div>
+        <div className="stat unknown">
+          <span>Bilmiyorum</span>
+          <strong>{stats.unknown}</strong>
+        </div>
+        <button className="reset-btn" onClick={resetStats}>Sıfırla</button>
       </div>
-      <div className="stat known">
-        <span>Biliyorum</span>
-        <strong>{stats.known}</strong>
-      </div>
-      <div className="stat unknown">
-        <span>Bilmiyorum</span>
-        <strong>{stats.unknown}</strong>
-      </div>
-      <button className="reset-btn" onClick={resetStats}>Sıfırla</button>
 
       {!isInRoom && (
         <div className="level-selector-embedded">
-          <label>Seviye:</label>
+          <label>Çalışma Seviyesi:</label>
           <select 
             value={practiceLevel} 
             onChange={(e) => setPracticeLevel(e.target.value)}
