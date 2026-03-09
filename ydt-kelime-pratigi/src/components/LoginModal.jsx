@@ -16,7 +16,8 @@ export default function LoginModal({ onLogin, onClose }) {
     const data = await res.json();
 
     if (data.success) {
-      onLogin(data.user);
+      // Token'ı user objesine ekleyerek gönderiyoruz
+      onLogin({ ...data.user, token: data.token });
     } else {
       alert(data.error || "Login başarısız");
     }
@@ -34,6 +35,8 @@ export default function LoginModal({ onLogin, onClose }) {
     const data = await res.json();
 
     if (data.success) {
+      // Register sonrası otomatik giriş (opsiyonel) veya sadece alert
+      // onLogin({ ...data.user, token: data.token }); 
       alert("Hesap oluşturuldu! Giriş yapabilirsiniz.");
     } else {
       alert(data.error || "Register başarısız");

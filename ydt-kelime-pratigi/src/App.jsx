@@ -722,7 +722,20 @@ useEffect(() => {
     } else {
       const savedUser = localStorage.getItem("wb_user");
       if (savedUser) {
-        setUser(JSON.parse(savedUser));
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          // Token kontrolü: Eğer token yoksa oturumu geçersiz say
+          if (parsedUser && parsedUser.token) {
+            setUser(parsedUser);
+          } else {
+            console.warn("Found user in storage but no token. Clearing.");
+            localStorage.removeItem("wb_user");
+            setUser(null);
+          }
+        } catch (e) {
+          console.error("Storage parse error", e);
+          localStorage.removeItem("wb_user");
+        }
       }
     }
   }, []);
