@@ -6,12 +6,23 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const session = require('express-session');
 
 
 const app = express();
 const server = http.createServer(app);
 
+// Session Config (Passport için gerekli)
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'gizli_anahtar_session',
+  resave: false,
+  saveUninitialized: false
+}));
 
+app.use(passport.initialize());
+app.use(passport.session());
 
 const WordSchema = new mongoose.Schema({
   term: { type: String, required: true },
@@ -31,8 +42,12 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const UserSchema = new mongoose.Schema({
+  googleId: String,
   username: { type: String, unique: true },
   password: String,
+  nickname: String,
+  bio: { type: String, default: "" },
+  avatar: { type: String, default: () => `https://api.dicebear.com/7.x/adventurer/svg?seed=${Math.random()}&backgroundColor=b6e3f4,c0aede,d1d4f9` },
 
   stats: {
     studied: { type: Number, default: 0 },
@@ -49,6 +64,98 @@ const UserSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model("User", UserSchema);
+
+// PASSPORT GOOGLE STRATEGY
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID || "GOOGLE_CLIENT_ID_BURAYA",
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || "GOOGLE_CLIENT_SECRET_BURAYA",
+    callbackURL: "/auth/google/callback"
+  },
+  async (accessToken, refreshToken, profile, done) => {
+    try {
+      // Önce Google ID ile ara
+      let user = await User.findOne({ googleId: profile.id });
+
+      if (user) {
+        return done(null, user);
+      }
+
+      // Yoksa email/username ile ara (çakışma kontrolü)
+      // Google'dan gelen email'i username olarak kullanabiliriz veya display name
+      // Ancak basitlik için unique bir username oluşturalım
+      const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
+      const baseUsername = email ? email.split('@')[0] : profile.displayName.replace(/\s+/g, '').toLowerCase();
+      
+      // Username çakışması varsa sonuna sayı ekle
+      let finalUsername = baseUsername;
+      let counter = 1;
+      while (await User.findOne({ username: finalUsername })) {
+        finalUsername = `${baseUsername}${counter}`;
+        counter++;
+      }
+
+      user = await User.create({
+        googleId: profile.id,
+        username: finalUsername,
+        nickname: profile.displayName,
+        avatar: profile.photos && profile.photos[0] ? profile.photos[0].value : `https://api.dicebear.com/7.x/adventurer/svg?seed=${finalUsername}&backgroundColor=b6e3f4,c0aede,d1d4f9`,
+        badges: [BADGES.NEWBIE.id],
+        stats: { studied: 0, known: 0, unknown: 0 },
+        streak: 0
+      });
+
+      return done(null, user);
+    } catch (err) {
+      return done(err, null);
+    }
+  }
+));
+
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
+});
+
+// AUTH ROUTES
+app.get('/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+app.get('/auth/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/login-failed' }),
+  (req, res) => {
+    // Başarılı giriş -> JWT oluştur ve frontend'e yönlendir
+    const token = jwt.sign(
+      { id: req.user._id, username: req.user.username },
+      "SECRET_KEY",
+      { expiresIn: "30d" }
+    );
+    
+    // Frontend URL'i (Development: http://localhost:5173, Production: /)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    
+    // Token'ı query parametresi olarak gönderiyoruz
+    res.redirect(`${frontendUrl}/?token=${token}&username=${req.user.username}`);
+  }
+);
+
+// BADGE CONSTANTS
+const BADGES = {
+  NEWBIE: { id: 'newbie', icon: '🐣', name: 'Yeni Başlayan', desc: 'Aramıza hoş geldin!' },
+  STREAK_3: { id: 'streak_3', icon: '🔥', name: '3 Günlük Seri', desc: '3 gün üst üste çalıştın!' },
+  STREAK_7: { id: 'streak_7', icon: '⚡', name: 'Haftalık Seri', desc: '7 gün üst üste çalıştın!' },
+  KNOWN_100: { id: 'known_100', icon: '🧠', name: 'Kelime Avcısı', desc: '100 kelime öğrendin!' },
+  KNOWN_500: { id: 'known_500', icon: '🎓', name: 'Kelime Ustası', desc: '500 kelime öğrendin!' },
+  KNOWN_1000: { id: 'known_1000', icon: '👑', name: 'Kelime Kralı', desc: '1000 kelime öğrendin!' }
+};
 
 const RoomSchema = new mongoose.Schema({
   code: { type: String, unique: true },
@@ -100,7 +207,8 @@ const io = new Server(server, {
 });
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Veri yapıları
 const rooms = new Map();        // roomCode -> room bilgileri
@@ -131,7 +239,9 @@ app.post('/api/register', async (req, res) => {
 
     const user = await User.create({
       username,
-      password: hashed
+      password: hashed,
+      nickname: username, // Varsayılan olarak username
+      badges: [BADGES.NEWBIE.id]
     });
 
     const token = jwt.sign(
@@ -145,6 +255,9 @@ app.post('/api/register', async (req, res) => {
       token,
       user: {
         username: user.username,
+        nickname: user.nickname,
+        avatar: user.avatar,
+        bio: user.bio,
         stats: user.stats,
         streak: user.streak,
         badges: user.badges
@@ -183,6 +296,9 @@ app.post('/api/login', async (req, res) => {
       token,
       user: {
         username: user.username,
+        nickname: user.nickname || user.username,
+        avatar: user.avatar || "👤",
+        bio: user.bio || "",
         stats: user.stats,
         streak: user.streak,
         badges: user.badges
@@ -208,15 +324,139 @@ app.get('/api/profile', async (req, res) => {
 
     res.json({
       username: user.username,
+      nickname: user.nickname || user.username,
+      avatar: user.avatar || "👤",
+      bio: user.bio || "",
       stats: user.stats,
       streak: user.streak,
-      badges: user.badges
+      badges: user.badges,
+      createdAt: user.createdAt
     });
 
   } catch (err) {
     res.status(401).json({ error: "Auth error" });
   }
 });
+
+app.post('/api/profile/update', async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+
+    const decoded = jwt.verify(token, "SECRET_KEY");
+    const { nickname, bio, avatar } = req.body;
+
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+    if (nickname) user.nickname = nickname;
+    if (bio !== undefined) user.bio = bio;
+    if (avatar) user.avatar = avatar;
+
+    await user.save();
+
+    res.json({ success: true, user: { 
+      username: user.username,
+      nickname: user.nickname,
+      avatar: user.avatar,
+      bio: user.bio,
+      stats: user.stats,
+      streak: user.streak,
+      badges: user.badges
+    }});
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Update error" });
+  }
+});
+
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    // En çok bilinen kelime sayısına göre sırala (Top 50)
+    const users = await User.find()
+      .sort({ "stats.known": -1 })
+      .limit(50)
+      .select("username nickname avatar stats badges streak");
+
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Leaderboard error" });
+  }
+});
+
+app.post('/api/stats/update', async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+
+    const decoded = jwt.verify(token, "SECRET_KEY");
+    const { studied, known, unknown } = req.body;
+
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+    // Stats güncelle
+    if (studied) user.stats.studied += studied;
+    if (known) user.stats.known += known;
+    if (unknown) user.stats.unknown += unknown;
+
+    // Streak Logic
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let lastStudy = user.lastStudyDate ? new Date(user.lastStudyDate) : null;
+    if (lastStudy) lastStudy.setHours(0, 0, 0, 0);
+
+    if (!lastStudy) {
+      // İlk defa çalışıyor
+      user.streak = 1;
+      user.lastStudyDate = new Date();
+    } else if (today.getTime() === lastStudy.getTime()) {
+      // Bugün zaten çalışmış, streak değişmez
+      user.lastStudyDate = new Date();
+    } else if (today.getTime() === lastStudy.getTime() + 86400000) {
+      // Dün çalışmış, streak artar
+      user.streak += 1;
+      user.lastStudyDate = new Date();
+    } else {
+      // Dünden önce çalışmış, streak sıfırlanır (veya 1 olur)
+      user.streak = 1;
+      user.lastStudyDate = new Date();
+    }
+
+    // Badge Logic
+    const newBadges = [];
+    const checkBadge = (id, condition) => {
+      if (condition && !user.badges.includes(id)) {
+        user.badges.push(id);
+        newBadges.push(BADGES[Object.keys(BADGES).find(k => BADGES[k].id === id)]);
+      }
+    };
+
+    checkBadge(BADGES.STREAK_3.id, user.streak >= 3);
+    checkBadge(BADGES.STREAK_7.id, user.streak >= 7);
+    checkBadge(BADGES.KNOWN_100.id, user.stats.known >= 100);
+    checkBadge(BADGES.KNOWN_500.id, user.stats.known >= 500);
+    checkBadge(BADGES.KNOWN_1000.id, user.stats.known >= 1000);
+
+    await user.save();
+
+    res.json({ 
+      success: true, 
+      stats: user.stats, 
+      streak: user.streak, 
+      badges: user.badges,
+      newBadges 
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Stats update error" });
+  }
+});
+
 app.post('/api/rooms', async (req, res) => {
   try {
     const { username, avatar } = req.body;

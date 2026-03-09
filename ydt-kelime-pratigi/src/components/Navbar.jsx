@@ -67,6 +67,14 @@ const Navbar = ({
           </li>
           <li className="nav-item">
             <button 
+              className={`nav-link ${currentView === 'leaderboard' ? 'active' : ''}`}
+              onClick={() => handleNavClick('leaderboard')}
+            >
+              🏆 Liderlik
+            </button>
+          </li>
+          <li className="nav-item">
+            <button 
               className={`nav-link ${currentView === 'room-menu' || isInRoom ? 'active' : ''}`}
               onClick={() => handleNavClick(isInRoom ? 'room' : 'room-menu')}
             >
@@ -105,9 +113,19 @@ const Navbar = ({
 
           <li className="nav-item user-section">
             {user ? (
-              <button className="nav-link profile-btn" onClick={() => { onLogoutClick(); setIsMenuOpen(false); }}>
-                👤 {user.username} (Çıkış)
-              </button>
+              <div className="user-controls">
+                <button className="nav-link profile-btn" onClick={() => handleNavClick('profile')}>
+                  {user.avatar && user.avatar.startsWith('http') ? (
+                    <img src={user.avatar} className="nav-avatar-img" alt="avatar" />
+                  ) : (
+                    user.avatar || '👤'
+                  )}
+                  {user.nickname || user.username}
+                </button>
+                <button className="logout-icon-btn" onClick={() => { onLogoutClick(); setIsMenuOpen(false); }} title="Çıkış Yap">
+                  🚪
+                </button>
+              </div>
             ) : (
               <button className="nav-link login-btn" onClick={() => { onLoginClick(); setIsMenuOpen(false); }}>
                 🔐 Giriş Yap

@@ -75,6 +75,7 @@ const generateOptions = (correctWord, allWords) => {
 function App() {
 
   const [selectedLevel,setSelectedLevel] = useState("ALL")
+  const [practiceLevel, setPracticeLevel] = useState("ALL");
 
   const loadFromStorage = (key, defaultValue) => {
     try {
@@ -92,7 +93,303 @@ const [favorites, setFavorites] = useState(() => {
   
 });
 
-const FavoritesView = () => (
+const ProfileView = () => {
+    // URL'den stili çıkar (varsa)
+    const getStyleFromUrl = (url) => {
+      if (!url) return "adventurer";
+      if (url.includes("adventurer")) return "adventurer";
+      if (url.includes("notionists")) return "notionists";
+      if (url.includes("micah")) return "micah";
+      if (url.includes("lorelei")) return "lorelei";
+      if (url.includes("bottts")) return "bottts";
+      if (url.includes("avataaars")) return "avataaars";
+      return "adventurer";
+    };
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({
+      nickname: user.nickname || user.username,
+      bio: user.bio || "",
+      avatar: user.avatar || "👤",
+      avatarStyle: getStyleFromUrl(user.avatar) 
+    });
+
+    const styles = [
+      { id: "adventurer", name: "🦸‍♂️ Maceracı", bg: "b6e3f4,c0aede,d1d4f9" },
+      { id: "notionists", name: "🎨 Minimalist", bg: "ffe5ec,ffc2d1,ffb3c6" },
+      { id: "micah", name: "✨ Modern", bg: "f4e4bc,d1d4f9,b6e3f4" },
+      { id: "lorelei", name: "🎭 Sanatsal", bg: "ffdfbf,ffd4c2,ffccb6" },
+      { id: "bottts", name: "🤖 Robot", bg: "e0e0e0,cccccc,b3b3b3" },
+      { id: "avataaars", name: "🙂 Klasik", bg: "transparent" }
+    ];
+
+    const generateAvatar = (style = editForm.avatarStyle) => {
+      const seed = Math.random().toString(36).substring(7);
+      const bg = styles.find(s => s.id === style)?.bg || "transparent";
+      return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}&backgroundColor=${bg}`;
+    };
+
+    const handleSave = () => {
+      fetch('/api/profile/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': user.token
+        },
+        // Sadece avatar URL'sini gönderiyoruz, stil bilgisi URL içinde zaten var
+        body: JSON.stringify({
+          nickname: editForm.nickname,
+          bio: editForm.bio,
+          avatar: editForm.avatar
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Token bilgisini koruyarak user state'ini güncelle
+          const updatedUser = { ...user, ...data.user, token: user.token };
+          setUser(updatedUser);
+          // LocalStorage'ı da güncelle
+          localStorage.setItem("wb_user", JSON.stringify(updatedUser));
+          setIsEditing(false);
+        } else {
+          alert("Kaydetme başarısız: " + (data.error || "Bilinmeyen hata"));
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Bağlantı hatası!");
+      });
+    };
+
+    const handleFileChange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // Max 5MB
+        if (file.size > 5 * 1024 * 1024) {
+          alert("Dosya boyutu çok büyük (Max 5MB)");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setEditForm(prev => ({
+            ...prev,
+            avatar: reader.result, // Base64 string
+            avatarStyle: "custom" // Custom stil
+          }));
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    const [avatarConfig, setAvatarConfig] = useState({
+      base: "adventurer",
+      gender: "neutral", // "male", "female", "neutral"
+      hair: "short",     // "short", "long", "curly" etc. (Basitleştirilmiş)
+      skin: "light"      // "light", "dark", "yellow" etc.
+    });
+
+    const generateCustomAvatar = () => {
+      // Gartic.io benzeri basit yapılandırma
+      // DiceBear Adventurer parametrelerini kullanarak özelleştirme
+      // seed, backgroundColor, skinColor, hair, hairColor vb.
+      
+      const seed = Math.random().toString(36).substring(7);
+      
+      // Basit parametreler (DiceBear Adventurer için)
+      // Bu stil çok detaylı parametre almaz, seed üzerinden çalışır.
+      // Ancak "Avataaars" veya "Bottts" gibi stiller daha fazla parametre alır.
+      // Kullanıcı "Gartic.io gibi" dediği için daha manuel bir yapı istiyor.
+      // DiceBear'da "Avataaars" stili en çok özelleştirilebilen stildir.
+      
+      let url = `https://api.dicebear.com/7.x/${avatarConfig.base}/svg?seed=${seed}`;
+      
+      // Renk ve arka plan ekle
+      url += `&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+      
+      return url;
+    };
+    
+    // YENİ AVATAR OLUŞTURUCU (Gartic.io Tarzı)
+    const AvatarBuilder = () => {
+      const [seed, setSeed] = useState(user.username);
+      const [bg, setBg] = useState("b6e3f4");
+      
+      const updateAvatar = (newSeed) => {
+        setSeed(newSeed);
+        setEditForm(prev => ({
+          ...prev, 
+          avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${newSeed}&backgroundColor=${bg}`
+        }));
+      };
+
+      return (
+        <div className="avatar-builder">
+          <div className="builder-controls">
+            <button onClick={() => updateAvatar(Math.random().toString(36))} title="Rastgele">🎲</button>
+            <div className="color-picker">
+              {["b6e3f4","c0aede","d1d4f9","ffdfbf","ffd4c2","ffe5ec"].map(color => (
+                <div 
+                  key={color} 
+                  className={`color-dot ${bg === color ? 'selected' : ''}`} 
+                  style={{background: `#${color}`}}
+                  onClick={() => {
+                    setBg(color);
+                    setEditForm(prev => ({
+                      ...prev, 
+                      avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}&backgroundColor=${color}`
+                    }));
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="upload-section">
+             <label className="upload-text-btn">
+               � Kendi Fotoğrafını Yükle
+               <input 
+                 type="file" 
+                 accept="image/*" 
+                 onChange={handleFileChange}
+                 style={{display: 'none'}} 
+               />
+             </label>
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="profile-view">
+        <div className="profile-header">
+          <div className="profile-avatar-container">
+            <img 
+              src={isEditing ? editForm.avatar : user.avatar} 
+              alt="Avatar" 
+              className="profile-avatar-img"
+              onError={(e) => e.target.src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.username}&backgroundColor=b6e3f4,c0aede,d1d4f9`}
+            />
+            {isEditing && <AvatarBuilder />}
+          </div>
+          
+          <div className="profile-info">
+            {isEditing ? (
+              <input 
+                value={editForm.nickname} 
+                onChange={e => setEditForm({...editForm, nickname: e.target.value})}
+                placeholder="Takma Ad"
+              />
+            ) : (
+              <h2>{user.nickname} <span className="username">(@{user.username})</span></h2>
+            )}
+            
+            {isEditing ? (
+              <textarea 
+                value={editForm.bio} 
+                onChange={e => setEditForm({...editForm, bio: e.target.value})}
+                placeholder="Hakkında bir şeyler yaz..."
+              />
+            ) : (
+              <p className="bio">{user.bio || "Henüz biyografi eklenmemiş."}</p>
+            )}
+          </div>
+          
+          <button className="edit-btn" onClick={() => isEditing ? handleSave() : setIsEditing(true)}>
+            {isEditing ? "Kaydet" : "✏️ Düzenle"}
+          </button>
+        </div>
+
+        <div className="profile-stats">
+          <div className="p-stat">
+            <span className="icon">🔥</span>
+            <span className="value">{user.streak || 0}</span>
+            <span className="label">Günlük Seri</span>
+          </div>
+          <div className="p-stat">
+            <span className="icon">📚</span>
+            <span className="value">{user.stats?.studied || 0}</span>
+            <span className="label">Çalışılan</span>
+          </div>
+          <div className="p-stat">
+            <span className="icon">🧠</span>
+            <span className="value">{user.stats?.known || 0}</span>
+            <span className="label">Bilinen</span>
+          </div>
+        </div>
+
+        <div className="badges-section">
+          <h3>🏅 Rozetlerim</h3>
+          <div className="badges-grid">
+            {user.badges && user.badges.length > 0 ? (
+              user.badges.map(badgeId => {
+                // Badge detaylarını bulmak için bir mapping gerekebilir veya server populate edebilir.
+                // Şimdilik server'dan badge ID geliyor, basit bir map yapalım veya server'dan tam obje isteyelim.
+                // Server'da BADGES objesi vardı. Frontend'de de tanımlayalım veya id'yi gösterelim.
+                return (
+                  <div key={badgeId} className="badge-item">
+                    <div className="badge-icon">🏆</div>
+                    <span>{badgeId}</span>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="no-badges">Henüz rozet kazanmadın. Çalışmaya başla!</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const LeaderboardView = () => {
+    const [leaders, setLeaders] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      fetch('/api/leaderboard')
+        .then(res => res.json())
+        .then(data => {
+          setLeaders(data);
+          setLoading(false);
+        });
+    }, []);
+
+    if (loading) return <div className="loading">Yükleniyor...</div>;
+
+    return (
+      <div className="leaderboard-view">
+        <h2>🏆 Liderlik Tablosu</h2>
+        <div className="leaderboard-list">
+          <div className="lb-header">
+            <span>#</span>
+            <span>Kullanıcı</span>
+            <span>Seri</span>
+            <span>Puan (Bilinen)</span>
+          </div>
+          {leaders.map((u, idx) => (
+            <div key={idx} className={`lb-item ${user && user.username === u.username ? 'me' : ''}`}>
+              <span className="rank">{idx + 1}</span>
+              <div className="user-col">
+                <span className="avatar">
+                  {u.avatar && u.avatar.startsWith('http') ? (
+                    <img src={u.avatar} alt="av" className="lb-avatar-img" />
+                  ) : (
+                    u.avatar || "👤"
+                  )}
+                </span>
+                <span className="nick">{u.nickname || u.username}</span>
+              </div>
+              <span className="streak">🔥 {u.streak || 0}</span>
+              <span className="score">⭐ {u.stats?.known || 0}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const FavoritesView = () => (
     <div className="word-list">
       <h2>⭐ Favoriler ({favorites.length})</h2>
 
@@ -144,12 +441,36 @@ const [loadingWords, setLoadingWords] = useState(true);
 
 
 useEffect(() => {
-  const savedUser = localStorage.getItem("wb_user");
+    // Check for token in URL (Social Login Redirect)
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const usernameParam = params.get('username');
 
-  if (savedUser) {
-    setUser(JSON.parse(savedUser));
-  }
-}, []);
+    if (token && usernameParam) {
+      // Save token
+      const userObj = { username: usernameParam, token }; // Minimal user obj
+      localStorage.setItem("wb_user", JSON.stringify(userObj));
+      
+      // Fetch full profile
+      fetch('/api/profile', {
+        headers: { 'Authorization': token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const fullUser = { ...data, token };
+        setUser(fullUser);
+        localStorage.setItem("wb_user", JSON.stringify(fullUser));
+        // Clear URL
+        window.history.replaceState({}, document.title, "/");
+      })
+      .catch(err => console.error("Profile fetch error:", err));
+    } else {
+      const savedUser = localStorage.getItem("wb_user");
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
+    }
+  }, []);
 useEffect(() => {
   fetch('/api/words')
     .then(res => res.json())
@@ -163,10 +484,37 @@ useEffect(() => {
       setLoadingWords(false);
     });
 }, []);
-  const sortedWordsList = useMemo(() => {
-  return [...words].sort((a, b) => a.term.localeCompare(b.term));
-}, [words]);
+  const practiceWords = useMemo(() => {
+    let filtered = words;
+    
+    if (practiceLevel !== "ALL") {
+      if (practiceLevel.includes("-")) {
+        // Range Logic (e.g. A1-A2)
+        const levels = [];
+        if (practiceLevel === "A1-A2") levels.push("A1", "A2");
+        if (practiceLevel === "B1-B2") levels.push("B1", "B2");
+        if (practiceLevel === "B1-C2") levels.push("B1", "B2", "C1", "C2");
+        if (practiceLevel === "C1-C2") levels.push("C1", "C2");
+        
+        filtered = words.filter(w => levels.includes(w.level));
+      } else {
+        filtered = words.filter(w => w.level === practiceLevel);
+      }
+    }
+    
+    // Shuffle filtered words on level change
+    return [...filtered].sort(() => Math.random() - 0.5);
+  }, [words, practiceLevel]);
+
+  // Use practiceWords for index management
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const currentWord = practiceWords[currentWordIndex];
+
+  // Reset index when level changes
+  useEffect(() => {
+    setCurrentWordIndex(0);
+    setIsFlipped(false);
+  }, [practiceLevel]);
   const [isFlipped, setIsFlipped] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [showExample, setShowExample] = useState(false);
@@ -629,7 +977,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
   };
 
   const nextWord = () => {
-    if (currentWordIndex < words.length - 1) {
+    if (currentWordIndex < practiceWords.length - 1) {
       const newIndex = currentWordIndex + 1;
       setCurrentWordIndex(newIndex);
       setIsFlipped(false);
@@ -664,27 +1012,60 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     const transitionDuration = 800;
     triggerCooldown(transitionDuration);
     
-    const currentWord = words[currentWordIndex];
+    const currentWord = practiceWords[currentWordIndex];
     
     if (isInRoom && roomCode) {
+      socket.emit('update-stats', {
+        roomCode,
+        username,
+        studied: 1,
+        known: isKnown ? 1 : 0,
+        unknown: !isKnown ? 1 : 0
+      });
+    } else {
+      // Local State Update
+      setStats(prev => ({
+        studied: prev.studied + 1,
+        known: isKnown ? prev.known + 1 : prev.known,
+        unknown: !isKnown ? prev.unknown + 1 : prev.unknown
+      }));
 
-  socket.emit('update-stats', {
-    roomCode,
-    username,
-    studied: 1,
-    known: isKnown ? 1 : 0,
-    unknown: !isKnown ? 1 : 0
-  });
-
-} else {
-
-  setStats(prev => ({
-    studied: prev.studied + 1,
-    known: isKnown ? prev.known + 1 : prev.known,
-    unknown: !isKnown ? prev.unknown + 1 : prev.unknown
-  }));
-
-}
+      // Server Update (If Logged In)
+      if (user && user.token) {
+        fetch('/api/stats/update', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': user.token
+          },
+          body: JSON.stringify({
+            studied: 1,
+            known: isKnown ? 1 : 0,
+            unknown: !isKnown ? 1 : 0
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setUser(prev => ({
+              ...prev,
+              stats: data.stats,
+              streak: data.streak,
+              badges: data.badges
+            }));
+            
+            if (data.newBadges && data.newBadges.length > 0) {
+              data.newBadges.forEach(b => {
+                // Basit bir toast/alert yerine custom bir animasyon eklenebilir
+                // Şimdilik alert
+                alert(`🎉 YENİ ROZET: ${b.name}\n${b.desc}`);
+              });
+            }
+          }
+        })
+        .catch(err => console.error("Stats update failed:", err));
+      }
+    }
 
     if (!isKnown) {
       setWrongWords(prev => {
@@ -828,8 +1209,32 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
   );
 
   const PracticeView = () => (
-  <div className="practice">
+    <div className="practice">
       <h2>{isInRoom ? '👥 Yarış Modu' : 'Tek Kişilik Kelime Çalışması'}</h2>
+      
+      {!isInRoom && (
+        <div className="level-selector">
+          <label>Çalışma Seviyesi:</label>
+          <select 
+            value={practiceLevel} 
+            onChange={(e) => setPracticeLevel(e.target.value)}
+          >
+            <option value="ALL">Tümü (Karma)</option>
+            <option value="A1-A2">A1 - A2</option>
+            <option value="B1-B2">B1 - B2</option>
+            <option value="B1-C2">B1 - C2</option>
+            <option value="C1-C2">C1 - C2</option>
+            <option disabled>──────────</option>
+            <option value="A1">Sadece A1</option>
+            <option value="A2">Sadece A2</option>
+            <option value="B1">Sadece B1</option>
+            <option value="B2">Sadece B2</option>
+            <option value="C1">Sadece C1</option>
+            <option value="C2">Sadece C2</option>
+          </select>
+        </div>
+      )}
+
       <StatsPanel />
       
       {isInRoom && (
@@ -854,12 +1259,19 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
       )}
       
       <div className="progress">
-  Kelime {currentWordIndex + 1} / {words.length}
-</div>
+        Kelime {currentWordIndex + 1} / {practiceWords.length}
+      </div>
 
-{words.length > 0 && words[currentWordIndex] && (
-  <Flashcard word={words[currentWordIndex]} />
-)}
+      {practiceWords.length > 0 && currentWord && (
+        <Flashcard word={currentWord} />
+      )}
+      
+      {practiceWords.length === 0 && (
+        <div className="empty-state">
+          Bu seviyede kelime bulunamadı.
+        </div>
+      )}
+
       <div className="controls">
         <div className="answer-buttons">
           <button className="btn-unknown" onClick={() => handleAnswer(false)} disabled={buttonCooldown}>✗ Bilmiyorum</button>
@@ -867,7 +1279,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
         </div>
         <div className="nav-buttons">
           <button className="btn-prev" onClick={prevWord} disabled={currentWordIndex === 0 || buttonCooldown}>← Önceki</button>
-          <button className="btn-next" onClick={nextWord} disabled={currentWordIndex === words.length - 1 || buttonCooldown}>Sonraki →</button>
+          <button className="btn-next" onClick={nextWord} disabled={currentWordIndex === practiceWords.length - 1 || buttonCooldown}>Sonraki →</button>
         </div>
       </div>
     </div>
@@ -1245,6 +1657,8 @@ if (loadingWords) {
       {testMode && testFinished && <TestResultsView />}
       {currentView === 'favorites' && <FavoritesView />}
       {currentView === 'matching-game' && <MatchingGameView />}
+      {currentView === 'profile' && <ProfileView />}
+      {currentView === 'leaderboard' && <LeaderboardView />}
       {currentView === 'word-list' && (
         <WordListView
           words={uniqueWords}
