@@ -93,7 +93,15 @@ const [favorites, setFavorites] = useState(() => {
   
 });
 
-const AvatarBuilder = ({ initialSeed, setEditForm, handleFileChange }) => {
+const logout = () => {
+    setUser(null);
+    localStorage.removeItem("wb_user");
+    setShowLogoutConfirm(false);
+    setCurrentView('practice'); 
+    window.location.reload(); 
+  };
+
+  const AvatarBuilder = ({ initialSeed, setEditForm, handleFileChange }) => {
   const [seed, setSeed] = useState(initialSeed);
   const [bg, setBg] = useState("b6e3f4");
   
@@ -1889,15 +1897,7 @@ if (loadingWords) {
         <div className="logout-modal">
           <h3>Çıkış yapmak istediğine emin misin?</h3>
           <div className="logout-buttons">
-            <button
-              onClick={() => {
-                setUser(null);
-                localStorage.removeItem("wb_user");
-                setShowLogoutConfirm(false);
-                setCurrentView('practice'); // Çıkış yapınca ana sayfaya dön
-                window.location.reload(); // Temiz bir başlangıç için sayfayı yenile
-              }}
-            >
+            <button onClick={logout}>
               Evet, çıkış yap
             </button>
             <button

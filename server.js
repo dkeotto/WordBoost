@@ -66,16 +66,15 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model("User", UserSchema);
 
 // PASSPORT GOOGLE STRATEGY
-const BASE_URL = process.env.FRONTEND_URL 
-  ? process.env.FRONTEND_URL.replace(/\/$/, '') 
-  : 'http://localhost:3000';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-console.log("🔹 Google Callback URL:", `${BASE_URL}/auth/google/callback`);
+console.log("🔹 Google Callback URL:", `${BACKEND_URL}/auth/google/callback`);
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "GOOGLE_CLIENT_ID_BURAYA",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "GOOGLE_CLIENT_SECRET_BURAYA",
-    callbackURL: "/auth/google/callback",
+    callbackURL: `${BACKEND_URL}/auth/google/callback`,
     passReqToCallback: true
   },
   async (req, accessToken, refreshToken, profile, done) => {
@@ -138,7 +137,7 @@ app.get('/auth/google',
 );
 
 app.get('/auth/google/callback', 
-  passport.authenticate('google', { failureRedirect: process.env.FRONTEND_URL || '/' }),
+  passport.authenticate('google', { failureRedirect: FRONTEND_URL }),
   (req, res) => {
     // Başarılı giriş -> JWT oluştur ve frontend'e yönlendir
     const token = jwt.sign(
@@ -148,10 +147,10 @@ app.get('/auth/google/callback',
     );
     
     // Frontend URL'i (Development: http://localhost:5173, Production: /)
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    // const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     
     // Token'ı query parametresi olarak gönderiyoruz
-    res.redirect(`${frontendUrl}/?token=${token}&username=${req.user.username}`);
+    res.redirect(`${FRONTEND_URL}/?token=${token}&username=${req.user.username}`);
   }
 );
 

@@ -1888,9 +1888,8 @@ button:disabled {
 /* Avatar Builder Styles */
 .avatar-builder {
   position: absolute;
-  top: 100%; /* Below the avatar */
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 140px; /* Avatarın sağına taşı */
   background: #2a2a2a;
   padding: 15px;
   border-radius: 16px;
@@ -1899,19 +1898,20 @@ button:disabled {
   flex-direction: column;
   gap: 12px;
   width: 300px;
-  z-index: 2000; /* Higher index */
+  z-index: 2000;
   box-shadow: 0 10px 40px rgba(0,0,0,0.9);
   animation: popInStatic 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  margin-top: 10px;
 }
 
 @media screen and (max-width: 768px) {
   .avatar-builder {
-    top: 130px; /* Below avatar on mobile */
+    position: fixed; /* Mobilde ekranın ortasına sabitle */
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    width: 90%; /* Full width on mobile */
+    transform: translate(-50%, -50%);
+    width: 90%;
     max-width: 350px;
+    margin-top: 0;
   }
 }
 
