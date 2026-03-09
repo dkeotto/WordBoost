@@ -371,6 +371,39 @@ app.post('/api/profile/update', async (req, res) => {
   }
 });
 
+app.get('/api/users/search', async (req, res) => {
+  try {
+    const q = req.query.q;
+    if (!q) return res.json([]);
+
+    const users = await User.find({
+      $or: [
+        { username: { $regex: q, $options: 'i' } },
+        { nickname: { $regex: q, $options: 'i' } }
+      ]
+    })
+    .select("username nickname avatar stats streak badges")
+    .limit(10);
+
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Search error" });
+  }
+});
+
+app.get('/api/users/:username', async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username })
+      .select("username nickname avatar bio stats streak badges createdAt");
+    
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: "Profile fetch error" });
+  }
+});
+
 app.get('/api/leaderboard', async (req, res) => {
   try {
     // En çok bilinen kelime sayısına göre sırala (Top 50)

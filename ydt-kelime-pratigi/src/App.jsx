@@ -342,9 +342,74 @@ const ProfileView = () => {
     );
   };
 
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const PublicProfileView = () => {
+    if (!selectedUser) return <div className="loading">Kullanıcı bulunamadı</div>;
+
+    return (
+      <div className="profile-view">
+        <button className="back-btn" onClick={() => setCurrentView('leaderboard')}>← Geri Dön</button>
+        
+        <div className="profile-header">
+          <div className="profile-avatar-container">
+            <img 
+              src={selectedUser.avatar} 
+              alt="Avatar" 
+              className="profile-avatar-img"
+              onError={(e) => e.target.src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${selectedUser.username}`}
+            />
+          </div>
+          
+          <div className="profile-info">
+            <h2>{selectedUser.nickname} <span className="username">(@{selectedUser.username})</span></h2>
+            <p className="bio">{selectedUser.bio || "Henüz biyografi eklenmemiş."}</p>
+            <p className="join-date">Katılım: {new Date(selectedUser.createdAt).toLocaleDateString('tr-TR')}</p>
+          </div>
+        </div>
+
+        <div className="profile-stats">
+          <div className="p-stat">
+            <span className="icon">🔥</span>
+            <span className="value">{selectedUser.streak || 0}</span>
+            <span className="label">Günlük Seri</span>
+          </div>
+          <div className="p-stat">
+            <span className="icon">📚</span>
+            <span className="value">{selectedUser.stats?.studied || 0}</span>
+            <span className="label">Çalışılan</span>
+          </div>
+          <div className="p-stat">
+            <span className="icon">🧠</span>
+            <span className="value">{selectedUser.stats?.known || 0}</span>
+            <span className="label">Bilinen</span>
+          </div>
+        </div>
+
+        <div className="badges-section">
+          <h3>🏅 Rozetler</h3>
+          <div className="badges-grid">
+            {selectedUser.badges && selectedUser.badges.length > 0 ? (
+              selectedUser.badges.map(badgeId => (
+                <div key={badgeId} className="badge-item">
+                  <div className="badge-icon">🏆</div>
+                  <span>{badgeId}</span>
+                </div>
+              ))
+            ) : (
+              <p className="no-badges">Henüz rozet kazanmamış.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const LeaderboardView = () => {
     const [leaders, setLeaders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
 
     useEffect(() => {
       fetch('/api/leaderboard')
@@ -355,20 +420,75 @@ const ProfileView = () => {
         });
     }, []);
 
+    const handleSearch = (e) => {
+      const q = e.target.value;
+      setSearchQuery(q);
+      
+      if (q.length > 2) {
+        fetch(`/api/users/search?q=${q}`)
+          .then(res => res.json())
+          .then(data => setSearchResults(data));
+      } else {
+        setSearchResults([]);
+      }
+    };
+
+    const openProfile = (username) => {
+      setLoading(true);
+      fetch(`/api/users/${username}`)
+        .then(res => res.json())
+        .then(data => {
+          setSelectedUser(data);
+          setCurrentView('public-profile');
+          setLoading(false);
+        })
+        .catch(() => {
+          alert("Kullanıcı profili yüklenemedi");
+          setLoading(false);
+        });
+    };
+
     if (loading) return <div className="loading">Yükleniyor...</div>;
 
     return (
       <div className="leaderboard-view">
-        <h2>🏆 Liderlik Tablosu</h2>
+        <h2>🏆 Liderlik Tablosu & Ara</h2>
+        
+        <div className="user-search-container">
+          <input 
+            type="text" 
+            placeholder="🔍 Kullanıcı Ara..." 
+            value={searchQuery}
+            onChange={handleSearch}
+            className="user-search-input"
+          />
+          
+          {searchResults.length > 0 && (
+            <div className="search-results-dropdown">
+              {searchResults.map(u => (
+                <div key={u._id} className="search-result-item" onClick={() => openProfile(u.username)}>
+                  <img src={u.avatar} alt="av" className="mini-avatar" />
+                  <span>{u.nickname || u.username}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="leaderboard-list">
           <div className="lb-header">
             <span>#</span>
             <span>Kullanıcı</span>
             <span>Seri</span>
-            <span>Puan (Bilinen)</span>
+            <span>Puan</span>
           </div>
           {leaders.map((u, idx) => (
-            <div key={idx} className={`lb-item ${user && user.username === u.username ? 'me' : ''}`}>
+            <div 
+              key={idx} 
+              className={`lb-item ${user && user.username === u.username ? 'me' : ''}`}
+              onClick={() => openProfile(u.username)}
+              style={{cursor: 'pointer'}}
+            >
               <span className="rank">{idx + 1}</span>
               <div className="user-col">
                 <span className="avatar">
@@ -1205,16 +1325,10 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
         <strong>{stats.unknown}</strong>
       </div>
       <button className="reset-btn" onClick={resetStats}>Sıfırla</button>
-    </div>
-  );
 
-  const PracticeView = () => (
-    <div className="practice">
-      <h2>{isInRoom ? '👥 Yarış Modu' : 'Tek Kişilik Kelime Çalışması'}</h2>
-      
       {!isInRoom && (
-        <div className="level-selector">
-          <label>Çalışma Seviyesi:</label>
+        <div className="level-selector-embedded">
+          <label>Seviye:</label>
           <select 
             value={practiceLevel} 
             onChange={(e) => setPracticeLevel(e.target.value)}
@@ -1234,7 +1348,13 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
           </select>
         </div>
       )}
+    </div>
+  );
 
+  const PracticeView = () => (
+    <div className="practice">
+      <h2>{isInRoom ? '👥 Yarış Modu' : 'Tek Kişilik Kelime Çalışması'}</h2>
+      
       <StatsPanel />
       
       {isInRoom && (
@@ -1658,6 +1778,7 @@ if (loadingWords) {
       {currentView === 'favorites' && <FavoritesView />}
       {currentView === 'matching-game' && <MatchingGameView />}
       {currentView === 'profile' && <ProfileView />}
+      {currentView === 'public-profile' && <PublicProfileView />}
       {currentView === 'leaderboard' && <LeaderboardView />}
       {currentView === 'word-list' && (
         <WordListView
