@@ -91,88 +91,86 @@ main {
   transform: translateY(-5px); /* Her şey birlikte yukarı kalkar */
 }
 
-/* Butonların havada kalmaması için container içine taşıdık gibi davranacağız */
-.flashcard-fav-btn, .flashcard-level, .flashcard-speak-btn {
-  /* Z-index ayarı ile kartın üstünde kalmalarını garantile */
-  z-index: 50; 
-  /* Kartla birlikte hareket etmeleri için transition ekle */
-  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+/* Flashcard Container & Hover Effects */
+.flashcard-container {
+  width: 100%;
+  max-width: 600px;
+  perspective: 1000px;
+  margin: 20px auto;
+  position: relative;
+  transition: transform 0.3s ease;
 }
 
-/* Container hover olduğunda butonlar da yukarı kalksın */
-.flashcard-container:hover .flashcard-fav-btn,
-.flashcard-container:hover .flashcard-level,
-.flashcard-container:hover .flashcard-speak-btn {
+.flashcard-container:hover {
   transform: translateY(-5px);
 }
 
-.flashcard-speak-btn {
+/* Flashcard Inner Buttons (Inside Card) */
+.flashcard-speak-btn, .flashcard-fav-btn, .flashcard-level {
   position: absolute;
-  top: 15px;
-  right: 70px; /* Favori butonunun solunda */
-  background: rgba(0,0,0,0.6);
+  z-index: 10; /* Card content üzerinde kalsın */
+  transition: transform 0.2s ease, background 0.2s;
+}
+
+.flashcard-speak-btn {
+  top: 20px;
+  right: 75px; /* Favori butonunun solunda */
+  background: rgba(0,0,0,0.4);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 50%;
   width: 45px;
   height: 45px;
   font-size: 1.5rem;
   color: var(--secondary-color);
-  z-index: 50;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
   padding: 0;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .flashcard-speak-btn:hover {
   transform: scale(1.1);
-  background: rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.6);
   border-color: var(--secondary-color);
 }
 
 .flashcard-fav-btn {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: rgba(0,0,0,0.6);
+  top: 20px;
+  right: 20px;
+  background: rgba(0,0,0,0.4);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 50%;
   width: 45px;
   height: 45px;
   font-size: 1.5rem;
   color: var(--secondary-color);
-  z-index: 50;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
   padding: 0;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .flashcard-fav-btn:hover {
   transform: scale(1.1);
-  background: rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.6);
   border-color: var(--secondary-color);
 }
 
 .flashcard-level {
-  position: absolute;
-  top: 15px;
-  left: 15px;
+  top: 20px;
+  left: 20px;
   background: var(--primary-color);
   color: black;
   font-weight: 800;
   padding: 8px 14px;
   border-radius: 12px;
-  z-index: 50;
   font-size: 1rem;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  pointer-events: none; /* Tıklamayı engelle, karta geçsin */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  pointer-events: none;
 }
 
 .flashcard {
@@ -369,7 +367,7 @@ button:disabled {
   max-width: 800px; /* Genişletildi */
 }
 
-.stats {
+.stats {  
   display: flex;
   justify-content: space-around;
   align-items: center;

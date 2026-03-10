@@ -155,32 +155,32 @@ const speakWord = (word) => {
 
   const Flashcard = ({ word, isFlipped, flipCard, showHint, setShowHint, showExample, setShowExample, feedback, feedbackMessage, favorites, toggleFavorite, speakWord }) => (
     <div className="flashcard-container">
-      <div className="flashcard-level">{word.level || "?"}</div>
-      
-      <button 
-        className="flashcard-speak-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          speakWord(word);
-        }}
-        title="Telaffuz"
-      >
-        🔊
-      </button>
-
-      <button 
-        className="flashcard-fav-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleFavorite(word);
-        }}
-      >
-        {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
-      </button>
-
       <div className={`flashcard ${isFlipped ? 'flipped' : ''}`} onClick={flipCard}>
         <div className="card-inner">
           <div className="card-front">
+            <div className="flashcard-level">{word.level || "?"}</div>
+            
+            <button 
+              className="flashcard-speak-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                speakWord(word);
+              }}
+              title="Telaffuz"
+            >
+              🔊
+            </button>
+
+            <button 
+              className="flashcard-fav-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFavorite(word);
+              }}
+            >
+              {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
+            </button>
+
             <h2>{word.term}</h2>
             <p className="hint-text">Kartı çevirmek için tıklayın</p>
           </div>
@@ -811,7 +811,7 @@ const ProfileView = () => {
             <span>Seri</span>
             <span>Puan</span>
           </div>
-          {leaders.filter(u => u && u.username).map((u, idx) => (
+          {leaders.filter(u => u && u.username && u.username.trim().length > 0 && u.stats).map((u, idx) => (
             <div 
               key={idx} 
               className={`lb-item ${user && user.username === u.username ? 'me' : ''}`}
@@ -944,19 +944,35 @@ useEffect(() => {
       }
     }
   }, []);
-useEffect(() => {
-  fetch('/api/words')
-    .then(res => res.json())
-    .then(data => {
-      const shuffled = [...data].sort(() => Math.random() - 0.5);
-      setWords(shuffled);
-      setLoadingWords(false);
-    })
-    .catch(err => {
-      console.error(err);
-      setLoadingWords(false);
-    });
-}, []);
+
+  useEffect(() => {
+    // 10 saniyelik zaman aşımı
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    fetch('/api/words', { signal: controller.signal })
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) {
+          const shuffled = [...data].sort(() => Math.random() - 0.5);
+          setWords(shuffled);
+        } else {
+          console.error("API'den beklenen veri gelmedi:", data);
+          setWords([]); // Boş array set et
+        }
+        setLoadingWords(false);
+      })
+      .catch(err => {
+        console.error("Kelime yükleme hatası:", err);
+        setLoadingWords(false); // Hata olsa bile loading'i kapat
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+      });
+  }, []);
   const practiceWords = useMemo(() => {
     let filtered = words;
     

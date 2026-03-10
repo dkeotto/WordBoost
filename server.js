@@ -65,13 +65,34 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", UserSchema);
 
-// PASSPORT GOOGLE STRATEGY
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
-// GÜNCELLEME: Varsayılan olarak canlı site adresini kullan, localhost değil.
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://ydtkelime.onrender.com';
+// DYNAMIC FRONTEND URL CONFIGURATION
+let FRONTEND_URL = process.env.FRONTEND_URL;
+let BACKEND_URL = process.env.BACKEND_URL;
+
+// Auto-detect Railway
+if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+  const railwayUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+  if (!BACKEND_URL) BACKEND_URL = railwayUrl;
+  if (!FRONTEND_URL) FRONTEND_URL = railwayUrl;
+  console.log("🚂 Railway Environment Detected");
+}
+
+// Auto-detect Render
+if (process.env.RENDER_EXTERNAL_URL) {
+  if (!BACKEND_URL) BACKEND_URL = process.env.RENDER_EXTERNAL_URL;
+  if (!FRONTEND_URL) FRONTEND_URL = process.env.RENDER_EXTERNAL_URL;
+  console.log("☁️ Render Environment Detected");
+}
+
+// Defaults
+if (!BACKEND_URL) BACKEND_URL = 'http://localhost:3000';
+if (!FRONTEND_URL) FRONTEND_URL = 'http://localhost:5173';
+
+console.log("🔹 Final Configuration:");
+console.log(`   - FRONTEND: ${FRONTEND_URL}`);
+console.log(`   - BACKEND: ${BACKEND_URL}`);
 
 console.log("🔹 Google Callback URL:", `${BACKEND_URL}/auth/google/callback`);
-console.log("🔹 Frontend Redirect URL:", FRONTEND_URL);
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "GOOGLE_CLIENT_ID_BURAYA",
@@ -223,10 +244,6 @@ async function startServer() {
     console.log("🍃 MongoDB connected");
 
     const PORT = process.env.PORT || 3000;
-    console.log("🔹 Environment Config:");
-    console.log(`   - FRONTEND_URL: ${FRONTEND_URL}`);
-    console.log(`   - BACKEND_URL: ${BACKEND_URL}`);
-    console.log(`   - PORT: ${PORT}`);
     
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
@@ -570,13 +587,21 @@ app.post('/api/rooms', async (req, res) => {
   }
 });
 
+app.get('/api/health', (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
+  res.json({ status: 'OK', db: dbStatus, timestamp: new Date() });
+});
+
 app.get('/api/words', async (req, res) => {
   try {
-    const words = await Word.find().sort({ term: 1 });
+    console.log("Fetching words...");
+    // 5 saniye zaman aşımı ekleyelim
+    const words = await Word.find().sort({ term: 1 }).maxTimeMS(5000); 
+    console.log(`Fetched ${words.length} words.`);
     res.json(words);
   } catch (err) {
-    console.error("WORD FETCH ERROR:", err); // LOG EKLE
-    res.status(500).json({ error: "Database error" });
+    console.error("WORD FETCH ERROR:", err); 
+    res.status(500).json({ error: "Database error: " + err.message });
   }
 });
 
