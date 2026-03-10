@@ -72,36 +72,7 @@ const generateOptions = (correctWord, allWords) => {
   return options.sort(() => Math.random() - 0.5);
 };
 
-function App() {
-
-  const [selectedLevel,setSelectedLevel] = useState("ALL")
-  const [practiceLevel, setPracticeLevel] = useState("ALL");
-
-  const loadFromStorage = (key, defaultValue) => {
-    try {
-      const saved = localStorage.getItem(`ydt_${key}`);
-      return saved ? JSON.parse(saved) : defaultValue;
-    } catch {
-      return defaultValue;
-    }
-  };
-const [user, setUser] = useState(null);
-
-const [favorites, setFavorites] = useState(() => {
-  const saved = localStorage.getItem("ydt_favorites");
-  return saved ? JSON.parse(saved) : [];
-  
-});
-
-const logout = () => {
-    setUser(null);
-    localStorage.removeItem("wb_user");
-    setShowLogoutConfirm(false);
-    setCurrentView('practice'); 
-    window.location.reload(); 
-  };
-
-  const AvatarBuilder = ({ initialSeed, setEditForm, handleFileChange, onClose }) => {
+const AvatarBuilder = ({ initialSeed, setEditForm, handleFileChange, onClose }) => {
   const [seed, setSeed] = useState(initialSeed);
   const [bg, setBg] = useState("b6e3f4");
   
@@ -173,6 +144,240 @@ const logout = () => {
     </div>
   );
 };
+
+const speakWord = (word) => {
+    const utterance = new SpeechSynthesisUtterance(word.term);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.8; 
+    window.speechSynthesis.cancel(); 
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const Flashcard = ({ word, isFlipped, flipCard, showHint, setShowHint, showExample, setShowExample, feedback, feedbackMessage, favorites, toggleFavorite, speakWord }) => (
+    <div className="flashcard-container">
+      <div className="flashcard-level">{word.level || "?"}</div>
+      
+      <button 
+        className="flashcard-speak-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          speakWord(word);
+        }}
+        title="Telaffuz"
+      >
+        🔊
+      </button>
+
+      <button 
+        className="flashcard-fav-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleFavorite(word);
+        }}
+      >
+        {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
+      </button>
+
+      <div className={`flashcard ${isFlipped ? 'flipped' : ''}`} onClick={flipCard}>
+        <div className="card-inner">
+          <div className="card-front">
+            <h2>{word.term}</h2>
+            <p className="hint-text">Kartı çevirmek için tıklayın</p>
+          </div>
+          <div className="card-back">
+            <h3>{word.meaning}</h3>
+          </div>
+        </div>
+      </div>
+      
+      <div className="extra-info-buttons">
+        <button 
+          className={`info-btn ${showHint ? 'active' : ''}`}
+          onClick={(e) => { e.stopPropagation(); setShowHint(!showHint); }}
+        >
+          💡 İpucu
+        </button>
+        <button 
+          className={`info-btn ${showExample ? 'active' : ''}`}
+          onClick={(e) => { e.stopPropagation(); setShowExample(!showExample); }}
+        >
+          📝 Örnek Kullanım
+        </button>
+      </div>
+      
+      {(showHint || showExample) && (
+        <div className="extra-info-display">
+          {showHint && (
+            <div className="info-section hint-section">
+              <strong>İpucu:</strong> {word.hint}
+            </div>
+          )}
+          {showExample && (
+            <div className="info-section example-section">
+              <strong>Örnek:</strong> {word.example}
+            </div>
+          )}
+        </div>
+      )}
+      
+      {feedback && (
+        <div
+          key={feedback.id}
+          className={`feedback ${feedback.type}`}
+        >
+          {feedbackMessage}
+        </div>
+      )}
+    </div>
+  );
+
+  const StatsPanel = ({ stats, resetStats, isInRoom, practiceLevel, setPracticeLevel }) => (
+    <div className="stats-container">
+      <div className="stats">
+        <div className="stat">
+          <span>Çalışılan</span>
+          <strong>{stats.studied}</strong>
+        </div>
+        <div className="stat known">
+          <span>Biliyorum</span>
+          <strong>{stats.known}</strong>
+        </div>
+        <div className="stat unknown">
+          <span>Bilmiyorum</span>
+          <strong>{stats.unknown}</strong>
+        </div>
+        <button className="reset-btn" onClick={resetStats}>Sıfırla</button>
+      </div>
+
+      {!isInRoom && (
+        <div className="level-selector-embedded">
+          <label>Çalışma Seviyesi:</label>
+          <select 
+            value={practiceLevel} 
+            onChange={(e) => setPracticeLevel(e.target.value)}
+          >
+            <option value="ALL">Tümü (Karma)</option>
+            <option value="A1-A2">A1 - A2</option>
+            <option value="B1-B2">B1 - B2</option>
+            <option value="B1-C2">B1 - C2</option>
+            <option value="C1-C2">C1 - C2</option>
+            <option disabled>──────────</option>
+            <option value="A1">Sadece A1</option>
+            <option value="A2">Sadece A2</option>
+            <option value="B1">Sadece B1</option>
+            <option value="B2">Sadece B2</option>
+            <option value="C1">Sadece C1</option>
+            <option value="C2">Sadece C2</option>
+          </select>
+        </div>
+      )}
+    </div>
+  );
+
+  const PracticeView = ({ 
+    isInRoom, stats, users, roomStats, username, 
+    currentWordIndex, practiceWords, currentWord, 
+    handleAnswer, buttonCooldown, prevWord, nextWord, 
+    resetStats, setPracticeLevel, practiceLevel,
+    isFlipped, flipCard, showHint, setShowHint, showExample, setShowExample, 
+    feedback, feedbackMessage, favorites, toggleFavorite, speakWord 
+  }) => (
+    <div className="practice">
+      <h2>{isInRoom ? '👥 Yarış Modu' : 'Tek Kişilik Kelime Çalışması'}</h2>
+      
+      <StatsPanel stats={stats} resetStats={resetStats} isInRoom={isInRoom} practiceLevel={practiceLevel} setPracticeLevel={setPracticeLevel} />
+      
+      {isInRoom && (
+        <div className="room-stats">
+          <h3>🏆 Canlı Skor ({users.length} oyuncu)</h3>
+          <div className="competitors">
+            {Object.entries(roomStats).length === 0 ? (
+              <p style={{color: 'rgba(255,255,255,0.5)'}}>Henüz skor yok...</p>
+            ) : (
+              Object.entries(roomStats)
+                .sort(([,a], [,b]) => (b.known || 0) - (a.known || 0))
+                .map(([name, userStats], index) => (
+                  <div key={name} className={`competitor ${name === username ? 'me' : ''}`}>
+                    <span className="rank">#{index + 1}</span>
+                    <span className="name">{name} {name === username ? '(Sen)' : ''}</span>
+                    <span className="score">✓ {userStats.known || 0}</span>
+                  </div>
+                ))
+            )}
+          </div>
+        </div>
+      )}
+      
+      <div className="progress">
+        Kelime {currentWordIndex + 1} / {practiceWords.length}
+      </div>
+
+      {practiceWords.length > 0 && currentWord && (
+        <Flashcard 
+          word={currentWord}
+          isFlipped={isFlipped}
+          flipCard={flipCard}
+          showHint={showHint}
+          setShowHint={setShowHint}
+          showExample={showExample}
+          setShowExample={setShowExample}
+          feedback={feedback}
+          feedbackMessage={feedbackMessage}
+          favorites={favorites}
+          toggleFavorite={toggleFavorite}
+          speakWord={speakWord}
+        />
+      )}
+      
+      {practiceWords.length === 0 && (
+        <div className="empty-state">
+          Bu seviyede kelime bulunamadı.
+        </div>
+      )}
+
+      <div className="controls">
+        <div className="answer-buttons">
+          <button className="btn-unknown" onClick={() => handleAnswer(false)} disabled={buttonCooldown}>✗ Bilmiyorum</button>
+          <button className="btn-known" onClick={() => handleAnswer(true)} disabled={buttonCooldown}>✓ Biliyorum</button>
+        </div>
+        <div className="nav-buttons">
+          <button className="btn-prev" onClick={prevWord} disabled={currentWordIndex === 0 || buttonCooldown}>← Önceki</button>
+          <button className="btn-next" onClick={nextWord} disabled={currentWordIndex === practiceWords.length - 1 || buttonCooldown}>Sonraki →</button>
+        </div>
+      </div>
+    </div>
+  );
+
+function App() {
+
+  const [selectedLevel,setSelectedLevel] = useState("ALL")
+  const [practiceLevel, setPracticeLevel] = useState("ALL");
+
+  const loadFromStorage = (key, defaultValue) => {
+    try {
+      const saved = localStorage.getItem(`ydt_${key}`);
+      return saved ? JSON.parse(saved) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  };
+const [user, setUser] = useState(null);
+
+const [favorites, setFavorites] = useState(() => {
+  const saved = localStorage.getItem("ydt_favorites");
+  return saved ? JSON.parse(saved) : [];
+  
+});
+
+const logout = () => {
+    setUser(null);
+    localStorage.removeItem("wb_user");
+    setShowLogoutConfirm(false);
+    setCurrentView('practice'); 
+    window.location.reload(); 
+  };
+
+
 
 const ProfileView = () => {
     // URL'den stili çıkar (varsa)
@@ -695,7 +900,7 @@ useEffect(() => {
       if (errorParam === 'auth_cancel') {
         alert("Giriş iptal edildi.");
       } else {
-        alert("Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin.");
+        alert("Giriş sırasında bir hata oluştu: " + errorParam + "\nLütfen tekrar deneyin.");
       }
       window.history.replaceState({}, document.title, "/");
       return;
@@ -1371,189 +1576,9 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     setCurrentView('practice');
   };
 
-  const speakWord = (word) => {
-    const utterance = new SpeechSynthesisUtterance(word.term);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.8; // Hızı biraz yavaşlat (Varsayılan 1)
-    window.speechSynthesis.cancel(); // Önceki okumayı durdur
-    window.speechSynthesis.speak(utterance);
-  };
 
-  const Flashcard = ({ word }) => (
-    <div className="flashcard-container">
-      {/* Favori ve Level Göstergeleri */}
-      <div className="flashcard-level">{word.level || "?"}</div>
-      
-      <button 
-        className="flashcard-speak-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          speakWord(word);
-        }}
-        title="Telaffuz"
-      >
-        🔊
-      </button>
 
-      <button 
-        className="flashcard-fav-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleFavorite(word);
-        }}
-      >
-        {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
-      </button>
 
-      <div className={`flashcard ${isFlipped ? 'flipped' : ''}`} onClick={flipCard}>
-        <div className="card-inner">
-          <div className="card-front">
-            <h2>{word.term}</h2>
-            <p className="hint-text">Kartı çevirmek için tıklayın</p>
-          </div>
-          <div className="card-back">
-            <h3>{word.meaning}</h3>
-          </div>
-        </div>
-      </div>
-      
-      <div className="extra-info-buttons">
-        <button 
-          className={`info-btn ${showHint ? 'active' : ''}`}
-          onClick={(e) => { e.stopPropagation(); setShowHint(!showHint); }}
-        >
-          💡 İpucu
-        </button>
-        <button 
-          className={`info-btn ${showExample ? 'active' : ''}`}
-          onClick={(e) => { e.stopPropagation(); setShowExample(!showExample); }}
-        >
-          📝 Örnek Kullanım
-        </button>
-      </div>
-      
-      {(showHint || showExample) && (
-        <div className="extra-info-display">
-          {showHint && (
-            <div className="info-section hint-section">
-              <strong>İpucu:</strong> {word.hint}
-            </div>
-          )}
-          {showExample && (
-            <div className="info-section example-section">
-              <strong>Örnek:</strong> {word.example}
-            </div>
-          )}
-        </div>
-      )}
-      
-      {feedback && (
-        <div
-          key={feedback.id}
-          className={`feedback ${feedback.type}`}
-        >
-          {feedbackMessage}
-        </div>
-      )}
-    </div>
-  );
-
-  const StatsPanel = () => (
-    <div className="stats-container">
-      <div className="stats">
-        <div className="stat">
-          <span>Çalışılan</span>
-          <strong>{stats.studied}</strong>
-        </div>
-        <div className="stat known">
-          <span>Biliyorum</span>
-          <strong>{stats.known}</strong>
-        </div>
-        <div className="stat unknown">
-          <span>Bilmiyorum</span>
-          <strong>{stats.unknown}</strong>
-        </div>
-        <button className="reset-btn" onClick={resetStats}>Sıfırla</button>
-      </div>
-
-      {!isInRoom && (
-        <div className="level-selector-embedded">
-          <label>Çalışma Seviyesi:</label>
-          <select 
-            value={practiceLevel} 
-            onChange={(e) => setPracticeLevel(e.target.value)}
-          >
-            <option value="ALL">Tümü (Karma)</option>
-            <option value="A1-A2">A1 - A2</option>
-            <option value="B1-B2">B1 - B2</option>
-            <option value="B1-C2">B1 - C2</option>
-            <option value="C1-C2">C1 - C2</option>
-            <option disabled>──────────</option>
-            <option value="A1">Sadece A1</option>
-            <option value="A2">Sadece A2</option>
-            <option value="B1">Sadece B1</option>
-            <option value="B2">Sadece B2</option>
-            <option value="C1">Sadece C1</option>
-            <option value="C2">Sadece C2</option>
-          </select>
-        </div>
-      )}
-    </div>
-  );
-
-  const PracticeView = () => (
-    <div className="practice">
-      <h2>{isInRoom ? '👥 Yarış Modu' : 'Tek Kişilik Kelime Çalışması'}</h2>
-      
-      <StatsPanel />
-      
-      {isInRoom && (
-        <div className="room-stats">
-          <h3>🏆 Canlı Skor ({users.length} oyuncu)</h3>
-          <div className="competitors">
-            {Object.entries(roomStats).length === 0 ? (
-              <p style={{color: 'rgba(255,255,255,0.5)'}}>Henüz skor yok...</p>
-            ) : (
-              Object.entries(roomStats)
-                .sort(([,a], [,b]) => (b.known || 0) - (a.known || 0))
-                .map(([name, userStats], index) => (
-                  <div key={name} className={`competitor ${name === username ? 'me' : ''}`}>
-                    <span className="rank">#{index + 1}</span>
-                    <span className="name">{name} {name === username ? '(Sen)' : ''}</span>
-                    <span className="score">✓ {userStats.known || 0}</span>
-                  </div>
-                ))
-            )}
-          </div>
-        </div>
-      )}
-      
-      <div className="progress">
-        Kelime {currentWordIndex + 1} / {practiceWords.length}
-      </div>
-
-      {practiceWords.length > 0 && currentWord && (
-        <Flashcard word={currentWord} />
-      )}
-      
-      {practiceWords.length === 0 && (
-        <div className="empty-state">
-          Bu seviyede kelime bulunamadı.
-        </div>
-      )}
-
-      <div className="controls">
-        <div className="answer-buttons">
-          <button className="btn-unknown" onClick={() => handleAnswer(false)} disabled={buttonCooldown}>✗ Bilmiyorum</button>
-          <button className="btn-known" onClick={() => handleAnswer(true)} disabled={buttonCooldown}>✓ Biliyorum</button>
-        </div>
-        <div className="nav-buttons">
-          <button className="btn-prev" onClick={prevWord} disabled={currentWordIndex === 0 || buttonCooldown}>← Önceki</button>
-          <button className="btn-next" onClick={nextWord} disabled={currentWordIndex === practiceWords.length - 1 || buttonCooldown}>Sonraki →</button>
-        </div>
-      </div>
-    </div>
-  );
 
   const MatchingGameView = () => (
     <div className="matching-game">
@@ -1921,7 +1946,36 @@ if (loadingWords) {
     </header>
 
     <main>
-      {!testMode && currentView === 'practice' && <PracticeView />}
+      {!testMode && currentView === 'practice' && (
+        <PracticeView 
+          isInRoom={isInRoom}
+          stats={stats}
+          users={users}
+          roomStats={roomStats}
+          username={username}
+          currentWordIndex={currentWordIndex}
+          practiceWords={practiceWords}
+          currentWord={currentWord}
+          handleAnswer={handleAnswer}
+          buttonCooldown={buttonCooldown}
+          prevWord={prevWord}
+          nextWord={nextWord}
+          resetStats={resetStats}
+          setPracticeLevel={setPracticeLevel}
+          practiceLevel={practiceLevel}
+          isFlipped={isFlipped}
+          flipCard={flipCard}
+          showHint={showHint}
+          setShowHint={setShowHint}
+          showExample={showExample}
+          setShowExample={setShowExample}
+          feedback={feedback}
+          feedbackMessage={feedbackMessage}
+          favorites={favorites}
+          toggleFavorite={toggleFavorite}
+          speakWord={speakWord}
+        />
+      )}
       {!testMode && currentView === 'test-setup' && <TestSetupView />}
       {testMode && !testFinished && <TestView />}
       {testMode && testFinished && <TestResultsView />}

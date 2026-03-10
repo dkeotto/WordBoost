@@ -220,6 +220,11 @@ async function startServer() {
     console.log("🍃 MongoDB connected");
 
     const PORT = process.env.PORT || 3000;
+    console.log("🔹 Environment Config:");
+    console.log(`   - FRONTEND_URL: ${FRONTEND_URL}`);
+    console.log(`   - BACKEND_URL: ${BACKEND_URL}`);
+    console.log(`   - PORT: ${PORT}`);
+    
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
