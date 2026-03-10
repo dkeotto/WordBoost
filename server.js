@@ -76,8 +76,8 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model("User", UserSchema);
 
 // DYNAMIC FRONTEND URL CONFIGURATION
-let FRONTEND_URL = process.env.FRONTEND_URL;
-let BACKEND_URL = process.env.BACKEND_URL;
+let FRONTEND_URL = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : '';
+let BACKEND_URL = process.env.BACKEND_URL ? process.env.BACKEND_URL.replace(/\/$/, '') : '';
 
 // Auto-detect Railway
 if (process.env.RAILWAY_PUBLIC_DOMAIN) {
@@ -89,8 +89,9 @@ if (process.env.RAILWAY_PUBLIC_DOMAIN) {
 
 // Auto-detect Render
 if (process.env.RENDER_EXTERNAL_URL) {
-  if (!BACKEND_URL) BACKEND_URL = process.env.RENDER_EXTERNAL_URL;
-  if (!FRONTEND_URL) FRONTEND_URL = process.env.RENDER_EXTERNAL_URL;
+  const renderUrl = process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '');
+  if (!BACKEND_URL) BACKEND_URL = renderUrl;
+  if (!FRONTEND_URL) FRONTEND_URL = renderUrl;
   console.log("☁️ Render Environment Detected");
 }
 
@@ -182,6 +183,7 @@ app.get('/auth/google',
 );
 
 app.get('/auth/google/callback', (req, res, next) => {
+  console.log("🔹 Google Callback Hit:", req.url);
   passport.authenticate('google', (err, user, info) => {
     if (err) {
       console.error("Google Auth Error:", err);
@@ -329,30 +331,48 @@ function generateRoomCode() {
 
 // NODEMAILER CONFIG
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER || 'wordboost.team@gmail.com',
     pass: process.env.EMAIL_PASS || 'dtnc rugo nzan owfo'
   },
-  debug: true, // Show debug output
-  logger: true // Log information to console
+  tls: {
+    rejectUnauthorized: false
+  },
+  debug: true,
+  logger: true
 });
 
 // Helper to send mail
 async function sendVerificationEmail(email, username, code) {
+  console.log(`📧 Attempting to send email to ${email}...`);
   try {
     const sender = process.env.EMAIL_USER || 'wordboost.team@gmail.com';
     const info = await transporter.sendMail({
-      from: `"WordBoost" <${sender}>`, // Sender address must match auth user
+      from: `"WordBoost" <${sender}>`, 
       to: email,
       subject: 'WordBoost Doğrulama Kodu',
       text: `Merhaba ${username},\n\nHesabını doğrulamak için kodun: ${code}\n\nİyi çalışmalar!`,
-      html: `<h3>Merhaba ${username},</h3><p>Hesabını doğrulamak için kodun:</p><h2>${code}</h2><p>İyi çalışmalar!</p>`
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+          <h2 style="color: #FF9F1C;">WordBoost Doğrulama</h2>
+          <p>Merhaba <strong>${username}</strong>,</p>
+          <p>Hesabını doğrulamak için aşağıdaki kodu kullanabilirsin:</p>
+          <div style="background: #f4f4f4; padding: 15px; border-radius: 10px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 5px; color: #333;">
+            ${code}
+          </div>
+          <p>Bu kod 1 saat süreyle geçerlidir.</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="font-size: 12px; color: #999;">Eğer bu işlemi sen yapmadıysan, bu maili görmezden gelebilirsin.</p>
+        </div>
+      `
     });
-    console.log("Message sent: %s", info.messageId);
+    console.log("✅ Mail sent successfully: %s", info.messageId);
     return true;
   } catch (error) {
-    console.error("Mail sending failed:", error);
+    console.error("❌ Mail sending failed:", error);
     return false;
   }
 }
@@ -423,7 +443,7 @@ app.post('/api/register', async (req, res) => {
     });
 
     // Mail Gönderme
-    sendVerificationEmail(email, username, verificationCode);
+    await sendVerificationEmail(email, username, verificationCode);
 
     res.json({
       success: true,
