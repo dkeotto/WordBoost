@@ -112,7 +112,7 @@ const Navbar = ({
             {user ? (
               <div className="user-controls">
                 <button className="nav-link profile-btn" onClick={() => handleNavClick('profile')}>
-                  {user.avatar && user.avatar.startsWith('http') ? (
+                  {user.avatar && (user.avatar.startsWith('http') || user.avatar.startsWith('data:')) ? (
                     <img src={user.avatar} className="nav-avatar-img" alt="avatar" />
                   ) : (
                     user.avatar || '👤'

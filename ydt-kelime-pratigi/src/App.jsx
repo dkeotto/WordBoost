@@ -657,7 +657,7 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
             </div>
           )}
 
-          {leaders.filter(u => u && u.username && u.username.trim().length > 0 && u.stats).map((u, idx) => (
+          {leaders.filter(u => u && u.username && u.username.trim().length > 0 && u.stats && typeof u.streak === 'number').map((u, idx) => (
             <div 
               key={u._id || idx} 
               className={`lb-item ${user && user.username === u.username ? 'me' : ''}`}
@@ -667,7 +667,7 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
               <span className="rank">{idx + 1}</span>
               <div className="user-col">
                 <span className="avatar">
-                  {u.avatar && u.avatar.startsWith('http') ? (
+                  {u.avatar && (u.avatar.startsWith('http') || u.avatar.startsWith('data:')) ? (
                     <img src={u.avatar} alt="av" className="lb-avatar-img" />
                   ) : (
                     <div className="lb-avatar-img" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#333', color: '#fff'}}>

@@ -21,8 +21,8 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production' || !!process.env.RENDER_EXTERNAL_URL, 
-    sameSite: (process.env.NODE_ENV === 'production' || !!process.env.RENDER_EXTERNAL_URL) ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production' || !!process.env.RENDER_EXTERNAL_URL || !!process.env.RAILWAY_PUBLIC_DOMAIN, 
+    sameSite: (process.env.NODE_ENV === 'production' || !!process.env.RENDER_EXTERNAL_URL || !!process.env.RAILWAY_PUBLIC_DOMAIN) ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 saat
   }
 }));
@@ -249,6 +249,23 @@ async function startServer() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("🍃 MongoDB connected");
+
+    // CLEANUP GHOST USERS
+    try {
+      const deleted = await User.deleteMany({
+        $or: [
+          { username: { $exists: false } },
+          { username: null },
+          { username: "" },
+          { "username": { $type: "string", $regex: /^\s*$/ } } // sadece boşluk içerenler
+        ]
+      });
+      if (deleted.deletedCount > 0) {
+        console.log(`🧹 Cleaned up ${deleted.deletedCount} ghost users`);
+      }
+    } catch (e) {
+      console.error("Cleanup error:", e);
+    }
 
     const PORT = process.env.PORT || 3000;
     

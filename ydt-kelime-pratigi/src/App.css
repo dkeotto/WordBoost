@@ -1045,17 +1045,27 @@ button:disabled {
   font-size: 0.9rem;
   /* Mobilde grid yapısını güncelle */
   grid-template-columns: 30px 1fr 50px 50px !important;
+  display: grid !important; /* Grid yapısını zorla */
 }
 
 .lb-header {
   grid-template-columns: 30px 1fr 50px 50px !important;
+  display: grid !important; /* Grid yapısını zorla */
 }
 
 /* Mobilde Streak ve Score GÖZÜKSÜN */
-.lb-header span:nth-child(3), .lb-item span:nth-child(3),
-.lb-header span:nth-child(4), .lb-item span:nth-child(4) { 
-  display: block !important; 
-} 
+.lb-header span, .lb-item span, .lb-item .streak, .lb-item .score {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
 
 .nick {
   max-width: 80px; /* İsim taşmasını engelle */
