@@ -9,7 +9,7 @@ const path = require('path');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
-
+const nodemailer = require('nodemailer');
 
 const app = express();
 app.set('trust proxy', 1); // Proxy arkasında (Render/Railway) çalıştığı için gerekli
@@ -50,6 +50,10 @@ const jwt = require('jsonwebtoken');
 const UserSchema = new mongoose.Schema({
   googleId: String,
   username: { type: String, unique: true },
+  email: { type: String, unique: true, sparse: true },
+  isVerified: { type: Boolean, default: false }, // Mail doğrulama durumu
+  verificationCode: String, // Doğrulama kodu
+  verificationCodeExpires: Date, // Kod geçerlilik süresi
   password: String,
   nickname: String,
   bio: { type: String, default: "" },
@@ -110,20 +114,29 @@ passport.use(new GoogleStrategy({
   async (req, accessToken, refreshToken, profile, done) => {
     try {
       console.log("🔹 Google Profile:", profile.displayName, profile.id);
-      // Önce Google ID ile ara
+      
+      // 1. Önce Google ID ile ara
       let user = await User.findOne({ googleId: profile.id });
+      if (user) return done(null, user);
 
-      if (user) {
-        return done(null, user);
+      // 2. Email ile ara (Hesap eşleştirme)
+      const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
+      if (email) {
+        user = await User.findOne({ email });
+        if (user) {
+          // Mevcut hesaba Google ID ekle
+          user.googleId = profile.id;
+          // Eğer avatar yoksa Google avatarını ekle
+          if (!user.avatar || user.avatar === '👤') {
+             user.avatar = profile.photos && profile.photos[0] ? profile.photos[0].value : user.avatar;
+          }
+          await user.save();
+          return done(null, user);
+        }
       }
 
-      // Yoksa email/username ile ara (çakışma kontrolü)
-      // Google'dan gelen email'i username olarak kullanabiliriz veya display name
-      // Ancak basitlik için unique bir username oluşturalım
-      const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
+      // 3. Yeni Kullanıcı Oluştur
       const baseUsername = email ? email.split('@')[0] : profile.displayName.replace(/\s+/g, '').toLowerCase();
-      
-      // Username çakışması varsa sonuna sayı ekle
       let finalUsername = baseUsername;
       let counter = 1;
       while (await User.findOne({ username: finalUsername })) {
@@ -134,6 +147,8 @@ passport.use(new GoogleStrategy({
       user = await User.create({
         googleId: profile.id,
         username: finalUsername,
+        email: email, // Email kaydet
+        isVerified: true, // Google ile gelenler otomatik onaylı
         nickname: profile.displayName,
         avatar: profile.photos && profile.photos[0] ? profile.photos[0].value : `https://api.dicebear.com/7.x/adventurer/svg?seed=${finalUsername}&backgroundColor=b6e3f4,c0aede,d1d4f9`,
         badges: [BADGES.NEWBIE.id],
@@ -307,29 +322,103 @@ function generateRoomCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// NODEMAILER CONFIG
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER || 'wordboost.team@gmail.com',
+    pass: process.env.EMAIL_PASS || 'dtnc rugo nzan owfo'
+  }
+});
+
 // API Routes
 app.post('/api/register', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, email, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ error: "Username ve password gerekli" });
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: "Username, email ve password gerekli" });
     }
 
-    const existing = await User.findOne({ username });
+    // Email format kontrolü
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Geçersiz email formatı" });
+    }
+
+    const existing = await User.findOne({ 
+      $or: [
+        { username }, 
+        { email }
+      ] 
+    });
 
     if (existing) {
+      if (existing.email === email) return res.status(400).json({ error: "Email zaten kullanılıyor" });
       return res.status(400).json({ error: "Username zaten kullanılıyor" });
     }
 
     const hashed = await bcrypt.hash(password, 10);
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     const user = await User.create({
       username,
+      email,
       password: hashed,
-      nickname: username, // Varsayılan olarak username
-      badges: [BADGES.NEWBIE.id]
+      nickname: username,
+      badges: [BADGES.NEWBIE.id],
+      isVerified: false,
+      verificationCode,
+      verificationCodeExpires: Date.now() + 3600000 // 1 saat geçerli
     });
+
+    // Mail Gönderme
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      try {
+        await transporter.sendMail({
+          from: '"WordBoost 🦊" <wordboost.app@gmail.com>',
+          to: email,
+          subject: 'WordBoost Doğrulama Kodu',
+          text: `Merhaba ${username},\n\nHesabını doğrulamak için kodun: ${verificationCode}\n\nİyi çalışmalar!`,
+          html: `<h3>Merhaba ${username},</h3><p>Hesabını doğrulamak için kodun:</p><h2>${verificationCode}</h2><p>İyi çalışmalar!</p>`
+        });
+      } catch (mailError) {
+        console.error("Mail gönderme hatası:", mailError);
+        // Mail hatası olsa bile kullanıcı oluşturuldu, manuel doğrulama gerekebilir
+      }
+    } else {
+      console.log(`[DEV MODE] Verification Code for ${email}: ${verificationCode}`);
+    }
+
+    res.json({
+      success: true,
+      requireVerification: true,
+      email: email,
+      message: "Doğrulama kodu gönderildi"
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Register error" });
+  }
+});
+
+app.post('/api/verify-email', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) return res.status(400).json({ error: "Kullanıcı bulunamadı" });
+    if (user.isVerified) return res.status(400).json({ error: "Hesap zaten doğrulanmış" });
+
+    if (user.verificationCode !== code || user.verificationCodeExpires < Date.now()) {
+      return res.status(400).json({ error: "Geçersiz veya süresi dolmuş kod" });
+    }
+
+    user.isVerified = true;
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+    await user.save();
 
     const token = jwt.sign(
       { id: user._id, username: user.username },
@@ -353,24 +442,43 @@ app.post('/api/register', async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Register error" });
+    res.status(500).json({ error: "Verification error" });
   }
 });
+
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    const user = await User.findOne({ username });
+    // Email veya Username ile giriş
+    const user = await User.findOne({
+      $or: [
+        { username: username },
+        { email: username }
+      ]
+    });
 
     if (!user) {
       return res.status(400).json({ error: "Kullanıcı bulunamadı" });
     }
 
+    // Şifre kontrolü
     const valid = await bcrypt.compare(password, user.password);
-
     if (!valid) {
       return res.status(400).json({ error: "Şifre yanlış" });
     }
+
+    // Doğrulama kontrolü (Opsiyonel: Eğer zorunluysa burayı aç)
+    /*
+    if (!user.isVerified) {
+      return res.json({ 
+        success: false, 
+        requireVerification: true, 
+        email: user.email,
+        error: "Lütfen önce mail adresinizi doğrulayın" 
+      });
+    }
+    */
 
     const token = jwt.sign(
       { id: user._id, username: user.username },

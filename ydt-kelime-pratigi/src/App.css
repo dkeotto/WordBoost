@@ -2253,4 +2253,60 @@ button:disabled {
   max-width: 600px;
 }
 
+/* Login Modal Extended Styles */
+.login-tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab-btn {
+  flex: 1;
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 10px;
+  font-size: 1rem;
+  box-shadow: none;
+}
+
+.tab-btn:hover {
+  color: white;
+  transform: none;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.remember-me input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.primary-btn {
+  background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+  color: black;
+  font-weight: bold;
+}
+
 /* Removed .profile-avatar-container.editing expansion */
