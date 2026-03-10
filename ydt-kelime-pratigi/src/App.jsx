@@ -9,6 +9,21 @@ import "./App.css";
 
 
 const SOCKET_URL = window.location.origin;
+
+// BADGE CONSTANTS (Backend ile aynı olmalı)
+const BADGES = {
+  newbie: { id: 'newbie', icon: '🐣', name: 'Yeni Başlayan', desc: 'Aramıza hoş geldin!' },
+  streak_3: { id: 'streak_3', icon: '🔥', name: '3 Günlük Seri', desc: '3 gün üst üste çalıştın!' },
+  streak_7: { id: 'streak_7', icon: '⚡', name: 'Haftalık Seri', desc: '7 gün üst üste çalıştın!' },
+  streak_30: { id: 'streak_30', icon: '🚀', name: 'Aylık Seri', desc: '30 gün üst üste çalıştın! İnanılmaz!' },
+  known_100: { id: 'known_100', icon: '🧠', name: 'Kelime Avcısı', desc: '100 kelime öğrendin!' },
+  known_500: { id: 'known_500', icon: '🎓', name: 'Kelime Ustası', desc: '500 kelime öğrendin!' },
+  known_1000: { id: 'known_1000', icon: '👑', name: 'Kelime Kralı', desc: '1000 kelime öğrendin!' },
+  night_owl: { id: 'night_owl', icon: '🦉', name: 'Gece Kuşu', desc: 'Gece 00:00 - 05:00 arası çalıştın.' },
+  early_bird: { id: 'early_bird', icon: '🌅', name: 'Erkenci Kuş', desc: 'Sabah 05:00 - 09:00 arası çalıştın.' },
+  weekend_warrior: { id: 'weekend_warrior', icon: '🎉', name: 'Hafta Sonu Savaşçısı', desc: 'Hafta sonu çalışmayı ihmal etmedin.' }
+};
+
 const socket = io(SOCKET_URL, {
   transports: ['websocket', 'polling'],
   timeout: 10000,
@@ -293,8 +308,10 @@ const ProfileView = ({ user, setUser, logout, setCurrentView }) => {
 
     const [showAvatarBuilder, setShowAvatarBuilder] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [selectedBadge, setSelectedBadge] = useState(null); // Rozet detayı için
     const [editForm, setEditForm] = useState({
       nickname: user.nickname || user.username,
+      username: user.username, // Username eklendi
       bio: user.bio || "",
       avatar: user.avatar || "👤",
       avatarStyle: getStyleFromUrl(user.avatar) 
@@ -335,6 +352,7 @@ const ProfileView = ({ user, setUser, logout, setCurrentView }) => {
         },
         body: JSON.stringify({
           nickname: editForm.nickname,
+          username: editForm.username, // Username gönder
           bio: editForm.bio,
           avatar: editForm.avatar
         })
@@ -429,20 +447,33 @@ const ProfileView = ({ user, setUser, logout, setCurrentView }) => {
           <div className="profile-info">
             <div className="profile-header-top">
               {isEditing ? (
-                <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
-                   <label style={{fontSize: '0.8rem', color: '#888'}}>Takma Ad</label>
-                   <input 
-                    value={editForm.nickname} 
-                    onChange={e => setEditForm({...editForm, nickname: e.target.value})}
-                    placeholder="Takma Ad"
-                    style={{maxWidth: '200px'}}
-                  />
+                <div style={{display: 'flex', flexDirection: 'column', gap: '10px', width: '100%'}}>
+                   <div style={{display:'flex', gap:'10px', flexWrap:'wrap'}}>
+                     <div style={{flex:1}}>
+                       <label style={{fontSize: '0.8rem', color: '#888'}}>Takma Ad</label>
+                       <input 
+                        value={editForm.nickname} 
+                        onChange={e => setEditForm({...editForm, nickname: e.target.value})}
+                        placeholder="Takma Ad"
+                        style={{width: '100%'}}
+                      />
+                     </div>
+                     <div style={{flex:1}}>
+                       <label style={{fontSize: '0.8rem', color: '#888'}}>Kullanıcı Adı (@)</label>
+                       <input 
+                        value={editForm.username} 
+                        onChange={e => setEditForm({...editForm, username: e.target.value})}
+                        placeholder="Kullanıcı Adı"
+                        style={{width: '100%'}}
+                      />
+                     </div>
+                   </div>
                 </div>
               ) : (
                 <h2>{user.nickname} <span className="username">(@{user.username})</span></h2>
               )}
 
-              <div style={{display: 'flex', alignItems: 'center'}}>
+              <div style={{display: 'flex', alignItems: 'center', marginLeft: 'auto'}}>
                 {isEditing && (
                   <button className="delete-btn" onClick={handleDeleteAccount} title="Hesabı Sil">
                     🗑️
@@ -492,22 +523,42 @@ const ProfileView = ({ user, setUser, logout, setCurrentView }) => {
           <h3>🏅 Rozetlerim</h3>
           <div className="badges-grid">
             {user.badges && user.badges.length > 0 ? (
-              user.badges.map(badgeId => (
-                <div key={badgeId} className="badge-item">
-                  <div className="badge-icon">🏆</div>
-                  <span>{badgeId}</span>
-                </div>
-              ))
+              user.badges.map(badgeId => {
+                const badgeInfo = BADGES[badgeId] || { icon: '🏆', name: badgeId, desc: '' };
+                return (
+                  <div 
+                    key={badgeId} 
+                    className="badge-item clickable"
+                    onClick={() => setSelectedBadge(badgeInfo)}
+                  >
+                    <div className="badge-icon">{badgeInfo.icon}</div>
+                    <span>{badgeInfo.name}</span>
+                  </div>
+                );
+              })
             ) : (
               <p className="no-badges">Henüz rozet kazanmadın. Çalışmaya başla!</p>
             )}
           </div>
         </div>
+
+        {selectedBadge && (
+          <div className="badge-modal-overlay" onClick={() => setSelectedBadge(null)}>
+            <div className="badge-modal" onClick={e => e.stopPropagation()}>
+              <div className="badge-modal-icon">{selectedBadge.icon}</div>
+              <h3>{selectedBadge.name}</h3>
+              <p>{selectedBadge.desc}</p>
+              <button onClick={() => setSelectedBadge(null)}>Kapat</button>
+            </div>
+          </div>
+        )}
       </div>
     );
 };
 
 const PublicProfileView = ({ selectedUser, setCurrentView }) => {
+    const [selectedBadge, setSelectedBadge] = useState(null);
+
     if (!selectedUser) return <div className="loading">Kullanıcı bulunamadı</div>;
 
     return (
@@ -553,17 +604,35 @@ const PublicProfileView = ({ selectedUser, setCurrentView }) => {
           <h3>🏅 Rozetler</h3>
           <div className="badges-grid">
             {selectedUser.badges && selectedUser.badges.length > 0 ? (
-              selectedUser.badges.map(badgeId => (
-                <div key={badgeId} className="badge-item">
-                  <div className="badge-icon">🏆</div>
-                  <span>{badgeId}</span>
-                </div>
-              ))
+              selectedUser.badges.map(badgeId => {
+                const badgeInfo = BADGES[badgeId] || { icon: '🏆', name: badgeId, desc: '' };
+                return (
+                  <div 
+                    key={badgeId} 
+                    className="badge-item clickable"
+                    onClick={() => setSelectedBadge(badgeInfo)}
+                  >
+                    <div className="badge-icon">{badgeInfo.icon}</div>
+                    <span>{badgeInfo.name}</span>
+                  </div>
+                );
+              })
             ) : (
               <p className="no-badges">Henüz rozet kazanmamış.</p>
             )}
           </div>
         </div>
+
+        {selectedBadge && (
+          <div className="badge-modal-overlay" onClick={() => setSelectedBadge(null)}>
+            <div className="badge-modal" onClick={e => e.stopPropagation()}>
+              <div className="badge-modal-icon">{selectedBadge.icon}</div>
+              <h3>{selectedBadge.name}</h3>
+              <p>{selectedBadge.desc}</p>
+              <button onClick={() => setSelectedBadge(null)}>Kapat</button>
+            </div>
+          </div>
+        )}
       </div>
     );
 };

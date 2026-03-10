@@ -236,9 +236,13 @@ const BADGES = {
   NEWBIE: { id: 'newbie', icon: '🐣', name: 'Yeni Başlayan', desc: 'Aramıza hoş geldin!' },
   STREAK_3: { id: 'streak_3', icon: '🔥', name: '3 Günlük Seri', desc: '3 gün üst üste çalıştın!' },
   STREAK_7: { id: 'streak_7', icon: '⚡', name: 'Haftalık Seri', desc: '7 gün üst üste çalıştın!' },
+  STREAK_30: { id: 'streak_30', icon: '🚀', name: 'Aylık Seri', desc: '30 gün üst üste çalıştın! İnanılmaz!' },
   KNOWN_100: { id: 'known_100', icon: '🧠', name: 'Kelime Avcısı', desc: '100 kelime öğrendin!' },
   KNOWN_500: { id: 'known_500', icon: '🎓', name: 'Kelime Ustası', desc: '500 kelime öğrendin!' },
-  KNOWN_1000: { id: 'known_1000', icon: '👑', name: 'Kelime Kralı', desc: '1000 kelime öğrendin!' }
+  KNOWN_1000: { id: 'known_1000', icon: '👑', name: 'Kelime Kralı', desc: '1000 kelime öğrendin!' },
+  NIGHT_OWL: { id: 'night_owl', icon: '🦉', name: 'Gece Kuşu', desc: 'Gece 00:00 - 05:00 arası çalıştın.' },
+  EARLY_BIRD: { id: 'early_bird', icon: '🌅', name: 'Erkenci Kuş', desc: 'Sabah 05:00 - 09:00 arası çalıştın.' },
+  WEEKEND_WARRIOR: { id: 'weekend_warrior', icon: '🎉', name: 'Hafta Sonu Savaşçısı', desc: 'Hafta sonu çalışmayı ihmal etmedin.' }
 };
 
 const RoomSchema = new mongoose.Schema({
@@ -265,18 +269,19 @@ async function startServer() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("🍃 MongoDB connected");
 
-    // CLEANUP GHOST USERS
+    // CLEANUP GHOST USERS & UNVERIFIED USERS
     try {
       const deleted = await User.deleteMany({
         $or: [
           { username: { $exists: false } },
           { username: null },
           { username: "" },
-          { "username": { $type: "string", $regex: /^\s*$/ } } // sadece boşluk içerenler
+          { "username": { $type: "string", $regex: /^\s*$/ } }, // sadece boşluk içerenler
+          { isVerified: false } // Doğrulanmamış hesapları sil
         ]
       });
       if (deleted.deletedCount > 0) {
-        console.log(`🧹 Cleaned up ${deleted.deletedCount} ghost users`);
+        console.log(`🧹 Cleaned up ${deleted.deletedCount} ghost/unverified users`);
       }
     } catch (e) {
       console.error("Cleanup error:", e);
@@ -328,8 +333,29 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.EMAIL_USER || 'wordboost.team@gmail.com',
     pass: process.env.EMAIL_PASS || 'dtnc rugo nzan owfo'
-  }
+  },
+  debug: true, // Show debug output
+  logger: true // Log information to console
 });
+
+// Helper to send mail
+async function sendVerificationEmail(email, username, code) {
+  try {
+    const sender = process.env.EMAIL_USER || 'wordboost.team@gmail.com';
+    const info = await transporter.sendMail({
+      from: `"WordBoost" <${sender}>`, // Sender address must match auth user
+      to: email,
+      subject: 'WordBoost Doğrulama Kodu',
+      text: `Merhaba ${username},\n\nHesabını doğrulamak için kodun: ${code}\n\nİyi çalışmalar!`,
+      html: `<h3>Merhaba ${username},</h3><p>Hesabını doğrulamak için kodun:</p><h2>${code}</h2><p>İyi çalışmalar!</p>`
+    });
+    console.log("Message sent: %s", info.messageId);
+    return true;
+  } catch (error) {
+    console.error("Mail sending failed:", error);
+    return false;
+  }
+}
 
 // API Routes
 app.post('/api/register', async (req, res) => {
@@ -346,22 +372,46 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: "Geçersiz email formatı" });
     }
 
-    const existing = await User.findOne({ 
+    let user = await User.findOne({ 
       $or: [
         { username }, 
         { email }
       ] 
     });
 
-    if (existing) {
-      if (existing.email === email) return res.status(400).json({ error: "Email zaten kullanılıyor" });
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashed = await bcrypt.hash(password, 10);
+
+    if (user) {
+      // Eğer kullanıcı var ama doğrulanmamışsa, kaydı güncelle ve tekrar mail at
+      if (!user.isVerified) {
+        // HESAP KURTARMA / ÜZERİNE YAZMA (Unverified accounts only)
+        // Eğer kullanıcı adı veya email eşleşiyorsa ve hesap doğrulanmamışsa,
+        // yeni gelen kişi bu hesabı devralabilir (email ve şifresini güncelleyerek).
+        
+        user.username = username;
+        user.email = email;
+        user.password = hashed;
+        user.verificationCode = verificationCode;
+        user.verificationCodeExpires = Date.now() + 3600000;
+        await user.save();
+           
+        // Mail Gönder
+        sendVerificationEmail(email, username, verificationCode);
+
+        return res.json({
+          success: true,
+          requireVerification: true,
+          email: email,
+          message: "Doğrulama kodu tekrar gönderildi"
+        });
+      }
+
+      if (user.email === email) return res.status(400).json({ error: "Email zaten kullanılıyor" });
       return res.status(400).json({ error: "Username zaten kullanılıyor" });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-    const user = await User.create({
+    user = await User.create({
       username,
       email,
       password: hashed,
@@ -373,22 +423,7 @@ app.post('/api/register', async (req, res) => {
     });
 
     // Mail Gönderme
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      try {
-        await transporter.sendMail({
-          from: '"WordBoost 🦊" <wordboost.app@gmail.com>',
-          to: email,
-          subject: 'WordBoost Doğrulama Kodu',
-          text: `Merhaba ${username},\n\nHesabını doğrulamak için kodun: ${verificationCode}\n\nİyi çalışmalar!`,
-          html: `<h3>Merhaba ${username},</h3><p>Hesabını doğrulamak için kodun:</p><h2>${verificationCode}</h2><p>İyi çalışmalar!</p>`
-        });
-      } catch (mailError) {
-        console.error("Mail gönderme hatası:", mailError);
-        // Mail hatası olsa bile kullanıcı oluşturuldu, manuel doğrulama gerekebilir
-      }
-    } else {
-      console.log(`[DEV MODE] Verification Code for ${email}: ${verificationCode}`);
-    }
+    sendVerificationEmail(email, username, verificationCode);
 
     res.json({
       success: true,
@@ -400,6 +435,65 @@ app.post('/api/register', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Register error" });
+  }
+});
+
+// FORGOT PASSWORD
+app.post('/api/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // Güvenlik: Kullanıcı yoksa bile "gönderildi" de (User enumeration prevention)
+      // Ama user experience için şimdilik hata dönelim
+      return res.status(404).json({ error: "Bu email ile kayıtlı kullanıcı bulunamadı" });
+    }
+
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    user.verificationCode = resetCode; // Reuse verification code field
+    user.verificationCodeExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    const sender = process.env.EMAIL_USER || 'wordboost.team@gmail.com';
+    await transporter.sendMail({
+      from: `"WordBoost" <${sender}>`,
+      to: email,
+      subject: 'Şifre Sıfırlama Kodu',
+      text: `Şifreni sıfırlamak için kodun: ${resetCode}`,
+      html: `<h3>Şifre Sıfırlama</h3><p>Kodun:</p><h2>${resetCode}</h2>`
+    });
+
+    res.json({ success: true, message: "Sıfırlama kodu gönderildi" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error sending email" });
+  }
+});
+
+app.post('/api/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    
+    if (user.verificationCode !== code || user.verificationCodeExpires < Date.now()) {
+      return res.status(400).json({ error: "Geçersiz veya süresi dolmuş kod" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    user.password = hashed;
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+    await user.save();
+
+    res.json({ success: true, message: "Şifre başarıyla güncellendi" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Reset error" });
   }
 });
 
@@ -539,10 +633,24 @@ app.post('/api/profile/update', async (req, res) => {
     if (!token) return res.status(401).json({ error: "Token gerekli" });
 
     const decoded = jwt.verify(token, "SECRET_KEY");
-    const { nickname, bio, avatar } = req.body;
+    const { nickname, bio, avatar, username } = req.body;
 
     const user = await User.findById(decoded.id);
     if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+    // Username değişimi ve unique kontrolü
+    if (username && username !== user.username) {
+      // Format kontrolü (boşluk olmamalı, min 3 karakter)
+      if (username.length < 3 || /\s/.test(username)) {
+        return res.status(400).json({ error: "Kullanıcı adı en az 3 karakter olmalı ve boşluk içermemelidir." });
+      }
+
+      const existing = await User.findOne({ username });
+      if (existing) {
+        return res.status(400).json({ error: "Bu kullanıcı adı zaten alınmış." });
+      }
+      user.username = username;
+    }
 
     if (nickname) user.nickname = nickname;
     if (bio !== undefined) user.bio = bio;
@@ -604,7 +712,8 @@ app.get('/api/leaderboard', async (req, res) => {
     // STREAK'e göre sırala (Önce en yüksek seri, sonra en çok bilinen kelime)
     const users = await User.find({
       username: { $exists: true, $ne: "" },
-      "stats.known": { $exists: true }
+      "stats.known": { $exists: true },
+      isVerified: true // Sadece doğrulanmış kullanıcılar
     })
       .sort({ "streak": -1, "stats.known": -1 }) // Önce seri, sonra puan
       .limit(50)
@@ -671,9 +780,18 @@ app.post('/api/stats/update', async (req, res) => {
 
     checkBadge(BADGES.STREAK_3.id, user.streak >= 3);
     checkBadge(BADGES.STREAK_7.id, user.streak >= 7);
+    checkBadge(BADGES.STREAK_30.id, user.streak >= 30);
     checkBadge(BADGES.KNOWN_100.id, user.stats.known >= 100);
     checkBadge(BADGES.KNOWN_500.id, user.stats.known >= 500);
     checkBadge(BADGES.KNOWN_1000.id, user.stats.known >= 1000);
+
+    // Time based badges
+    const hour = new Date().getHours();
+    const day = new Date().getDay(); // 0 = Sunday, 6 = Saturday
+
+    if (hour >= 0 && hour < 5) checkBadge(BADGES.NIGHT_OWL.id, true);
+    if (hour >= 5 && hour < 9) checkBadge(BADGES.EARLY_BIRD.id, true);
+    if (day === 0 || day === 6) checkBadge(BADGES.WEEKEND_WARRIOR.id, true);
 
     await user.save();
 
