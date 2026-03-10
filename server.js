@@ -469,9 +469,9 @@ app.get('/api/users/:username', async (req, res) => {
 
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    // En çok bilinen kelime sayısına göre sırala (Top 50)
+    // STREAK'e göre sırala (Önce en yüksek seri, sonra en çok bilinen kelime)
     const users = await User.find()
-      .sort({ "stats.known": -1 })
+      .sort({ "streak": -1, "stats.known": -1 }) // Önce seri, sonra puan
       .limit(50)
       .select("username nickname avatar stats badges streak");
 
@@ -887,6 +887,9 @@ io.to(roomCode).emit('sync-stats', {
           await room.save();
         }
         
+        // Clean up server memory
+        roomStats.delete(roomCode);
+        roomHosts.delete(roomCode);
 
         console.log(`🗑️ Room ${roomCode} is now empty, cleaned up`);
 

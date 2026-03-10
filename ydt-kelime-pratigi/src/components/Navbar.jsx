@@ -10,9 +10,7 @@ const Navbar = ({
   isInRoom,
   wordsCount,
   wrongWordsCount,
-  favoritesCount,
-  setTestMode,
-  setMatchingGame
+  favoritesCount
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -20,16 +18,15 @@ const Navbar = ({
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const handleNavClick = (view, action = null) => {
+  const handleNavClick = (view) => {
     setCurrentView(view);
-    if (action) action();
     setIsMenuOpen(false); // Menüyü kapat
   };
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <div className="navbar-logo" onClick={() => handleNavClick('practice', () => { setTestMode(false); setMatchingGame(false); })}>
+        <div className="navbar-logo" onClick={() => handleNavClick('practice')}>
           <img src="/wb-logo.png" alt="WB" className="navbar-logo-img" onError={(e) => e.target.style.display = 'none'} />
           <h1>WordBoost</h1>
         </div>
@@ -44,15 +41,15 @@ const Navbar = ({
           <li className="nav-item">
             <button 
               className={`nav-link ${currentView === 'practice' ? 'active' : ''}`}
-              onClick={() => handleNavClick('practice', () => { setTestMode(false); setMatchingGame(false); })}
+              onClick={() => handleNavClick('practice')}
             >
               📝 Çalışma
             </button>
           </li>
           <li className="nav-item">
             <button 
-              className={`nav-link ${currentView === 'test-setup' ? 'active' : ''}`}
-              onClick={() => handleNavClick('test-setup', () => { setTestMode(false); setMatchingGame(false); })}
+              className={`nav-link ${currentView === 'test' ? 'active' : ''}`}
+              onClick={() => handleNavClick('test')}
             >
               🎯 Test
             </button>
@@ -60,7 +57,7 @@ const Navbar = ({
           <li className="nav-item">
             <button 
               className={`nav-link ${currentView === 'matching-game' ? 'active' : ''}`}
-              onClick={() => handleNavClick('matching-game', () => { setMatchingGame(false); })}
+              onClick={() => handleNavClick('matching-game')}
             >
               🎮 Eşleştirme
             </button>

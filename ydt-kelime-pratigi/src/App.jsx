@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import LoginModal from "./components/LoginModal";
 import Navbar from "./components/Navbar";
+import Flashcard from "./components/Flashcard";
+import StatsPanel from "./components/StatsPanel";
+import AvatarBuilder from "./components/AvatarBuilder";
 import { io } from "socket.io-client";
 import "./App.css";
-
 
 
 const SOCKET_URL = window.location.origin;
@@ -17,7 +19,6 @@ const socket = io(SOCKET_URL, {
 socket.io.on('upgradeError', (err) => {
   console.warn('Socket.IO upgrade error:', err);
 });
-
 
 
 const playSound = (type) => {
@@ -72,209 +73,15 @@ const generateOptions = (correctWord, allWords) => {
   return options.sort(() => Math.random() - 0.5);
 };
 
-const AvatarBuilder = ({ initialSeed, setEditForm, handleFileChange, onClose }) => {
-  const [seed, setSeed] = useState(initialSeed);
-  const [bg, setBg] = useState("b6e3f4");
-  
-  const updateAvatar = (newSeed) => {
-    setSeed(newSeed);
-    setEditForm(prev => ({
-      ...prev, 
-      avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${newSeed}&backgroundColor=${bg}`
-    }));
-  };
-
-  const colors = [
-    // Ten Renkleri
-    "f8d9ce", "f4c5b5", "eabbae", "d6a598", "b98375", "966052", "6c4238",
-    // Saç/Nötr
-    "2c2c2c", "4a3b32", "6d4c41", "8d6e63", "d7ccc8", "fafafa", "ffeb3b",
-    // Canlı Renkler
-    "f44336", "e91e63", "9c27b0", "673ab7", "3f51b5", "2196f3", "03a9f4",
-    "00bcd4", "009688", "4caf50", "8bc34a", "cddc39", "ffc107", "ff9800",
-    "ff5722", "795548", "607d8b",
-    // Pasteller
-    "b6e3f4", "c0aede", "d1d4f9", "ffdfbf", "ffd4c2", "ffe5ec",
-    "d4e157", "ff7043", "bdbdbd", "78909c"
-  ];
-
-  return (
-    <div className="avatar-builder-overlay" onClick={(e) => {
-      if (e.target.className === 'avatar-builder-overlay') onClose();
-    }}>
-      <div className="avatar-builder">
-        <div className="builder-header">
-          <span>Avatar Oluşturucu</span>
-          <button className="close-builder-btn" onClick={onClose}>×</button>
-        </div>
-        <div className="builder-controls">
-          <button onClick={() => updateAvatar(Math.random().toString(36))} title="Rastgele" className="random-btn">🎲 Karıştır</button>
-          <div className="color-picker-container">
-            <p className="color-label">Arkaplan Rengi:</p>
-            <div className="color-picker">
-              {colors.map(color => (
-                <div 
-                  key={color} 
-                  className={`color-dot ${bg === color ? 'selected' : ''}`} 
-                  style={{background: `#${color}`}}
-                  onClick={() => {
-                    setBg(color);
-                    setEditForm(prev => ({
-                      ...prev, 
-                      avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}&backgroundColor=${color}`
-                    }));
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="upload-section">
-           <label className="upload-text-btn">
-             📂 Kendi Fotoğrafını Yükle
-             <input 
-               type="file" 
-               accept="image/*" 
-               onChange={handleFileChange}
-               style={{display: 'none'}} 
-             />
-           </label>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const speakWord = (word) => {
     const utterance = new SpeechSynthesisUtterance(word.term);
     utterance.lang = 'en-US';
     utterance.rate = 0.8; 
     window.speechSynthesis.cancel(); 
     window.speechSynthesis.speak(utterance);
-  };
+};
 
-  const Flashcard = ({ word, isFlipped, flipCard, showHint, setShowHint, showExample, setShowExample, feedback, feedbackMessage, favorites, toggleFavorite, speakWord }) => (
-    <div className="flashcard-container">
-      <div className={`flashcard ${isFlipped ? 'flipped' : ''}`} onClick={flipCard}>
-        <div className="card-inner">
-          <div className="card-front">
-            <div className="flashcard-level">{word.level || "?"}</div>
-            
-            <button 
-              className="flashcard-speak-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                speakWord(word);
-              }}
-              title="Telaffuz"
-            >
-              🔊
-            </button>
-
-            <button 
-              className="flashcard-fav-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleFavorite(word);
-              }}
-            >
-              {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
-            </button>
-
-            <h2>{word.term}</h2>
-            <p className="hint-text">Kartı çevirmek için tıklayın</p>
-          </div>
-          <div className="card-back">
-            <h3>{word.meaning}</h3>
-          </div>
-        </div>
-      </div>
-      
-      <div className="extra-info-buttons">
-        <button 
-          className={`info-btn ${showHint ? 'active' : ''}`}
-          onClick={(e) => { e.stopPropagation(); setShowHint(!showHint); }}
-        >
-          💡 İpucu
-        </button>
-        <button 
-          className={`info-btn ${showExample ? 'active' : ''}`}
-          onClick={(e) => { e.stopPropagation(); setShowExample(!showExample); }}
-        >
-          📝 Örnek Kullanım
-        </button>
-      </div>
-      
-      {(showHint || showExample) && (
-        <div className="extra-info-display">
-          {showHint && (
-            <div className="info-section hint-section">
-              <strong>İpucu:</strong> {word.hint}
-            </div>
-          )}
-          {showExample && (
-            <div className="info-section example-section">
-              <strong>Örnek:</strong> {word.example}
-            </div>
-          )}
-        </div>
-      )}
-      
-      {feedback && (
-        <div
-          key={feedback.id}
-          className={`feedback ${feedback.type}`}
-        >
-          {feedbackMessage}
-        </div>
-      )}
-    </div>
-  );
-
-  const StatsPanel = ({ stats, resetStats, isInRoom, practiceLevel, setPracticeLevel }) => (
-    <div className="stats-container">
-      <div className="stats">
-        <div className="stat">
-          <span>Çalışılan</span>
-          <strong>{stats.studied}</strong>
-        </div>
-        <div className="stat known">
-          <span>Biliyorum</span>
-          <strong>{stats.known}</strong>
-        </div>
-        <div className="stat unknown">
-          <span>Bilmiyorum</span>
-          <strong>{stats.unknown}</strong>
-        </div>
-        <button className="reset-btn" onClick={resetStats}>Sıfırla</button>
-      </div>
-
-      {!isInRoom && (
-        <div className="level-selector-embedded">
-          <label>Çalışma Seviyesi:</label>
-          <select 
-            value={practiceLevel} 
-            onChange={(e) => setPracticeLevel(e.target.value)}
-          >
-            <option value="ALL">Tümü (Karma)</option>
-            <option value="A1-A2">A1 - A2</option>
-            <option value="B1-B2">B1 - B2</option>
-            <option value="B1-C2">B1 - C2</option>
-            <option value="C1-C2">C1 - C2</option>
-            <option disabled>──────────</option>
-            <option value="A1">Sadece A1</option>
-            <option value="A2">Sadece A2</option>
-            <option value="B1">Sadece B1</option>
-            <option value="B2">Sadece B2</option>
-            <option value="C1">Sadece C1</option>
-            <option value="C2">Sadece C2</option>
-          </select>
-        </div>
-      )}
-    </div>
-  );
-
-  const PracticeView = ({ 
+const PracticeView = ({ 
     isInRoom, stats, users, roomStats, username, 
     currentWordIndex, practiceWords, currentWord, 
     handleAnswer, buttonCooldown, prevWord, nextWord, 
@@ -346,40 +153,124 @@ const speakWord = (word) => {
         </div>
       </div>
     </div>
+);
+
+const WordListView = ({
+  words,
+  searchTerm,
+  setSearchTerm,
+  filteredWords,
+  selectedLevel,
+  setSelectedLevel,
+  favorites,
+  toggleFavorite,
+  speakWord
+}) => {
+  return (
+    <div className="word-list">
+      <h2>Tüm Kelimeler ({words.length}) - Alfabetik</h2>
+
+      <div className="search-box">
+        <input
+          type="text"
+          placeholder="Kelime veya anlam ara..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          value={selectedLevel}
+          onChange={(e)=>setSelectedLevel(e.target.value)}
+        >
+          <option value="ALL">All</option>
+          <option value="A1">A1</option>
+          <option value="A2">A2</option>
+          <option value="B1">B1</option>
+          <option value="B2">B2</option>
+          <option value="C1">C1</option>
+          <option value="C2">C2</option>
+        </select>
+      </div>
+
+      <div className="word-grid">
+        {filteredWords.map((word, idx) => (
+          <div key={word.term} className="word-card">
+            <button
+              className="fav-btn"
+              onClick={() => toggleFavorite(word)}
+            >
+              {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
+            </button>
+
+            <button
+              className="list-speak-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                speakWord(word);
+              }}
+              title="Telaffuz"
+            >
+              🔊
+            </button>
+
+            <h4>
+             {word.term}
+             <span className="level">{word.level}</span>
+            </h4>
+            <p className="meaning">{word.meaning}</p>
+            <p className="hint">{word.hint}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
+};
 
-function App() {
+const FavoritesView = ({ favorites, toggleFavorite }) => (
+    <div className="word-list">
+      <h2>⭐ Favoriler ({favorites.length})</h2>
 
-  const [selectedLevel,setSelectedLevel] = useState("ALL")
-  const [practiceLevel, setPracticeLevel] = useState("ALL");
+      {favorites.length === 0 ? (
+        <p className="empty">Henüz favori kelime yok.</p>
+      ) : (
+        <div className="word-grid">
+          {favorites.map((word, idx) => (
+            <div key={idx} className="word-card">
+              <button
+                className="fav-btn"
+                onClick={() => toggleFavorite(word)}
+              >
+                ⭐
+              </button>
+              <h4>{word.term}</h4>
+              <p className="meaning">{word.meaning}</p>
+              <p className="hint">{word.hint}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+);
 
-  const loadFromStorage = (key, defaultValue) => {
-    try {
-      const saved = localStorage.getItem(`ydt_${key}`);
-      return saved ? JSON.parse(saved) : defaultValue;
-    } catch {
-      return defaultValue;
-    }
-  };
-const [user, setUser] = useState(null);
+const WrongWordsView = ({ wrongWords }) => (
+    <div className="wrong-words">
+      <h2>Yanlış Bilinen Kelimeler ({wrongWords.length})</h2>
+      {wrongWords.length === 0 ? (
+        <p className="empty">Henüz yanlış bilinen kelime yok! Harika gidiyorsun! 🎉</p>
+      ) : (
+        <div className="word-grid">
+          {wrongWords.map((word, idx) => (
+            <div key={idx} className="word-card wrong">
+              <h4>{word.term}</h4>
+              <p className="meaning">{word.meaning}</p>
+              <p className="hint">{word.hint}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+);
 
-const [favorites, setFavorites] = useState(() => {
-  const saved = localStorage.getItem("ydt_favorites");
-  return saved ? JSON.parse(saved) : [];
-  
-});
-
-const logout = () => {
-    setUser(null);
-    localStorage.removeItem("wb_user");
-    setShowLogoutConfirm(false);
-    setCurrentView('practice'); 
-    window.location.reload(); 
-  };
-
-
-
-const ProfileView = () => {
+const ProfileView = ({ user, setUser, logout, setCurrentView }) => {
     // URL'den stili çıkar (varsa)
     const getStyleFromUrl = (url) => {
       if (!url) return "adventurer";
@@ -393,7 +284,6 @@ const ProfileView = () => {
     };
 
     const [showAvatarBuilder, setShowAvatarBuilder] = useState(false);
-
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({
       nickname: user.nickname || user.username,
@@ -401,21 +291,6 @@ const ProfileView = () => {
       avatar: user.avatar || "👤",
       avatarStyle: getStyleFromUrl(user.avatar) 
     });
-
-    const styles = [
-      { id: "adventurer", name: "🦸‍♂️ Maceracı", bg: "b6e3f4,c0aede,d1d4f9" },
-      { id: "notionists", name: "🎨 Minimalist", bg: "ffe5ec,ffc2d1,ffb3c6" },
-      { id: "micah", name: "✨ Modern", bg: "f4e4bc,d1d4f9,b6e3f4" },
-      { id: "lorelei", name: "🎭 Sanatsal", bg: "ffdfbf,ffd4c2,ffccb6" },
-      { id: "bottts", name: "🤖 Robot", bg: "e0e0e0,cccccc,b3b3b3" },
-      { id: "avataaars", name: "🙂 Klasik", bg: "transparent" }
-    ];
-
-    const generateAvatar = (style = editForm.avatarStyle) => {
-      const seed = Math.random().toString(36).substring(7);
-      const bg = styles.find(s => s.id === style)?.bg || "transparent";
-      return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}&backgroundColor=${bg}`;
-    };
 
     const handleDeleteAccount = async () => {
       if (!confirm("Hesabını kalıcı olarak silmek istediğine emin misin? Bu işlem geri alınamaz!")) return;
@@ -450,7 +325,6 @@ const ProfileView = () => {
           'Content-Type': 'application/json',
           'Authorization': user.token
         },
-        // Sadece avatar URL'sini gönderiyoruz, stil bilgisi URL içinde zaten var
         body: JSON.stringify({
           nickname: editForm.nickname,
           bio: editForm.bio,
@@ -460,14 +334,11 @@ const ProfileView = () => {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          // Token bilgisini koruyarak user state'ini güncelle
           const updatedUser = { ...user, ...data.user, token: user.token };
           setUser(updatedUser);
-          // LocalStorage'ı da güncelle
           localStorage.setItem("wb_user", JSON.stringify(updatedUser));
           setIsEditing(false);
         } else {
-          // Token hatası ise
           if (data.error && (data.error.includes("Token") || data.error.includes("auth"))) {
              alert("Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.");
              logout();
@@ -485,53 +356,21 @@ const ProfileView = () => {
     const handleFileChange = (e) => {
       const file = e.target.files[0];
       if (file) {
-        // Max 5MB
         if (file.size > 5 * 1024 * 1024) {
           alert("Dosya boyutu çok büyük (Max 5MB)");
           return;
         }
-
         const reader = new FileReader();
         reader.onloadend = () => {
           setEditForm(prev => ({
             ...prev,
-            avatar: reader.result, // Base64 string
-            avatarStyle: "custom" // Custom stil
+            avatar: reader.result,
+            avatarStyle: "custom"
           }));
         };
         reader.readAsDataURL(file);
       }
     };
-
-    const [avatarConfig, setAvatarConfig] = useState({
-      base: "adventurer",
-      gender: "neutral", // "male", "female", "neutral"
-      hair: "short",     // "short", "long", "curly" etc. (Basitleştirilmiş)
-      skin: "light"      // "light", "dark", "yellow" etc.
-    });
-
-    const generateCustomAvatar = () => {
-      // Gartic.io benzeri basit yapılandırma
-      // DiceBear Adventurer parametrelerini kullanarak özelleştirme
-      // seed, backgroundColor, skinColor, hair, hairColor vb.
-      
-      const seed = Math.random().toString(36).substring(7);
-      
-      // Basit parametreler (DiceBear Adventurer için)
-      // Bu stil çok detaylı parametre almaz, seed üzerinden çalışır.
-      // Ancak "Avataaars" veya "Bottts" gibi stiller daha fazla parametre alır.
-      // Kullanıcı "Gartic.io gibi" dediği için daha manuel bir yapı istiyor.
-      // DiceBear'da "Avataaars" stili en çok özelleştirilebilen stildir.
-      
-      let url = `https://api.dicebear.com/7.x/${avatarConfig.base}/svg?seed=${seed}`;
-      
-      // Renk ve arka plan ekle
-      url += `&backgroundColor=b6e3f4,c0aede,d1d4f9`;
-      
-      return url;
-    };
-    
-
 
     return (
       <div className="profile-view">
@@ -645,17 +484,12 @@ const ProfileView = () => {
           <h3>🏅 Rozetlerim</h3>
           <div className="badges-grid">
             {user.badges && user.badges.length > 0 ? (
-              user.badges.map(badgeId => {
-                // Badge detaylarını bulmak için bir mapping gerekebilir veya server populate edebilir.
-                // Şimdilik server'dan badge ID geliyor, basit bir map yapalım veya server'dan tam obje isteyelim.
-                // Server'da BADGES objesi vardı. Frontend'de de tanımlayalım veya id'yi gösterelim.
-                return (
-                  <div key={badgeId} className="badge-item">
-                    <div className="badge-icon">🏆</div>
-                    <span>{badgeId}</span>
-                  </div>
-                );
-              })
+              user.badges.map(badgeId => (
+                <div key={badgeId} className="badge-item">
+                  <div className="badge-icon">🏆</div>
+                  <span>{badgeId}</span>
+                </div>
+              ))
             ) : (
               <p className="no-badges">Henüz rozet kazanmadın. Çalışmaya başla!</p>
             )}
@@ -663,11 +497,9 @@ const ProfileView = () => {
         </div>
       </div>
     );
-  };
+};
 
-  const [selectedUser, setSelectedUser] = useState(null);
-
-  const PublicProfileView = () => {
+const PublicProfileView = ({ selectedUser, setCurrentView }) => {
     if (!selectedUser) return <div className="loading">Kullanıcı bulunamadı</div>;
 
     return (
@@ -726,9 +558,9 @@ const ProfileView = () => {
         </div>
       </div>
     );
-  };
+};
 
-  const LeaderboardView = () => {
+const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
     const [leaders, setLeaders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -757,7 +589,6 @@ const ProfileView = () => {
     };
 
     const openProfile = (targetUsername) => {
-      // Eğer kendi ismine tıkladıysa, kendi düzenlenebilir profiline git
       if (user && user.username === targetUsername) {
         setCurrentView('profile');
         return;
@@ -777,7 +608,7 @@ const ProfileView = () => {
         });
     };
 
-    if (loading) return <div className="loading">Yükleniyor...</div>;
+    if (loading) return <div className="loading-screen">Yükleniyor...</div>;
 
     return (
       <div className="leaderboard-view">
@@ -827,7 +658,9 @@ const ProfileView = () => {
                     u.avatar || "👤"
                   )}
                 </span>
-                <span className="nick">{u.nickname || u.username}</span>
+                <span className="nick">
+                  {(u.nickname && u.nickname.trim().length > 0) ? u.nickname : u.username}
+                </span>
               </div>
               <span className="streak">🔥 {u.streak || 0}</span>
               <span className="score">⭐ {u.stats?.known || 0}</span>
@@ -836,60 +669,532 @@ const ProfileView = () => {
         </div>
       </div>
     );
-  };
-
-  const FavoritesView = () => (
-    <div className="word-list">
-      <h2>⭐ Favoriler ({favorites.length})</h2>
-
-      {favorites.length === 0 ? (
-        <p className="empty">Henüz favori kelime yok.</p>
-      ) : (
-        <div className="word-grid">
-          {favorites.map((word, idx) => (
-  <div key={idx} className="word-card">
-
-    <button
-      className="fav-btn"
-      onClick={() => toggleFavorite(word)}
-    >
-      ⭐
-    </button>
-
-    <h4>{word.term}</h4>
-    <p className="meaning">{word.meaning}</p>
-    <p className="hint">{word.hint}</p>
-
-  </div>
-))}
-        </div>
-      )}
-    </div>
-  );
-
-useEffect(() => {
-  localStorage.setItem("ydt_favorites", JSON.stringify(favorites));
-}, [favorites]);
-const toggleFavorite = (word) => {
-  setFavorites(prev => {
-    const exists = prev.find(w => w.term === word.term);
-
-    if (exists) {
-      return prev.filter(w => w.term !== word.term);
-    }
-
-    return [...prev, word];
-  });
 };
 
-const [showLogin, setShowLogin] = useState(false);
-const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-const [currentView, setCurrentView] = useState('practice');
-const [words, setWords] = useState([]);
-const [loadingWords, setLoadingWords] = useState(true);
+const MatchingGameView = ({ words, setCurrentView }) => {
+    const [matchingGame, setMatchingGame] = useState(false);
+    const [matchingCards, setMatchingCards] = useState([]);
+    const [selectedCards, setSelectedCards] = useState([]);
+    const [matchedPairs, setMatchedPairs] = useState([]);
+    const [moves, setMoves] = useState(0);
+    const [gameTime, setGameTime] = useState(0);
+    const [gameTimer, setGameTimer] = useState(null);
+    const [gameFinished, setGameFinished] = useState(false);
+
+    useEffect(() => {
+        if (matchingGame && !gameFinished && matchedPairs.length < 8) {
+          const timer = setInterval(() => {
+            setGameTime(prev => prev + 1);
+          }, 1000);
+          setGameTimer(timer);
+          return () => clearInterval(timer);
+        }
+    }, [matchingGame, gameFinished, matchedPairs.length]);
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const calculateScore = () => {
+        const baseScore = 1000;
+        const timeBonus = Math.max(0, 300 - gameTime) * 2;
+        const moveBonus = Math.max(0, 100 - moves * 5);
+        return baseScore + timeBonus + moveBonus;
+    };
+
+    const startMatchingGame = () => {
+        const selectedWords = [...words].sort(() => Math.random() - 0.5).slice(0, 8);
+        const cards = [];
+        
+        selectedWords.forEach((word, index) => {
+          cards.push({
+            id: `term-${index}`,
+            content: word.term,
+            type: 'term',
+            pairId: index,
+            word: word
+          });
+          cards.push({
+            id: `meaning-${index}`,
+            content: word.meaning,
+            type: 'meaning',
+            pairId: index,
+            word: word
+          });
+        });
+        
+        setMatchingCards(cards.sort(() => Math.random() - 0.5));
+        setSelectedCards([]);
+        setMatchedPairs([]);
+        setMoves(0);
+        setGameTime(0);
+        setGameFinished(false);
+        setMatchingGame(true);
+    };
+
+    const handleCardClick = (card) => {
+        if (selectedCards.length === 2 || selectedCards.find(c => c.id === card.id) || matchedPairs.includes(card.pairId)) {
+          return;
+        }
+    
+        const newSelected = [...selectedCards, card];
+        setSelectedCards(newSelected);
+    
+        if (newSelected.length === 2) {
+          setMoves(prev => prev + 1);
+          
+          if (newSelected[0].pairId === newSelected[1].pairId) {
+            playSound('correct');
+            setMatchedPairs(prev => [...prev, card.pairId]);
+            setSelectedCards([]);
+            
+            if (matchedPairs.length + 1 === 8) {
+              setGameFinished(true);
+              if (gameTimer) clearInterval(gameTimer);
+            }
+          } else {
+            playSound('wrong');
+            setTimeout(() => {
+              setSelectedCards([]);
+            }, 1000);
+          }
+        }
+    };
+
+    return (
+    <div className="matching-game">
+      {!matchingGame ? (
+        <div className="game-start-screen">
+          <h2>🎮 Eşleştirme Oyunu</h2>
+          <p>8 çift kelimeyi en kısa sürede eşleştir!</p>
+          
+          <div className="game-rules">
+            <div className="rule-item">
+              <span className="icon">⏱️</span>
+              <span>Zamana Karşı Yarış</span>
+            </div>
+            <div className="rule-item">
+              <span className="icon">🧠</span>
+              <span>Hafızanı Test Et</span>
+            </div>
+            <div className="rule-item">
+              <span className="icon">🏆</span>
+              <span>En Yüksek Skoru Yap</span>
+            </div>
+          </div>
+
+          <button className="start-game-btn" onClick={startMatchingGame}>
+            OYUNU BAŞLAT
+          </button>
+        </div>
+      ) : (
+        <>
+          <h2>🎮 Eşleştirme Oyunu</h2>
+          
+          {!gameFinished ? (
+            <>
+              <div className="game-stats">
+                <div className="game-stat">
+                  <span>⏱️ Süre</span>
+                  <strong>{formatTime(gameTime)}</strong>
+                </div>
+                <div className="game-stat">
+                  <span>🎯 Hamle</span>
+                  <strong>{moves}</strong>
+                </div>
+                <div className="game-stat">
+                  <span>✓ Eşleşme</span>
+                  <strong>{matchedPairs.length}/8</strong>
+                </div>
+              </div>
+
+              <div className="matching-grid">
+                {matchingCards.map((card) => {
+                  const isSelected = selectedCards.find(c => c.id === card.id);
+                  const isMatched = matchedPairs.includes(card.pairId);
+                  
+                  return (
+                    <button
+                      key={card.id}
+                      className={`matching-card ${isSelected ? 'selected' : ''} ${isMatched ? 'matched' : ''} ${card.type}`}
+                      onClick={() => handleCardClick(card)}
+                      disabled={isMatched || selectedCards.length === 2}
+                    >
+                      <span className="card-content">{card.content}</span>
+                      {isMatched && <span className="check-mark">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="game-results">
+              <h3>🎉 Tebrikler!</h3>
+              <div className="final-stats">
+                <div className="final-stat">
+                  <span>⏱️ Süre</span>
+                  <strong>{formatTime(gameTime)}</strong>
+                </div>
+                <div className="final-stat">
+                  <span>🎯 Hamle</span>
+                  <strong>{moves}</strong>
+                </div>
+                <div className="final-stat">
+                  <span>🏆 Skor</span>
+                  <strong className="score-highlight">{calculateScore()}</strong>
+                </div>
+              </div>
+              <div className="game-buttons">
+                <button onClick={startMatchingGame}>🔄 Yeniden Oyna</button>
+                <button className="btn-secondary" onClick={() => { setMatchingGame(false); setCurrentView('practice'); }}>Çalışmaya Dön</button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+    );
+};
+
+const TestManager = ({ words, setCurrentView, setWrongWords }) => {
+    const [testMode, setTestMode] = useState('setup'); // setup, test, results
+    const [testWords, setTestWords] = useState([]);
+    const [testIndex, setTestIndex] = useState(0);
+    const [testResults, setTestResults] = useState([]);
+    const [testOptions, setTestOptions] = useState([]);
+    const [selectedOption, setSelectedOption] = useState(null);
+    const [showResult, setShowResult] = useState(false);
+    const [testType, setTestType] = useState('EN-TR');
+    const [error, setError] = useState('');
+
+    const startTest = (countValue, wordSource = words) => {
+        if (countValue < 5 || countValue > wordSource.length) {
+          setError(`Kelime sayısı 5-${wordSource.length} arasında olmalı`);
+          return;
+        }
+        
+        const shuffled = [...wordSource].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, countValue);
+        
+        setTestWords(selected);
+        setTestIndex(0);
+        setTestResults([]);
+        setTestMode('test');
+        setShowResult(false);
+        setSelectedOption(null);
+        
+        const options = generateOptions(selected[0], words);
+        setTestOptions(options);
+    };
+
+    const startRetest = () => {
+        const wrongAnswers = testResults.filter(r => !r.correct).map(r => r.word);
+        startTest(wrongAnswers.length, wrongAnswers);
+    };
+
+    const handleTestAnswer = (option) => {
+        if (showResult) return;
+        
+        setSelectedOption(option);
+        setShowResult(true);
+        
+        const currentWord = testWords[testIndex];
+        const isCorrect = option.term === currentWord.term;
+        
+        if (isCorrect) {
+          playSound('correct');
+        } else {
+          playSound('wrong');
+          setWrongWords(prev => {
+            if (!prev.find(w => w.term === currentWord.term)) {
+              return [...prev, currentWord];
+            }
+            return prev;
+          });
+        }
+        
+        setTestResults(prev => [...prev, {
+          word: currentWord,
+          selected: option,
+          correct: isCorrect
+        }]);
+        
+        setTimeout(() => {
+          if (testIndex < testWords.length - 1) {
+            setTestIndex(prev => prev + 1);
+            setShowResult(false);
+            setSelectedOption(null);
+            const nextOptions = generateOptions(testWords[testIndex + 1], words);
+            setTestOptions(nextOptions);
+          } else {
+            setTestMode('results');
+          }
+        }, 1500);
+    };
+
+    if (testMode === 'setup') {
+        return (
+            <div className="test-setup">
+              <h2>🎯 Test Modu</h2>
+              <p className="description">Kendini test etmeye hazır mısın?</p>
+              
+              {error && <div className="error">{error}</div>}
+              
+              <div className="test-config-container">
+                <div className="config-item">
+                  <label>Soru Sayısı</label>
+                  <div className="test-input">
+                    <input 
+                      id="test-count-input"
+                      type="number"
+                      defaultValue={10}
+                      min={5}
+                      max={words.length}
+                    />
+                    <span>/ {words.length}</span>
+                  </div>
+                </div>
+        
+                <div className="config-item">
+                  <label>Test Türü</label>
+                  <div className="test-type-selector">
+                    <button 
+                      className={`type-btn ${testType === 'EN-TR' ? 'active' : ''}`}
+                      onClick={() => setTestType('EN-TR')}
+                    >
+                      🇬🇧 ➔ 🇹🇷
+                      <span>İngilizce - Türkçe</span>
+                    </button>
+                    <button 
+                      className={`type-btn ${testType === 'TR-EN' ? 'active' : ''}`}
+                      onClick={() => setTestType('TR-EN')}
+                    >
+                      🇹🇷 ➔ 🇬🇧
+                      <span>Türkçe - İngilizce</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+        
+              <button className="start-test-btn" onClick={() => {
+                  const input = document.getElementById('test-count-input');
+                  startTest(input ? parseInt(input.value) : 10);
+              }}>
+                TESTİ BAŞLAT
+              </button>
+              
+              <div className="test-info">
+                <div className="info-item">
+                  <span className="icon">📝</span>
+                  <span>4 şıklı sorular</span>
+                </div>
+                <div className="info-item">
+                  <span className="icon">⏱️</span>
+                  <span>Süre sınırı yok</span>
+                </div>
+                <div className="info-item">
+                  <span className="icon">📊</span>
+                  <span>Detaylı analiz</span>
+                </div>
+              </div>
+            </div>
+        );
+    }
+
+    if (testMode === 'test') {
+        const currentWord = testWords[testIndex];
+        const progress = ((testIndex + 1) / testWords.length) * 100;
+        const questionText = testType === 'EN-TR' ? currentWord.term : currentWord.meaning;
+
+        return (
+            <div className="test-mode">
+              <div className="test-progress-bar">
+                <div className="progress-fill" style={{width: `${progress}%`}}></div>
+              </div>
+              <div className="test-header">
+                <span>Soru {testIndex + 1} / {testWords.length}</span>
+                <span>Doğru: {testResults.filter(r => r.correct).length}</span>
+              </div>
+              
+              <div className="test-question">
+                <span className="lang-badge">{testType === 'EN-TR' ? '🇬🇧 İNGİLİZCE' : '🇹🇷 TÜRKÇE'}</span>
+                <h3>"{questionText}"</h3>
+                <p>kelimesinin anlamı nedir?</p>
+              </div>
+              
+              <div className="test-options">
+                {testOptions.map((option, idx) => {
+                  const optionText = testType === 'EN-TR' ? option.meaning : option.term;
+                  
+                  return (
+                    <button
+                      key={idx}
+                      className={`option-btn ${showResult ? 
+                        (option.term === currentWord.term ? 'correct' : 
+                         selectedOption?.term === option.term ? 'wrong' : '') : ''}`}
+                      onClick={() => handleTestAnswer(option)}
+                      disabled={showResult}
+                    >
+                      {optionText}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              {showResult && (
+                <div className={`test-feedback ${testResults[testResults.length - 1]?.correct ? 'correct' : 'wrong'}`}>
+                  {testResults[testResults.length - 1]?.correct ? '✓ Doğru!' : '✗ Yanlış!'}
+                </div>
+              )}
+            </div>
+        );
+    }
+
+    if (testMode === 'results') {
+        const correctCount = testResults.filter(r => r.correct).length;
+        const percentage = Math.round((correctCount / testWords.length) * 100);
+        const wrongCount = testResults.filter(r => !r.correct).length;
+
+        return (
+            <div className="test-results">
+              <h2>🎉 Test Sonuçları</h2>
+              
+              <div className="score-circle">
+                <div className="score">{percentage}%</div>
+                <div style={{fontSize: '1rem', opacity: 0.8}}>{correctCount}/{testWords.length}</div>
+              </div>
+              
+              <div className="result-message">
+                {percentage >= 90 ? '🏆 Mükemmel!' : 
+                 percentage >= 70 ? '🌟 Çok İyi!' : 
+                 percentage >= 50 ? '👍 İyi gidiyorsun!' : 
+                 '💪 Daha çok çalışmalısın!'}
+              </div>
+              
+              {wrongCount > 0 && (
+                <div className="wrong-answers">
+                  <h3>📚 Yanlışlar</h3>
+                  {testResults.filter(r => !r.correct).map((result, idx) => (
+                    <div key={idx} className="wrong-item">
+                      <strong>{result.word.term}</strong> - Doğru: {result.word.meaning}
+                      <br/>
+                      <small>Senin cevabın: {result.selected.meaning}</small>
+                    </div>
+                  ))}
+                  <button onClick={startRetest} style={{marginTop: '15px', width: '100%'}}>
+                    🔄 Yanlışları Tekrar Test Et
+                  </button>
+                </div>
+              )}
+              
+              <div style={{marginTop: '30px', display: 'flex', gap: '15px', justifyContent: 'center'}}>
+                <button onClick={() => setTestMode('setup')}>Yeni Test</button>
+                <button className="btn-secondary" onClick={() => setCurrentView('practice')}>Çalışmaya Dön</button>
+              </div>
+            </div>
+        );
+    }
+    return null;
+};
+
+const RoomMenuView = ({ username, createRoom, joinRoom, loading, error }) => (
+    <div className="room-menu">
+      <h2>Çok Oyunculu Oda Sistemi</h2>
+      <p className="description">Arkadaşlarınla birlikte kelime çalışması yap!</p>
+      {error && <div className="error">{error}</div>}
+      <div className="input-group">
+        <input 
+          id="username-input"
+          type="text"
+          placeholder="Kullanıcı adınız"
+          defaultValue={username}
+          style={{width: '100%', padding: '15px'}}
+        />
+      </div>
+      <div className="actions">
+        <button onClick={createRoom} disabled={loading}>{loading ? 'Oluşturuluyor...' : '🎮 Yeni Oda Oluştur'}</button>
+        <div className="or">veya</div>
+        <input 
+          id="joincode-input"
+          type="text"
+          placeholder="Oda kodu (6 haneli)"
+          maxLength={6}
+          style={{width: '100%', padding: '15px'}}
+        />
+        <button onClick={joinRoom}>🚪 Odaya Katıl</button>
+      </div>
+    </div>
+);
+
+const RoomView = ({ roomCode, users, username, isHost, setCurrentView, leaveRoom }) => {
+    return (
+      <div className="room">
+        <div className="room-header">
+          <h3>Oda Kodu: <span className="code">{roomCode}</span></h3>
+          <p>Bu kodu arkadaşlarınla paylaş!</p>
+          <p style={{color: '#00d4ff', marginTop: '10px'}}>
+            👥 Odada {users.length} kişi var
+          </p>
+          {isHost && <span className="host-badge">👑 Host</span>}
+        </div>
+
+        <div className="users">
+          <h4>Kullanıcılar:</h4>
+          <ul>
+            {users.map((user, idx) => (
+              <li key={idx} className={user.username === username ? 'me' : ''}>
+                {user.username} {user.username === username && '(Sen)'} {user.isHost && '👑'}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="room-actions">
+          <button onClick={() => setCurrentView('practice')}>▶️ Çalışmaya Başla</button>
+          <button className="btn-secondary" onClick={leaveRoom}>🚪 Odadan Çık</button>
+        </div>
+      </div>
+    );
+};
+
+function App() {
+
+  const [selectedLevel,setSelectedLevel] = useState("ALL")
+  const [practiceLevel, setPracticeLevel] = useState("ALL");
+
+  const loadFromStorage = (key, defaultValue) => {
+    try {
+      const saved = localStorage.getItem(`ydt_${key}`);
+      return saved ? JSON.parse(saved) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  };
+  const [user, setUser] = useState(null);
+
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem("ydt_favorites");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("wb_user");
+    setShowLogoutConfirm(false);
+    setCurrentView('practice'); 
+    window.location.reload(); 
+  };
+
+  const [showLogin, setShowLogin] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [currentView, setCurrentView] = useState('practice');
+  const [words, setWords] = useState([]);
+  const [loadingWords, setLoadingWords] = useState(true);
 
 
-useEffect(() => {
+  useEffect(() => {
     // Check for token in URL (Social Login Redirect)
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
@@ -1012,29 +1317,9 @@ useEffect(() => {
   const wrongWordsCount = wrongWords.length; // Add this derived state
   const [buttonCooldown, setButtonCooldown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const searchInputRef = useRef(null);
-  useEffect(() => {
-  if (searchInputRef.current) {
-    searchInputRef.current.focus();
-  }
-}, [searchTerm]);
-
-  const feedbackCounter = useRef(0);
-  const [feedback, setFeedback] = useState(null);
-  const lastFeedbackRef = useRef({ time: 0, type: null });
-  const activeFeedbackRef = useRef(null);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
   
-  const [testMode, setTestMode] = useState(false);
-  const [testWords, setTestWords] = useState([]);
-  const [testIndex, setTestIndex] = useState(0);
-  const [testOptions, setTestOptions] = useState([]);
-  const [testResults, setTestResults] = useState([]);
-  const [testFinished, setTestFinished] = useState(false);
-  const [testWordCount, setTestWordCount] = useState(10);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [showResult, setShowResult] = useState(false);
-  const [retestMode, setRetestMode] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
   
   const [roomCode, setRoomCode] = useState('');
   const [username, setUsername] = useState('');
@@ -1045,16 +1330,7 @@ useEffect(() => {
   const [loading, setLoading] = useState(false);
   const [isInRoom, setIsInRoom] = useState(false);
   const [isHost, setIsHost] = useState(false);
-
-  // Matching Game States
-  const [matchingGame, setMatchingGame] = useState(false);
-  const [matchingCards, setMatchingCards] = useState([]);
-  const [selectedCards, setSelectedCards] = useState([]);
-  const [matchedPairs, setMatchedPairs] = useState([]);
-  const [moves, setMoves] = useState(0);
-  const [gameTime, setGameTime] = useState(0);
-  const [gameTimer, setGameTimer] = useState(null);
-  const [gameFinished, setGameFinished] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('ydt_stats', JSON.stringify(stats));
@@ -1131,20 +1407,6 @@ useEffect(() => {
       socket.off('error');
     };
   }, []);
-
-  // Login 
-  
-
-  // Matching Game Timer
-  useEffect(() => {
-    if (matchingGame && !gameFinished && matchedPairs.length < 8) {
-      const timer = setInterval(() => {
-        setGameTime(prev => prev + 1);
-      }, 1000);
-      setGameTimer(timer);
-      return () => clearInterval(timer);
-    }
-  }, [matchingGame, gameFinished, matchedPairs.length]);
 
   const uniqueWords = useMemo(() => {
   return [...new Map(words.map(w => [w.term, w])).values()];
@@ -1303,168 +1565,6 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
 }, 800);
 };
 
-// Matching Game Functions
-  const startMatchingGame = () => {
-    const selectedWords = [...words].sort(() => Math.random() - 0.5).slice(0, 8);
-    const cards = [];
-    
-    selectedWords.forEach((word, index) => {
-      cards.push({
-        id: `term-${index}`,
-        content: word.term,
-        type: 'term',
-        pairId: index,
-        word: word
-      });
-      cards.push({
-        id: `meaning-${index}`,
-        content: word.meaning,
-        type: 'meaning',
-        pairId: index,
-        word: word
-      });
-    });
-    
-    setMatchingCards(cards.sort(() => Math.random() - 0.5));
-    setSelectedCards([]);
-    setMatchedPairs([]);
-    setMoves(0);
-    setGameTime(0);
-    setGameFinished(false);
-    setMatchingGame(true);
-    setCurrentView('matching-game');
-  };
-
-  const handleCardClick = (card) => {
-    if (selectedCards.length === 2 || selectedCards.find(c => c.id === card.id) || matchedPairs.includes(card.pairId)) {
-      return;
-    }
-
-    const newSelected = [...selectedCards, card];
-    setSelectedCards(newSelected);
-
-    if (newSelected.length === 2) {
-      setMoves(prev => prev + 1);
-      
-      if (newSelected[0].pairId === newSelected[1].pairId) {
-        // Match found
-        playSound('correct');
-        setMatchedPairs(prev => [...prev, card.pairId]);
-        setSelectedCards([]);
-        
-        if (matchedPairs.length + 1 === 8) {
-          setGameFinished(true);
-          if (gameTimer) clearInterval(gameTimer);
-        }
-      } else {
-        // No match
-        playSound('wrong');
-        setTimeout(() => {
-          setSelectedCards([]);
-        }, 1000);
-      }
-    }
-  };
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const calculateScore = () => {
-    const baseScore = 1000;
-    const timeBonus = Math.max(0, 300 - gameTime) * 2;
-    const moveBonus = Math.max(0, 100 - moves * 5);
-    return baseScore + timeBonus + moveBonus;
-  };
-
-  const [testType, setTestType] = useState('EN-TR'); // 'EN-TR' or 'TR-EN'
-
-  const startTest = (wordsList = null) => {
-    const testCountInput = document.getElementById('test-count-input');
-    const countValue = testCountInput ? parseInt(testCountInput.value) : 10;
-    const wordSource = wordsList || words;
-    
-    if (countValue < 5 || countValue > wordSource.length) {
-      setError(`Kelime sayısı 5-${wordSource.length} arasında olmalı`);
-      return;
-    }
-    
-    setTestWordCount(countValue);
-    const shuffled = [...wordSource].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, countValue);
-    
-    setTestWords(selected);
-    setTestIndex(0);
-    setTestResults([]);
-    setTestFinished(false);
-    setTestMode(true);
-    setRetestMode(false);
-    setShowResult(false);
-    setSelectedOption(null);
-    
-    const options = generateOptions(selected[0], words);
-    setTestOptions(options);
-  };
-
-  const startRetest = () => {
-    const wrongAnswers = testResults.filter(r => !r.correct).map(r => r.word);
-    if (wrongAnswers.length === 0) {
-      setError('Yanlış yapılan kelime yok!');
-      return;
-    }
-    setRetestMode(true);
-    setTestWords(wrongAnswers);
-    setTestIndex(0);
-    setTestResults([]);
-    setTestFinished(false);
-    setShowResult(false);
-    setSelectedOption(null);
-    const options = generateOptions(wrongAnswers[0], words);
-    setTestOptions(options);
-  };
-
-  const handleTestAnswer = (option) => {
-    if (showResult) return;
-    
-    setSelectedOption(option);
-    setShowResult(true);
-    
-    const currentWord = testWords[testIndex];
-    const isCorrect = option.term === currentWord.term;
-    
-    if (isCorrect) {
-      playSound('correct');
-    } else {
-      playSound('wrong');
-      setWrongWords(prev => {
-        if (!prev.find(w => w.term === currentWord.term)) {
-          return [...prev, currentWord];
-        }
-        return prev;
-      });
-    }
-    
-    setTestResults(prev => [...prev, {
-      word: currentWord,
-      selected: option,
-      correct: isCorrect
-    }]);
-    
-    setTimeout(() => {
-      if (testIndex < testWords.length - 1) {
-        setTestIndex(prev => prev + 1);
-        setShowResult(false);
-        setSelectedOption(null);
-        const nextOptions = generateOptions(testWords[testIndex + 1], words);
-        setTestOptions(nextOptions);
-      } else {
-        setTestFinished(true);
-      }
-    }, 1500);
-  };
-
   const nextWord = () => {
     if (currentWordIndex < practiceWords.length - 1) {
       const newIndex = currentWordIndex + 1;
@@ -1496,13 +1596,18 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
   const handleAnswer = (isKnown) => {
     if (buttonCooldown) return;
     
+    const currentWord = practiceWords[currentWordIndex];
+    
+    // SAFEGUARD: Eğer kelime yoksa işlemi durdur (Crash önleyici)
+    if (!currentWord) return;
+
     // Geçiş süresi ve cooldown'ı eşitle (800ms)
-    // Böylece kelime değişmeden tekrar tıklanamaz
     const transitionDuration = 800;
     triggerCooldown(transitionDuration);
     
-    const currentWord = practiceWords[currentWordIndex];
-    
+    // SAFEGUARD: Eğer kullanıcı yoksa veya token yoksa sadece lokalde güncelle
+    const hasToken = user && user.token;
+
     if (isInRoom && roomCode) {
       socket.emit('update-stats', {
         roomCode,
@@ -1520,7 +1625,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
       }));
 
       // Server Update (If Logged In)
-      if (user && user.token) {
+      if (hasToken) {
         fetch('/api/stats/update', {
           method: 'POST',
           headers: { 
@@ -1573,6 +1678,18 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     }, transitionDuration);
   };
 
+  const toggleFavorite = (word) => {
+    const exists = favorites.find(w => w.term === word.term);
+    let newFavs;
+    if (exists) {
+      newFavs = favorites.filter(w => w.term !== word.term);
+    } else {
+      newFavs = [...favorites, word];
+    }
+    setFavorites(newFavs);
+    localStorage.setItem("ydt_favorites", JSON.stringify(newFavs));
+  };
+
   const flipCard = () => setIsFlipped(!isFlipped);
   
   const resetStats = () => {
@@ -1592,353 +1709,9 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     setCurrentView('practice');
   };
 
-
-
-
-
-  const MatchingGameView = () => (
-    <div className="matching-game">
-      {!matchingGame ? (
-        <div className="game-start-screen">
-          <h2>🎮 Eşleştirme Oyunu</h2>
-          <p>8 çift kelimeyi en kısa sürede eşleştir!</p>
-          
-          <div className="game-rules">
-            <div className="rule-item">
-              <span className="icon">⏱️</span>
-              <span>Zamana Karşı Yarış</span>
-            </div>
-            <div className="rule-item">
-              <span className="icon">🧠</span>
-              <span>Hafızanı Test Et</span>
-            </div>
-            <div className="rule-item">
-              <span className="icon">🏆</span>
-              <span>En Yüksek Skoru Yap</span>
-            </div>
-          </div>
-
-          <button className="start-game-btn" onClick={startMatchingGame}>
-            OYUNU BAŞLAT
-          </button>
-        </div>
-      ) : (
-        <>
-          <h2>🎮 Eşleştirme Oyunu</h2>
-          
-          {!gameFinished ? (
-            <>
-              <div className="game-stats">
-                <div className="game-stat">
-                  <span>⏱️ Süre</span>
-                  <strong>{formatTime(gameTime)}</strong>
-                </div>
-                <div className="game-stat">
-                  <span>🎯 Hamle</span>
-                  <strong>{moves}</strong>
-                </div>
-                <div className="game-stat">
-                  <span>✓ Eşleşme</span>
-                  <strong>{matchedPairs.length}/8</strong>
-                </div>
-              </div>
-
-              <div className="matching-grid">
-                {matchingCards.map((card) => {
-                  const isSelected = selectedCards.find(c => c.id === card.id);
-                  const isMatched = matchedPairs.includes(card.pairId);
-                  
-                  return (
-                    <button
-                      key={card.id}
-                      className={`matching-card ${isSelected ? 'selected' : ''} ${isMatched ? 'matched' : ''} ${card.type}`}
-                      onClick={() => handleCardClick(card)}
-                      disabled={isMatched || selectedCards.length === 2}
-                    >
-                      <span className="card-content">{card.content}</span>
-                      {isMatched && <span className="check-mark">✓</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <div className="game-results">
-              <h3>🎉 Tebrikler!</h3>
-              <div className="final-stats">
-                <div className="final-stat">
-                  <span>⏱️ Süre</span>
-                  <strong>{formatTime(gameTime)}</strong>
-                </div>
-                <div className="final-stat">
-                  <span>🎯 Hamle</span>
-                  <strong>{moves}</strong>
-                </div>
-                <div className="final-stat">
-                  <span>🏆 Skor</span>
-                  <strong className="score-highlight">{calculateScore()}</strong>
-                </div>
-              </div>
-              <div className="game-buttons">
-                <button onClick={startMatchingGame}>🔄 Yeniden Oyna</button>
-                <button className="btn-secondary" onClick={() => { setMatchingGame(false); setCurrentView('practice'); }}>Çalışmaya Dön</button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-
-  const TestSetupView = () => (
-    <div className="test-setup">
-      <h2>🎯 Test Modu</h2>
-      <p className="description">Kendini test etmeye hazır mısın?</p>
-      
-      {error && <div className="error">{error}</div>}
-      
-      <div className="test-config-container">
-        <div className="config-item">
-          <label>Soru Sayısı</label>
-          <div className="test-input">
-            <input 
-              id="test-count-input"
-              type="number"
-              defaultValue={10}
-              min={5}
-              max={words.length}
-            />
-            <span>/ {words.length}</span>
-          </div>
-        </div>
-
-        <div className="config-item">
-          <label>Test Türü</label>
-          <div className="test-type-selector">
-            <button 
-              className={`type-btn ${testType === 'EN-TR' ? 'active' : ''}`}
-              onClick={() => setTestType('EN-TR')}
-            >
-              🇬🇧 ➔ 🇹🇷
-              <span>İngilizce - Türkçe</span>
-            </button>
-            <button 
-              className={`type-btn ${testType === 'TR-EN' ? 'active' : ''}`}
-              onClick={() => setTestType('TR-EN')}
-            >
-              🇹🇷 ➔ 🇬🇧
-              <span>Türkçe - İngilizce</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <button className="start-test-btn" onClick={() => startTest()}>
-        TESTİ BAŞLAT
-      </button>
-      
-      <div className="test-info">
-        <div className="info-item">
-          <span className="icon">📝</span>
-          <span>4 şıklı sorular</span>
-        </div>
-        <div className="info-item">
-          <span className="icon">⏱️</span>
-          <span>Süre sınırı yok</span>
-        </div>
-        <div className="info-item">
-          <span className="icon">📊</span>
-          <span>Detaylı analiz</span>
-        </div>
-      </div>
-    </div>
-  );
-
-  const TestView = () => {
-    const currentWord = testWords[testIndex];
-    const progress = ((testIndex + 1) / testWords.length) * 100;
-    
-    // Determine question and options based on testType
-    const questionText = testType === 'EN-TR' ? currentWord.term : currentWord.meaning;
-    
-    return (
-      <div className="test-mode">
-        <div className="test-progress-bar">
-          <div className="progress-fill" style={{width: `${progress}%`}}></div>
-        </div>
-        <div className="test-header">
-          <span>Soru {testIndex + 1} / {testWords.length}</span>
-          <span>Doğru: {testResults.filter(r => r.correct).length}</span>
-        </div>
-        
-        <div className="test-question">
-          <span className="lang-badge">{testType === 'EN-TR' ? '🇬🇧 İNGİLİZCE' : '🇹🇷 TÜRKÇE'}</span>
-          <h3>"{questionText}"</h3>
-          <p>kelimesinin anlamı nedir?</p>
-        </div>
-        
-        <div className="test-options">
-          {testOptions.map((option, idx) => {
-            const optionText = testType === 'EN-TR' ? option.meaning : option.term;
-            
-            return (
-              <button
-                key={idx}
-                className={`option-btn ${showResult ? 
-                  (option.term === currentWord.term ? 'correct' : 
-                   selectedOption?.term === option.term ? 'wrong' : '') : ''}`}
-                onClick={() => handleTestAnswer(option)}
-                disabled={showResult}
-              >
-                {optionText}
-              </button>
-            );
-          })}
-        </div>
-        
-        {showResult && (
-          <div className={`test-feedback ${testResults[testResults.length - 1]?.correct ? 'correct' : 'wrong'}`}>
-            {testResults[testResults.length - 1]?.correct ? '✓ Doğru!' : '✗ Yanlış!'}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const TestResultsView = () => {
-    const correctCount = testResults.filter(r => r.correct).length;
-    const percentage = Math.round((correctCount / testWords.length) * 100);
-    const wrongCount = testResults.filter(r => !r.correct).length;
-    
-    return (
-      <div className="test-results">
-        <h2>🎉 Test Sonuçları</h2>
-        
-        <div className="score-circle">
-          <div className="score">{percentage}%</div>
-          <div style={{fontSize: '1rem', opacity: 0.8}}>{correctCount}/{testWords.length}</div>
-        </div>
-        
-        <div className="result-message">
-          {percentage >= 90 ? '🏆 Mükemmel!' : 
-           percentage >= 70 ? '🌟 Çok İyi!' : 
-           percentage >= 50 ? '👍 İyi gidiyorsun!' : 
-           '💪 Daha çok çalışmalısın!'}
-        </div>
-        
-        {wrongCount > 0 && (
-          <div className="wrong-answers">
-            <h3>📚 Yanlışlar</h3>
-            {testResults.filter(r => !r.correct).map((result, idx) => (
-              <div key={idx} className="wrong-item">
-                <strong>{result.word.term}</strong> - Doğru: {result.word.meaning}
-                <br/>
-                <small>Senin cevabın: {result.selected.meaning}</small>
-              </div>
-            ))}
-            <button onClick={startRetest} style={{marginTop: '15px', width: '100%'}}>
-              🔄 Yanlışları Tekrar Test Et
-            </button>
-          </div>
-        )}
-        
-        <div style={{marginTop: '30px', display: 'flex', gap: '15px', justifyContent: 'center'}}>
-          <button onClick={() => {setTestMode(false); setCurrentView('test-setup');}}>Yeni Test</button>
-          <button className="btn-secondary" onClick={() => {setTestMode(false); setCurrentView('practice');}}>Çalışmaya Dön</button>
-        </div>
-      </div>
-    );
-  };
-
-  
-
-      const WrongWordsView = () => (
-    <div className="wrong-words">
-      <h2>Yanlış Bilinen Kelimeler ({wrongWords.length})</h2>
-      {wrongWords.length === 0 ? (
-        <p className="empty">Henüz yanlış bilinen kelime yok! Harika gidiyorsun! 🎉</p>
-      ) : (
-        <div className="word-grid">
-          {wrongWords.map((word, idx) => (
-            <div key={idx} className="word-card wrong">
-              <h4>{word.term}</h4>
-              <p className="meaning">{word.meaning}</p>
-              <p className="hint">{word.hint}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-  
-
-  const RoomMenuView = () => (
-    <div className="room-menu">
-      <h2>Çok Oyunculu Oda Sistemi</h2>
-      <p className="description">Arkadaşlarınla birlikte kelime çalışması yap!</p>
-      {error && <div className="error">{error}</div>}
-      <div className="input-group">
-        <input 
-          id="username-input"
-          type="text"
-          placeholder="Kullanıcı adınız"
-          defaultValue={username}
-          style={{width: '100%', padding: '15px'}}
-        />
-      </div>
-      <div className="actions">
-        <button onClick={createRoom} disabled={loading}>{loading ? 'Oluşturuluyor...' : '🎮 Yeni Oda Oluştur'}</button>
-        <div className="or">veya</div>
-        <input 
-          id="joincode-input"
-          type="text"
-          placeholder="Oda kodu (6 haneli)"
-          defaultValue={joinCode}
-          maxLength={6}
-          style={{width: '100%', padding: '15px'}}
-        />
-        <button onClick={joinRoom}>🚪 Odaya Katıl</button>
-      </div>
-    </div>
-  );
-
-  const RoomView = () => {
-    useEffect(() => {
-      setError('');
-    }, []);
-
-    return (
-      <div className="room">
-        <div className="room-header">
-          <h3>Oda Kodu: <span className="code">{roomCode}</span></h3>
-          <p>Bu kodu arkadaşlarınla paylaş!</p>
-          <p style={{color: '#00d4ff', marginTop: '10px'}}>
-            👥 Odada {users.length} kişi var
-          </p>
-          {isHost && <span className="host-badge">👑 Host</span>}
-        </div>
-
-        <div className="users">
-          <h4>Kullanıcılar:</h4>
-          <ul>
-            {users.map((user, idx) => (
-              <li key={idx} className={user.username === username ? 'me' : ''}>
-                {user.username} {user.username === username && '(Sen)'} {user.isHost && '👑'}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="room-actions">
-          <button onClick={() => setCurrentView('practice')}>▶️ Çalışmaya Başla</button>
-          <button className="btn-secondary" onClick={leaveRoom}>🚪 Odadan Çık</button>
-        </div>
-      </div>
-    );
-  };
 if (loadingWords) {
   return (
-    <div style={{ padding: "40px", textAlign: "center" }}>
+    <div className="loading-screen">
       Kelime yükleniyor...
     </div>
   );
@@ -1956,13 +1729,11 @@ if (loadingWords) {
           wordsCount={words.length}
           wrongWordsCount={wrongWordsCount}
           favoritesCount={favorites.length}
-          setTestMode={setTestMode}
-          setMatchingGame={setMatchingGame}
         />
     </header>
 
     <main>
-      {!testMode && currentView === 'practice' && (
+      {currentView === 'practice' && (
         <PracticeView 
           isInRoom={isInRoom}
           stats={stats}
@@ -1992,14 +1763,12 @@ if (loadingWords) {
           speakWord={speakWord}
         />
       )}
-      {!testMode && currentView === 'test-setup' && <TestSetupView />}
-      {testMode && !testFinished && <TestView />}
-      {testMode && testFinished && <TestResultsView />}
-      {currentView === 'favorites' && <FavoritesView />}
-      {currentView === 'matching-game' && <MatchingGameView />}
-      {currentView === 'profile' && <ProfileView />}
-      {currentView === 'public-profile' && <PublicProfileView />}
-      {currentView === 'leaderboard' && <LeaderboardView />}
+      {currentView === 'test' && <TestManager words={words} setCurrentView={setCurrentView} setWrongWords={setWrongWords} />}
+      {currentView === 'favorites' && <FavoritesView favorites={favorites} toggleFavorite={toggleFavorite} />}
+      {currentView === 'matching-game' && <MatchingGameView words={words} setCurrentView={setCurrentView} />}
+      {currentView === 'profile' && <ProfileView user={user} setUser={setUser} logout={logout} setCurrentView={setCurrentView} />}
+      {currentView === 'public-profile' && <PublicProfileView selectedUser={selectedUser} setCurrentView={setCurrentView} />}
+      {currentView === 'leaderboard' && <LeaderboardView user={user} setCurrentView={setCurrentView} setSelectedUser={setSelectedUser} />}
       {currentView === 'word-list' && (
         <WordListView
           words={uniqueWords}
@@ -2013,9 +1782,9 @@ if (loadingWords) {
           speakWord={speakWord}
         />
       )}
-      {currentView === 'wrong-words' && <WrongWordsView />}
-      {currentView === 'room-menu' && <RoomMenuView />}
-      {currentView === 'room' && <RoomView />}
+      {currentView === 'wrong-words' && <WrongWordsView wrongWords={wrongWords} />}
+      {currentView === 'room-menu' && <RoomMenuView username={username} createRoom={createRoom} joinRoom={joinRoom} loading={loading} error={error} />}
+      {currentView === 'room' && <RoomView roomCode={roomCode} users={users} username={username} isHost={isHost} setCurrentView={setCurrentView} leaveRoom={leaveRoom} />}
     </main>
 
     {showLogin && (
@@ -2050,82 +1819,6 @@ if (loadingWords) {
 
   </div>
 );
-}
-function WordListView({
-  words,
-  searchTerm,
-  setSearchTerm,
-  filteredWords,
-  selectedLevel,
-  setSelectedLevel,
-  favorites,
-  toggleFavorite,
-  speakWord
-}) {
-  return (
-    <div className="word-list">
-      <h2>Tüm Kelimeler ({words.length}) - Alfabetik</h2>
-
-      <div className="search-box">
-
-  <input
-    type="text"
-    placeholder="Kelime veya anlam ara..."
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-  />
-
-  <select
-    value={selectedLevel}
-    onChange={(e)=>setSelectedLevel(e.target.value)}
-  >
-
-    <option value="ALL">All</option>
-    <option value="A1">A1</option>
-    <option value="A2">A2</option>
-    <option value="B1">B1</option>
-    <option value="B2">B2</option>
-    <option value="C1">C1</option>
-    <option value="C2">C2</option>
-
-  </select>
-
-</div>
-
-      <div className="word-grid">
-        {filteredWords.map((word, idx) => (
-          <div key={word.term} className="word-card">
-
-            <button
-              className="fav-btn"
-              onClick={() => toggleFavorite(word)}
-            >
-              {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
-            </button>
-
-            <button
-              className="list-speak-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                speakWord(word);
-              }}
-              title="Telaffuz"
-            >
-              🔊
-            </button>
-
-            <h4>
- {word.term}
- <span className="level">{word.level}</span>
-</h4>
-            <p className="meaning">{word.meaning}</p>
-            <p className="hint">{word.hint}</p>
-
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 export default App;
