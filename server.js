@@ -21,8 +21,8 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Production'da HTTPS zorunlu
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-site cookie için gerekli
+    secure: process.env.NODE_ENV === 'production' || !!process.env.RENDER_EXTERNAL_URL, 
+    sameSite: (process.env.NODE_ENV === 'production' || !!process.env.RENDER_EXTERNAL_URL) ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 saat
   }
 }));

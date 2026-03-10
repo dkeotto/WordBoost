@@ -657,9 +657,9 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
             </div>
           )}
 
-          {leaders.filter(u => u && u.username && u.username.trim().length > 0).map((u, idx) => (
+          {leaders.filter(u => u && u.username && u.username.trim().length > 0 && u.stats).map((u, idx) => (
             <div 
-              key={idx} 
+              key={u._id || idx} 
               className={`lb-item ${user && user.username === u.username ? 'me' : ''}`}
               onClick={() => openProfile(u.username)}
               style={{cursor: 'pointer'}}
@@ -670,15 +670,17 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
                   {u.avatar && u.avatar.startsWith('http') ? (
                     <img src={u.avatar} alt="av" className="lb-avatar-img" />
                   ) : (
-                    u.avatar || "👤"
+                    <div className="lb-avatar-img" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#333', color: '#fff'}}>
+                       {u.avatar || "👤"}
+                    </div>
                   )}
                 </span>
-                <span className="nick">
+                <span className="nick" title={u.nickname || u.username}>
                   {(u.nickname && u.nickname.trim().length > 0) ? u.nickname : u.username}
                 </span>
               </div>
-              <span className="streak">🔥 {u.streak || 0}</span>
-              <span className="score">⭐ {u.stats?.known || 0}</span>
+              <span className="streak" style={{display: 'inline-block'}}>🔥 {u.streak || 0}</span>
+              <span className="score" style={{display: 'inline-block'}}>⭐ {u.stats?.known || 0}</span>
             </div>
           ))}
         </div>

@@ -1034,20 +1034,35 @@ button:disabled {
   }
   
   /* Leaderboard Mobile */
-  .leaderboard-view {
-    padding: 1rem;
-    width: 100%;
-  }
+.leaderboard-view {
+  padding: 1rem;
+  width: 100%;
+}
 
-  .lb-item {
-    padding: 12px 8px;
-    gap: 8px;
-    font-size: 0.9rem;
-  }
+.lb-item {
+  padding: 12px 8px;
+  gap: 8px;
+  font-size: 0.9rem;
+  /* Mobilde grid yapısını güncelle */
+  grid-template-columns: 30px 1fr 50px 50px !important;
+}
 
-  .nick {
-    max-width: 80px; /* İsim taşmasını engelle */
-  }
+.lb-header {
+  grid-template-columns: 30px 1fr 50px 50px !important;
+}
+
+/* Mobilde Streak ve Score GÖZÜKSÜN */
+.lb-header span:nth-child(3), .lb-item span:nth-child(3),
+.lb-header span:nth-child(4), .lb-item span:nth-child(4) { 
+  display: block !important; 
+} 
+
+.nick {
+  max-width: 80px; /* İsim taşmasını engelle */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 }
 
 /* Responsive Fixes */
