@@ -12,6 +12,7 @@ const session = require('express-session');
 
 
 const app = express();
+app.set('trust proxy', 1); // Proxy arkasında (Render/Railway) çalıştığı için gerekli
 const server = http.createServer(app);
 
 // Session Config (Passport için gerekli)

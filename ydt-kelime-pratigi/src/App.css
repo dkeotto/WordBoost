@@ -70,21 +70,21 @@ main {
 }
 
 .practice h2 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-align: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .flashcard-container {
   width: 100%;
   max-width: 600px;
   perspective: 1000px;
-  margin: 20px auto;
+  margin: 10px auto;
   position: relative;
-  transition: transform 0.3s ease; /* Konteyner hareket edecek */
+  transition: transform 0.3s ease;
 }
 
 .flashcard-container:hover {
@@ -175,15 +175,15 @@ main {
 
 .flashcard {
   width: 100%;
-  height: 400px; /* Sabit yükseklik, kaymaları önler */
+  height: 350px; /* Yükseklik azaltıldı */
   position: relative;
   transform-style: preserve-3d;
   transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1), box-shadow 0.3s;
   cursor: pointer;
-  border-radius: 24px; /* Daha yuvarlak köşeler */
+  border-radius: 24px;
   box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-  margin-bottom: 20px;
-  background-color: transparent; /* Arka planı inner'a bırak */
+  margin-bottom: 10px;
+  background-color: transparent;
 }
 
 .flashcard.flipped {
@@ -230,7 +230,7 @@ main {
 }
 
 .card-front h2 {
-  font-size: 3.5rem; /* Daha büyük font */
+  font-size: 3rem;
   font-weight: 800;
   margin: 0;
   padding: 0 20px;
@@ -238,8 +238,6 @@ main {
   text-shadow: 0 4px 20px rgba(0,0,0,0.5);
   text-align: center;
   line-height: 1.2;
-  
-  /* Absolute yerine Flex item olarak merkezde kalsın */
   position: relative; 
   top: auto;
   left: auto;
@@ -375,14 +373,14 @@ button:disabled {
 .stats-container {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
   background: #1E1E1E;
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   width: 100%;
-  max-width: 800px; /* Genişletildi */
+  max-width: 800px;
 }
 
 .stats {  
