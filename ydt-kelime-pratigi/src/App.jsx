@@ -21,29 +21,37 @@ socket.io.on('upgradeError', (err) => {
 });
 
 
+let audioCtx;
+
 const playSound = (type) => {
   try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
     
     oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    gainNode.connect(audioCtx.destination);
     
     if (type === 'correct') {
-      oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
-      oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1);
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
+      oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+      oscillator.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+      gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+      oscillator.start(audioCtx.currentTime);
+      oscillator.stop(audioCtx.currentTime + 0.3);
     } else {
-      oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-      oscillator.frequency.setValueAtTime(150, audioContext.currentTime + 0.2);
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.4);
+      oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+      oscillator.frequency.setValueAtTime(150, audioCtx.currentTime + 0.2);
+      gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+      oscillator.start(audioCtx.currentTime);
+      oscillator.stop(audioCtx.currentTime + 0.4);
     }
   } catch (e) {
     console.log('Ses çalınamadı:', e);
@@ -642,7 +650,14 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
             <span>Seri</span>
             <span>Puan</span>
           </div>
-          {leaders.filter(u => u && u.username && u.username.trim().length > 0 && u.stats).map((u, idx) => (
+          
+          {leaders.length === 0 && !loading && (
+            <div style={{padding: '20px', textAlign: 'center', color: '#888'}}>
+              Henüz kimse listeye girmemiş. İlk sen ol! 🚀
+            </div>
+          )}
+
+          {leaders.filter(u => u && u.username && u.username.trim().length > 0).map((u, idx) => (
             <div 
               key={idx} 
               className={`lb-item ${user && user.username === u.username ? 'me' : ''}`}

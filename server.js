@@ -19,7 +19,12 @@ const server = http.createServer(app);
 app.use(session({
   secret: process.env.SESSION_SECRET || 'gizli_anahtar_session',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // Production'da HTTPS zorunlu
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-site cookie için gerekli
+    maxAge: 24 * 60 * 60 * 1000 // 24 saat
+  }
 }));
 
 app.use(passport.initialize());
@@ -99,7 +104,8 @@ passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "GOOGLE_CLIENT_ID_BURAYA",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "GOOGLE_CLIENT_SECRET_BURAYA",
     callbackURL: `${BACKEND_URL}/auth/google/callback`,
-    passReqToCallback: true
+    passReqToCallback: true,
+    proxy: true // Railway/Render için gerekli
   },
   async (req, accessToken, refreshToken, profile, done) => {
     try {
@@ -471,12 +477,18 @@ app.get('/api/users/:username', async (req, res) => {
 app.get('/api/leaderboard', async (req, res) => {
   try {
     // STREAK'e göre sırala (Önce en yüksek seri, sonra en çok bilinen kelime)
-    const users = await User.find()
+    const users = await User.find({
+      username: { $exists: true, $ne: "" },
+      "stats.known": { $exists: true }
+    })
       .sort({ "streak": -1, "stats.known": -1 }) // Önce seri, sonra puan
       .limit(50)
       .select("username nickname avatar stats badges streak");
 
-    res.json(users);
+    // Boş kullanıcıları filtrele (ek güvenlik)
+    const filteredUsers = users.filter(u => u.username && u.username.trim().length > 0);
+
+    res.json(filteredUsers);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Leaderboard error" });
