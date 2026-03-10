@@ -811,7 +811,7 @@ const ProfileView = () => {
             <span>Seri</span>
             <span>Puan</span>
           </div>
-          {leaders.map((u, idx) => (
+          {leaders.filter(u => u && u.username).map((u, idx) => (
             <div 
               key={idx} 
               className={`lb-item ${user && user.username === u.username ? 'me' : ''}`}

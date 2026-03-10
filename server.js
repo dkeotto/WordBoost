@@ -67,9 +67,11 @@ const User = mongoose.model("User", UserSchema);
 
 // PASSPORT GOOGLE STRATEGY
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+// GÜNCELLEME: Varsayılan olarak canlı site adresini kullan, localhost değil.
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://ydtkelime.onrender.com';
 
 console.log("🔹 Google Callback URL:", `${BACKEND_URL}/auth/google/callback`);
+console.log("🔹 Frontend Redirect URL:", FRONTEND_URL);
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "GOOGLE_CLIENT_ID_BURAYA",
@@ -161,6 +163,7 @@ app.get('/auth/google/callback', (req, res, next) => {
         { expiresIn: "30d" }
       );
 
+      // FRONTEND_URL'e yönlendir (Token ile)
       res.redirect(`${FRONTEND_URL}/?token=${token}&username=${user.username}`);
     });
   })(req, res, next);
@@ -923,4 +926,3 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
-

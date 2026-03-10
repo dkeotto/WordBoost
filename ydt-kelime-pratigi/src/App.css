@@ -172,6 +172,7 @@ main {
   z-index: 50;
   font-size: 1rem;
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  pointer-events: none; /* Tıklamayı engelle, karta geçsin */
 }
 
 .flashcard {
@@ -217,13 +218,14 @@ main {
   justify-content: center;
   border-radius: 20px;
   padding: 2rem;
-  background: linear-gradient(135deg, #1E1E1E, #252525);
-  border: 1px solid rgba(255, 159, 28, 0.2);
+  background: #2A2A2A; /* Daha açık koyu gri */
+  border: 2px solid rgba(255, 159, 28, 0.3); /* Daha belirgin kenarlık */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
 
 .card-back {
   transform: rotateY(180deg);
-  background: linear-gradient(135deg, #252525, #1E1E1E);
+  background: #2F2F2F;
   border-color: var(--primary-color);
 }
 
@@ -364,30 +366,34 @@ button:disabled {
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   margin-bottom: 2rem;
   width: 100%;
-  max-width: 600px;
+  max-width: 800px; /* Genişletildi */
 }
 
 .stats {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  gap: 15px;
+  gap: 20px; /* Aralık arttırıldı */
   width: 100%;
+  flex-wrap: wrap; /* Mobilde taşmayı önler */
 }
 
 .stat {
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex: 1; /* Eşit alan kaplasınlar */
+  min-width: 80px;
 }
 
 .stat span {
-  font-size: 0.9rem;
+  font-size: 1rem; /* Yazı büyütüldü */
   color: var(--text-muted);
+  margin-bottom: 5px;
 }
 
 .stat strong {
-  font-size: 1.5rem;
+  font-size: 1.8rem; /* Sayılar büyütüldü */
   color: white;
 }
 
@@ -1715,56 +1721,126 @@ button:disabled {
   padding: 2rem;
   border-radius: 20px;
   border: 1px solid rgba(255, 159, 28, 0.2);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-.leaderboard-view h2 {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: var(--primary-color);
+.user-search-container {
+  position: relative;
+  margin-bottom: 25px;
+}
+
+.user-search-input {
+  width: 100%;
+  padding: 15px;
+  border-radius: 12px;
+  background: #2A2A2A;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.user-search-input:focus {
+  border-color: var(--primary-color);
+  background: #333;
+  outline: none;
 }
 
 .leaderboard-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.lb-header, .lb-item {
-  display: grid;
-  grid-template-columns: 50px 1fr 100px 100px;
-  padding: 15px;
-  align-items: center;
-  border-radius: 10px;
+  gap: 12px;
 }
 
 .lb-header {
+  display: grid;
+  grid-template-columns: 60px 1fr 100px 100px;
+  padding: 15px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   font-weight: bold;
-  color: var(--text-muted);
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  color: var(--primary-color);
   margin-bottom: 10px;
 }
 
 .lb-item {
-  background: rgba(255,255,255,0.03);
+  display: grid;
+  grid-template-columns: 60px 1fr 100px 100px;
+  padding: 15px;
+  align-items: center;
+  border-radius: 12px;
+  background: #252525;
   transition: all 0.2s;
+  cursor: pointer;
+  border: 1px solid transparent;
 }
 
-.lb-item:hover { background: rgba(255,255,255,0.08); }
-.lb-item.me { border: 1px solid var(--primary-color); background: rgba(255, 159, 28, 0.1); }
+.lb-item:hover {
+  background: #2A2A2A;
+  transform: translateY(-2px);
+  border-color: rgba(255, 159, 28, 0.3);
+}
 
-.lb-item .rank { font-weight: bold; font-size: 1.2rem; color: var(--text-muted); text-align: center; }
-.lb-item:nth-child(2) .rank { color: #FFD700; } /* 1st (header is 1st child) -> actually header is separate in my html structure? no, it's inside list div */
-/* wait, header is inside list div. So item 1 is nth-child(2) */
-.lb-item:nth-child(2) .rank { color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); font-size: 1.5rem; } 
-.lb-item:nth-child(3) .rank { color: #C0C0C0; font-size: 1.4rem; }
-.lb-item:nth-child(4) .rank { color: #CD7F32; font-size: 1.3rem; }
+.lb-item.me {
+  background: rgba(255, 159, 28, 0.15);
+  border: 1px solid var(--primary-color);
+}
 
-.user-col { display: flex; align-items: center; gap: 10px; }
-.user-col .avatar { font-size: 1.5rem; }
-.user-col .nick { font-weight: bold; }
+.user-col {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
-.lb-item .streak { color: #FF4500; font-weight: bold; }
-.lb-item .score { color: var(--secondary-color); font-weight: bold; }
+.lb-avatar-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-color);
+}
+
+.nick {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.rank {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #888;
+}
+
+.lb-item:nth-child(1) .rank { color: #FFD700; font-size: 1.4rem; }
+.lb-item:nth-child(2) .rank { color: #C0C0C0; font-size: 1.3rem; }
+.lb-item:nth-child(3) .rank { color: #CD7F32; font-size: 1.3rem; }
+
+.streak { color: #FF5722; font-weight: bold; }
+.score { color: #FFC107; font-weight: bold; }
+
+@media screen and (max-width: 768px) {
+  .leaderboard-view {
+    padding: 1rem;
+  }
+  
+  .lb-header, .lb-item {
+    grid-template-columns: 40px 1fr auto auto;
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .nick {
+    font-size: 0.9rem;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .streak, .score {
+    font-size: 0.9rem;
+  }
+}
 
 /* Mobile Responsive */
 @media screen and (max-width: 768px) {
