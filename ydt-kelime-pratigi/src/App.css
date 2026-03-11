@@ -1182,6 +1182,96 @@ button:disabled {
   background: rgba(255, 255, 255, 0.05);
 }
 
+/* Yeni Rozet Bildirimi */
+.badge-notification-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(8px);
+}
+
+.badge-notification-modal {
+  background: var(--bg-light);
+  padding: 1.75rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 159, 28, 0.35);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  max-width: 380px;
+  width: 90%;
+  animation: popInStatic 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.badge-notification-modal h3 {
+  color: var(--text-main);
+  font-size: 1.35rem;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.badge-notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.badge-notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.85rem;
+  background: rgba(255, 159, 28, 0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 159, 28, 0.2);
+  text-align: left;
+}
+
+.badge-notification-icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.badge-notification-item strong {
+  display: block;
+  color: var(--primary-color);
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.badge-notification-item p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.badge-notification-btn {
+  display: block;
+  width: 100%;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border: none;
+  border-radius: 12px;
+  color: var(--bg-dark);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.badge-notification-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(255, 159, 28, 0.4);
+}
+
 /* Login Modal Specifics */
 .login-modal h2 {
   color: var(--primary-color);

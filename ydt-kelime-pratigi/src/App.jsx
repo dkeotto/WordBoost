@@ -1275,6 +1275,7 @@ function App() {
 
   const [showLogin, setShowLogin] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [newBadgeNotification, setNewBadgeNotification] = useState(null); // { badges: [{ id }] }
   const [currentView, setCurrentView] = useState('practice');
   const [words, setWords] = useState([]);
   const [loadingWords, setLoadingWords] = useState(true);
@@ -1735,11 +1736,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
             }));
             
             if (data.newBadges && data.newBadges.length > 0) {
-              data.newBadges.forEach(b => {
-                // Basit bir toast/alert yerine custom bir animasyon eklenebilir
-                // Şimdilik alert
-                alert(`🎉 YENİ ROZET: ${b.name}\n${b.desc}`);
-              });
+              setNewBadgeNotification({ badges: data.newBadges });
             }
           }
         })
@@ -1899,6 +1896,31 @@ if (loadingWords) {
               Vazgeç
             </button>
           </div>
+        </div>
+      </div>
+    )}
+
+    {newBadgeNotification && newBadgeNotification.badges && newBadgeNotification.badges.length > 0 && (
+      <div className="badge-notification-overlay" onClick={() => setNewBadgeNotification(null)}>
+        <div className="badge-notification-modal" onClick={e => e.stopPropagation()}>
+          <h3>🎉 Yeni Rozet{newBadgeNotification.badges.length > 1 ? 'ler' : ''} Kazandın!</h3>
+          <div className="badge-notification-list">
+            {newBadgeNotification.badges.map(b => {
+              const info = BADGES[b.id] || { icon: b.icon || '🏆', name: b.name || b.id, desc: b.desc || '' };
+              return (
+                <div key={b.id} className="badge-notification-item">
+                  <span className="badge-notification-icon">{info.icon}</span>
+                  <div>
+                    <strong>{info.name}</strong>
+                    <p>{info.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <button className="badge-notification-btn" onClick={() => setNewBadgeNotification(null)}>
+            Tamam
+          </button>
         </div>
       </div>
     )}

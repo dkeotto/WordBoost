@@ -233,7 +233,7 @@ app.delete('/api/profile', async (req, res) => {
   }
 });
 
-// BADGE CONSTANTS
+// BADGE CONSTANTS (UTF-8 Turkish)
 const BADGES = {
   NEWBIE: { id: 'newbie', icon: '??', name: 'Yeni Baºlayan', desc: 'Aram?za hoº geldin!' },
   STREAK_3: { id: 'streak_3', icon: '??', name: '3 Günlük Seri', desc: '3 gün üst üste çal?ºt?n!' },
