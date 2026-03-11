@@ -12,10 +12,10 @@ const session = require('express-session');
 const nodemailer = require('nodemailer');
 
 const app = express();
-app.set('trust proxy', 1); // Proxy arkasında (Render/Railway) çalıştığı için gerekli
+app.set('trust proxy', 1); // Proxy arkas?nda (Render/Railway) �al?�t??? i�in gerekli
 const server = http.createServer(app);
 
-// Session Config (Passport için gerekli)
+// Session Config (Passport i�in gerekli)
 app.use(session({
   secret: process.env.SESSION_SECRET || 'gizli_anahtar_session',
   resave: false,
@@ -51,9 +51,9 @@ const UserSchema = new mongoose.Schema({
   googleId: String,
   username: { type: String, unique: true },
   email: { type: String, unique: true, sparse: true },
-  isVerified: { type: Boolean, default: false }, // Mail doğrulama durumu
-  verificationCode: String, // Doğrulama kodu
-  verificationCodeExpires: Date, // Kod geçerlilik süresi
+  isVerified: { type: Boolean, default: false }, // Mail do?rulama durumu
+  verificationCode: String, // Do?rulama kodu
+  verificationCodeExpires: Date, // Kod ge�erlilik s�resi
   password: String,
   nickname: String,
   bio: { type: String, default: "" },
@@ -84,7 +84,7 @@ if (process.env.RAILWAY_PUBLIC_DOMAIN) {
   const railwayUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
   if (!BACKEND_URL) BACKEND_URL = railwayUrl;
   if (!FRONTEND_URL) FRONTEND_URL = railwayUrl;
-  console.log("🚂 Railway Environment Detected");
+  console.log("?? Railway Environment Detected");
 }
 
 // Auto-detect Render
@@ -92,43 +92,43 @@ if (process.env.RENDER_EXTERNAL_URL) {
   const renderUrl = process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '');
   if (!BACKEND_URL) BACKEND_URL = renderUrl;
   if (!FRONTEND_URL) FRONTEND_URL = renderUrl;
-  console.log("☁️ Render Environment Detected");
+  console.log("?? Render Environment Detected");
 }
 
 // Defaults
 if (!BACKEND_URL) BACKEND_URL = 'http://localhost:3000';
 if (!FRONTEND_URL) FRONTEND_URL = 'http://localhost:5173';
 
-console.log("🔹 Final Configuration:");
+console.log("?? Final Configuration:");
 console.log(`   - FRONTEND: ${FRONTEND_URL}`);
 console.log(`   - BACKEND: ${BACKEND_URL}`);
 
-console.log("🔹 Google Callback URL:", `${BACKEND_URL}/auth/google/callback`);
+console.log("?? Google Callback URL:", `${BACKEND_URL}/auth/google/callback`);
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "GOOGLE_CLIENT_ID_BURAYA",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "GOOGLE_CLIENT_SECRET_BURAYA",
     callbackURL: `${BACKEND_URL}/auth/google/callback`,
     passReqToCallback: true,
-    proxy: true // Railway/Render için gerekli
+    proxy: true // Railway/Render i�in gerekli
   },
   async (req, accessToken, refreshToken, profile, done) => {
     try {
-      console.log("🔹 Google Profile:", profile.displayName, profile.id);
+      console.log("?? Google Profile:", profile.displayName, profile.id);
       
-      // 1. Önce Google ID ile ara
+      // 1. �nce Google ID ile ara
       let user = await User.findOne({ googleId: profile.id });
       if (user) return done(null, user);
 
-      // 2. Email ile ara (Hesap eşleştirme)
+      // 2. Email ile ara (Hesap e�le�tirme)
       const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
       if (email) {
         user = await User.findOne({ email });
         if (user) {
           // Mevcut hesaba Google ID ekle
           user.googleId = profile.id;
-          // Eğer avatar yoksa Google avatarını ekle
-          if (!user.avatar || user.avatar === '👤') {
+          // E?er avatar yoksa Google avatar?n? ekle
+          if (!user.avatar || user.avatar === '??') {
              user.avatar = profile.photos && profile.photos[0] ? profile.photos[0].value : user.avatar;
           }
           await user.save();
@@ -136,7 +136,7 @@ passport.use(new GoogleStrategy({
         }
       }
 
-      // 3. Yeni Kullanıcı Oluştur
+      // 3. Yeni Kullan?c? Olu�tur
       const baseUsername = email ? email.split('@')[0] : profile.displayName.replace(/\s+/g, '').toLowerCase();
       let finalUsername = baseUsername;
       let counter = 1;
@@ -149,7 +149,7 @@ passport.use(new GoogleStrategy({
         googleId: profile.id,
         username: finalUsername,
         email: email, // Email kaydet
-        isVerified: true, // Google ile gelenler otomatik onaylı
+        isVerified: true, // Google ile gelenler otomatik onayl?
         nickname: profile.displayName,
         avatar: profile.photos && profile.photos[0] ? profile.photos[0].value : `https://api.dicebear.com/7.x/adventurer/svg?seed=${finalUsername}&backgroundColor=b6e3f4,c0aede,d1d4f9`,
         badges: [BADGES.NEWBIE.id],
@@ -183,15 +183,15 @@ app.get('/auth/google',
 );
 
 app.get('/auth/google/callback', (req, res, next) => {
-  console.log("🔹 Google Callback Hit:", req.url);
+  console.log("?? Google Callback Hit:", req.url);
   passport.authenticate('google', (err, user, info) => {
     if (err) {
       console.error("Google Auth Error:", err);
-      // Hata durumunda frontend'e yönlendir
+      // Hata durumunda frontend'e y�nlendir
       return res.redirect(`${FRONTEND_URL}/?error=auth_error`);
     }
     if (!user) {
-      // Kullanıcı iptal ettiyse veya kullanıcı bulunamadıysa
+      // Kullan?c? iptal ettiyse veya kullan?c? bulunamad?ysa
       return res.redirect(`${FRONTEND_URL}/?error=auth_cancel`);
     }
 
@@ -201,14 +201,14 @@ app.get('/auth/google/callback', (req, res, next) => {
         return res.redirect(`${FRONTEND_URL}/?error=login_error`);
       }
 
-      // Başarılı giriş
+      // Ba�ar?l? giri�
       const token = jwt.sign(
         { id: user._id, username: user.username },
         "SECRET_KEY",
         { expiresIn: "30d" }
       );
 
-      // FRONTEND_URL'e yönlendir (Token ile)
+      // FRONTEND_URL'e y�nlendir (Token ile)
       res.redirect(`${FRONTEND_URL}/?token=${token}&username=${user.username}`);
     });
   })(req, res, next);
@@ -223,7 +223,7 @@ app.delete('/api/profile', async (req, res) => {
     const decoded = jwt.verify(token, "SECRET_KEY");
     const user = await User.findById(decoded.id);
 
-    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    if (!user) return res.status(404).json({ error: "Kullan?c? bulunamad?" });
 
     await User.findByIdAndDelete(decoded.id);
     res.json({ success: true, message: "Hesap silindi" });
@@ -235,16 +235,16 @@ app.delete('/api/profile', async (req, res) => {
 
 // BADGE CONSTANTS
 const BADGES = {
-  NEWBIE: { id: 'newbie', icon: '🐣', name: 'Yeni Başlayan', desc: 'Aramıza hoş geldin!' },
-  STREAK_3: { id: 'streak_3', icon: '🔥', name: '3 Günlük Seri', desc: '3 gün üst üste çalıştın!' },
-  STREAK_7: { id: 'streak_7', icon: '⚡', name: 'Haftalık Seri', desc: '7 gün üst üste çalıştın!' },
-  STREAK_30: { id: 'streak_30', icon: '🚀', name: 'Aylık Seri', desc: '30 gün üst üste çalıştın! İnanılmaz!' },
-  KNOWN_100: { id: 'known_100', icon: '🧠', name: 'Kelime Avcısı', desc: '100 kelime öğrendin!' },
-  KNOWN_500: { id: 'known_500', icon: '🎓', name: 'Kelime Ustası', desc: '500 kelime öğrendin!' },
-  KNOWN_1000: { id: 'known_1000', icon: '👑', name: 'Kelime Kralı', desc: '1000 kelime öğrendin!' },
-  NIGHT_OWL: { id: 'night_owl', icon: '🦉', name: 'Gece Kuşu', desc: 'Gece 00:00 - 05:00 arası çalıştın.' },
-  EARLY_BIRD: { id: 'early_bird', icon: '🌅', name: 'Erkenci Kuş', desc: 'Sabah 05:00 - 09:00 arası çalıştın.' },
-  WEEKEND_WARRIOR: { id: 'weekend_warrior', icon: '🎉', name: 'Hafta Sonu Savaşçısı', desc: 'Hafta sonu çalışmayı ihmal etmedin.' }
+  NEWBIE: { id: 'newbie', icon: '??', name: 'Yeni Ba�layan', desc: 'Aram?za ho� geldin!' },
+  STREAK_3: { id: 'streak_3', icon: '??', name: '3 G�nl�k Seri', desc: '3 g�n �st �ste �al?�t?n!' },
+  STREAK_7: { id: 'streak_7', icon: '?', name: 'Haftal?k Seri', desc: '7 g�n �st �ste �al?�t?n!' },
+  STREAK_30: { id: 'streak_30', icon: '??', name: 'Ayl?k Seri', desc: '30 g�n �st �ste �al?�t?n! ?nan?lmaz!' },
+  KNOWN_100: { id: 'known_100', icon: '??', name: 'Kelime Avc?s?', desc: '100 kelime �?rendin!' },
+  KNOWN_500: { id: 'known_500', icon: '??', name: 'Kelime Ustas?', desc: '500 kelime �?rendin!' },
+  KNOWN_1000: { id: 'known_1000', icon: '??', name: 'Kelime Kral?', desc: '1000 kelime �?rendin!' },
+  NIGHT_OWL: { id: 'night_owl', icon: '??', name: 'Gece Ku�u', desc: 'Gece 00:00 - 05:00 aras? �al?�t?n.' },
+  EARLY_BIRD: { id: 'early_bird', icon: '??', name: 'Erkenci Ku�', desc: 'Sabah 05:00 - 09:00 aras? �al?�t?n.' },
+  WEEKEND_WARRIOR: { id: 'weekend_warrior', icon: '??', name: 'Hafta Sonu Sava��?s?', desc: 'Hafta sonu �al?�may? ihmal etmedin.' }
 };
 
 const RoomSchema = new mongoose.Schema({
@@ -269,7 +269,8 @@ const Word = mongoose.model("Word", WordSchema);
 async function startServer() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("🍃 MongoDB connected");
+    console.log("?? MongoDB connected");
+    await ensureMailTransport();
 
     // CLEANUP GHOST USERS & UNVERIFIED USERS
     try {
@@ -278,12 +279,12 @@ async function startServer() {
           { username: { $exists: false } },
           { username: null },
           { username: "" },
-          { "username": { $type: "string", $regex: /^\s*$/ } }, // sadece boşluk içerenler
-          { isVerified: false } // Doğrulanmamış hesapları sil
+          { "username": { $type: "string", $regex: /^\s*$/ } }, // sadece bo�luk i�erenler
+          { isVerified: false } // Do?rulanmam?� hesaplar? sil
         ]
       });
       if (deleted.deletedCount > 0) {
-        console.log(`🧹 Cleaned up ${deleted.deletedCount} ghost/unverified users`);
+        console.log(`?? Cleaned up ${deleted.deletedCount} ghost/unverified users`);
       }
     } catch (e) {
       console.error("Cleanup error:", e);
@@ -292,7 +293,7 @@ async function startServer() {
     const PORT = process.env.PORT || 3000;
     
     server.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`?? Server running on port ${PORT}`);
     });
 
   } catch (err) {
@@ -304,7 +305,7 @@ async function startServer() {
 startServer();
 
 
-// CORS ve transport ayarları
+// CORS ve transport ayarlar?
 const io = new Server(server, {
   cors: {
     origin: "*",
@@ -319,11 +320,11 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Veri yapıları
+// Veri yap?lar?
 const rooms = new Map();        // roomCode -> room bilgileri
 const roomUsers = new Map();    // socket.id -> { roomCode, username, isHost }
 const roomStats = new Map();    // roomCode -> { username: { studied, known, unknown, avatar } }
-const roomHosts = new Map();    // roomCode -> hostUsername (güvenlik için)
+const roomHosts = new Map();    // roomCode -> hostUsername (g�venlik i�in)
 
 function generateRoomCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -345,35 +346,105 @@ const transporter = nodemailer.createTransport({
   logger: true
 });
 
-// Helper to send mail
+// Helper to send mail (with timeout so API never hangs)
+const MAIL_SEND_TIMEOUT_MS = 15000;
+
 async function sendVerificationEmail(email, username, code) {
-  console.log(`📧 Attempting to send email to ${email}...`);
-  try {
-    const sender = process.env.EMAIL_USER || 'wordboost.team@gmail.com';
-    const info = await transporter.sendMail({
+  console.log(`?? Attempting to send email to ${email}...`);
+  const sender = process.env.EMAIL_USER || 'wordboost.team@gmail.com';
+
+  const mailPromise = transporter.sendMail({
       from: `"WordBoost" <${sender}>`, 
       to: email,
-      subject: 'WordBoost Doğrulama Kodu',
-      text: `Merhaba ${username},\n\nHesabını doğrulamak için kodun: ${code}\n\nİyi çalışmalar!`,
+      subject: 'WordBoost Do?rulama Kodu',
+      text: `Merhaba ${username},\n\nHesab?n? do?rulamak i�in kodun: ${code}\n\n?yi �al?�malar!`,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-          <h2 style="color: #FF9F1C;">WordBoost Doğrulama</h2>
+          <h2 style="color: #FF9F1C;">WordBoost Do?rulama</h2>
           <p>Merhaba <strong>${username}</strong>,</p>
-          <p>Hesabını doğrulamak için aşağıdaki kodu kullanabilirsin:</p>
+          <p>Hesab?n? do?rulamak i�in a�a??daki kodu kullanabilirsin:</p>
           <div style="background: #f4f4f4; padding: 15px; border-radius: 10px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 5px; color: #333;">
             ${code}
           </div>
-          <p>Bu kod 1 saat süreyle geçerlidir.</p>
+          <p>Bu kod 1 saat s�reyle ge�erlidir.</p>
           <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-          <p style="font-size: 12px; color: #999;">Eğer bu işlemi sen yapmadıysan, bu maili görmezden gelebilirsin.</p>
+          <p style="font-size: 12px; color: #999;">E?er bu i�lemi sen yapmad?ysan, bu maili g�rmezden gelebilirsin.</p>
         </div>
       `
-    });
-    console.log("✅ Mail sent successfully: %s", info.messageId);
+  });
+
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Mail g�nderimi zaman a�?m?na u?rad? (SMTP yan?t vermiyor)')), MAIL_SEND_TIMEOUT_MS)
+  );
+
+  try {
+    const info = await Promise.race([mailPromise, timeoutPromise]);
+    console.log("? Mail sent successfully: %s", info.messageId);
+    const accepted = Array.isArray(info.accepted) ? info.accepted : [];
+    const rejected = Array.isArray(info.rejected) ? info.rejected : [];
+    console.log("Mail delivery details:", { accepted, rejected, response: info.response });
+    if (!accepted.includes(email)) {
+      return {
+        success: false,
+        error: `Recipient was not accepted by SMTP server. Rejected: ${rejected.join(', ') || 'unknown'}`
+      };
+    }
+    return { success: true, messageId: info.messageId, response: info.response };
+  } catch (error) {
+    // Hata detay?n? logla ve �st seviyeye anlaml? bir mesaj d�nd�r
+    console.error("? Mail sending failed:", error);
+    return { success: false, error: error.message || 'Mail sending failed' };
+  }
+}
+
+
+let mailTransportVerified = false;
+
+async function ensureMailTransport() {
+  if (mailTransportVerified) return true;
+
+  try {
+    await transporter.verify();
+    mailTransportVerified = true;
+    console.log("Mail transport ready");
     return true;
   } catch (error) {
-    console.error("❌ Mail sending failed:", error);
+    console.error("Mail transport verification failed:", error);
     return false;
+  }
+}
+
+async function sendPasswordResetEmail(email, resetCode) {
+  const sender = process.env.EMAIL_USER || 'wordboost.team@gmail.com';
+  const transportOk = await ensureMailTransport();
+
+  if (!transportOk) {
+    return { success: false, error: 'Mail transport is not ready' };
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"WordBoost" <${sender}>`,
+      to: email,
+      subject: '?ifre S?f?rlama Kodu',
+      text: `?ifreni s?f?rlamak i?in kodun: ${resetCode}`,
+      html: `<h3>?ifre S?f?rlama</h3><p>Kodun:</p><h2>${resetCode}</h2>`
+    });
+
+    const accepted = Array.isArray(info.accepted) ? info.accepted : [];
+    const rejected = Array.isArray(info.rejected) ? info.rejected : [];
+
+    if (!accepted.includes(email)) {
+      return {
+        success: false,
+        error: `Recipient was not accepted by SMTP server. Rejected: ${rejected.join(', ') || 'unknown'}`
+      };
+    }
+
+    return { success: true, messageId: info.messageId, response: info.response };
+  } catch (error) {
+    console.error("Password reset mail failed:", error);
+    return { success: false, error: error.message || 'Mail sending failed' };
   }
 }
 
@@ -386,10 +457,10 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: "Username, email ve password gerekli" });
     }
 
-    // Email format kontrolü
+    // Email format kontrol�
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: "Geçersiz email formatı" });
+      return res.status(400).json({ error: "Ge�ersiz email format?" });
     }
 
     let user = await User.findOne({ 
@@ -403,11 +474,11 @@ app.post('/api/register', async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
 
     if (user) {
-      // Eğer kullanıcı var ama doğrulanmamışsa, kaydı güncelle ve tekrar mail at
+      // E?er kullan?c? var ama do?rulanmam?�sa, kayd? g�ncelle ve tekrar mail at
       if (!user.isVerified) {
-        // HESAP KURTARMA / ÜZERİNE YAZMA (Unverified accounts only)
-        // Eğer kullanıcı adı veya email eşleşiyorsa ve hesap doğrulanmamışsa,
-        // yeni gelen kişi bu hesabı devralabilir (email ve şifresini güncelleyerek).
+        // HESAP KURTARMA / �ZER?NE YAZMA (Unverified accounts only)
+        // E?er kullan?c? ad? veya email e�le�iyorsa ve hesap do?rulanmam?�sa,
+        // yeni gelen ki�i bu hesab? devralabilir (email ve �ifresini g�ncelleyerek).
         
         user.username = username;
         user.email = email;
@@ -415,20 +486,27 @@ app.post('/api/register', async (req, res) => {
         user.verificationCode = verificationCode;
         user.verificationCodeExpires = Date.now() + 3600000;
         await user.save();
-           
-        // Mail Gönder
-        sendVerificationEmail(email, username, verificationCode);
+
+        // Mail G�nder
+        const mailResult = await sendVerificationEmail(email, username, verificationCode);
+
+        if (!mailResult.success) {
+          console.error("Register re-send mail error:", mailResult.error);
+          return res.status(500).json({
+            error: "Do?rulama maili g�nderilemedi. L�tfen daha sonra tekrar deneyin."
+          });
+        }
 
         return res.json({
           success: true,
           requireVerification: true,
           email: email,
-          message: "Doğrulama kodu tekrar gönderildi"
+          message: "Do?rulama kodu tekrar g�nderildi"
         });
       }
 
-      if (user.email === email) return res.status(400).json({ error: "Email zaten kullanılıyor" });
-      return res.status(400).json({ error: "Username zaten kullanılıyor" });
+      if (user.email === email) return res.status(400).json({ error: "Email zaten kullan?l?yor" });
+      return res.status(400).json({ error: "Username zaten kullan?l?yor" });
     }
 
     user = await User.create({
@@ -439,17 +517,25 @@ app.post('/api/register', async (req, res) => {
       badges: [BADGES.NEWBIE.id],
       isVerified: false,
       verificationCode,
-      verificationCodeExpires: Date.now() + 3600000 // 1 saat geçerli
+      verificationCodeExpires: Date.now() + 3600000 // 1 saat ge�erli
     });
 
-    // Mail Gönderme
-    await sendVerificationEmail(email, username, verificationCode);
+    // Mail G�nderme
+    const mailResult = await sendVerificationEmail(email, username, verificationCode);
+
+    if (!mailResult.success) {
+      console.error("Register mail error:", mailResult.error);
+      // Hesab? olu�turduk ama mail gidemedi -> Kullan?c?ya a�?k�a s�yle
+      return res.status(500).json({
+        error: "Do?rulama maili g�nderilemedi. L�tfen birka� dakika sonra tekrar kay?t olmay? deneyin."
+      });
+    }
 
     res.json({
       success: true,
       requireVerification: true,
       email: email,
-      message: "Doğrulama kodu gönderildi"
+      message: "Do?rulama kodu g�nderildi"
     });
 
   } catch (err) {
@@ -465,9 +551,9 @@ app.post('/api/forgot-password', async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      // Güvenlik: Kullanıcı yoksa bile "gönderildi" de (User enumeration prevention)
-      // Ama user experience için şimdilik hata dönelim
-      return res.status(404).json({ error: "Bu email ile kayıtlı kullanıcı bulunamadı" });
+      // G�venlik: Kullan?c? yoksa bile "g�nderildi" de (User enumeration prevention)
+      // Ama user experience i�in �imdilik hata d�nelim
+      return res.status(404).json({ error: "Bu email ile kay?tl? kullan?c? bulunamad?" });
     }
 
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -475,16 +561,14 @@ app.post('/api/forgot-password', async (req, res) => {
     user.verificationCodeExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const sender = process.env.EMAIL_USER || 'wordboost.team@gmail.com';
-    await transporter.sendMail({
-      from: `"WordBoost" <${sender}>`,
-      to: email,
-      subject: 'Şifre Sıfırlama Kodu',
-      text: `Şifreni sıfırlamak için kodun: ${resetCode}`,
-      html: `<h3>Şifre Sıfırlama</h3><p>Kodun:</p><h2>${resetCode}</h2>`
-    });
+    const mailResult = await sendPasswordResetEmail(email, resetCode);
 
-    res.json({ success: true, message: "Sıfırlama kodu gönderildi" });
+    if (!mailResult.success) {
+      return res.status(500).json({ error: "S?f?rlama maili g?nderilemedi" });
+    }
+
+
+    res.json({ success: true, message: "S?f?rlama kodu g�nderildi" });
 
   } catch (err) {
     console.error(err);
@@ -497,10 +581,10 @@ app.post('/api/reset-password', async (req, res) => {
     const { email, code, newPassword } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    if (!user) return res.status(404).json({ error: "Kullan?c? bulunamad?" });
     
     if (user.verificationCode !== code || user.verificationCodeExpires < Date.now()) {
-      return res.status(400).json({ error: "Geçersiz veya süresi dolmuş kod" });
+      return res.status(400).json({ error: "Ge�ersiz veya s�resi dolmu� kod" });
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);
@@ -509,7 +593,7 @@ app.post('/api/reset-password', async (req, res) => {
     user.verificationCodeExpires = undefined;
     await user.save();
 
-    res.json({ success: true, message: "Şifre başarıyla güncellendi" });
+    res.json({ success: true, message: "�ifre ba�ar?yla g�ncellendi" });
 
   } catch (err) {
     console.error(err);
@@ -522,11 +606,11 @@ app.post('/api/verify-email', async (req, res) => {
     const { email, code } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user) return res.status(400).json({ error: "Kullanıcı bulunamadı" });
-    if (user.isVerified) return res.status(400).json({ error: "Hesap zaten doğrulanmış" });
+    if (!user) return res.status(400).json({ error: "Kullan?c? bulunamad?" });
+    if (user.isVerified) return res.status(400).json({ error: "Hesap zaten do?rulanm?�" });
 
     if (user.verificationCode !== code || user.verificationCodeExpires < Date.now()) {
-      return res.status(400).json({ error: "Geçersiz veya süresi dolmuş kod" });
+      return res.status(400).json({ error: "Ge�ersiz veya s�resi dolmu� kod" });
     }
 
     user.isVerified = true;
@@ -564,7 +648,7 @@ app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Email veya Username ile giriş
+    // Email veya Username ile giri�
     const user = await User.findOne({
       $or: [
         { username: username },
@@ -573,23 +657,23 @@ app.post('/api/login', async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ error: "Kullanıcı bulunamadı" });
+      return res.status(400).json({ error: "Kullan?c? bulunamad?" });
     }
 
-    // Şifre kontrolü
+    // �ifre kontrol�
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
-      return res.status(400).json({ error: "Şifre yanlış" });
+      return res.status(400).json({ error: "�ifre yanl?�" });
     }
 
-    // Doğrulama kontrolü (Opsiyonel: Eğer zorunluysa burayı aç)
+    // Do?rulama kontrol� (Opsiyonel: E?er zorunluysa buray? a�)
     /*
     if (!user.isVerified) {
       return res.json({ 
         success: false, 
         requireVerification: true, 
         email: user.email,
-        error: "Lütfen önce mail adresinizi doğrulayın" 
+        error: "L�tfen �nce mail adresinizi do?rulay?n" 
       });
     }
     */
@@ -606,7 +690,7 @@ app.post('/api/login', async (req, res) => {
       user: {
         username: user.username,
         nickname: user.nickname || user.username,
-        avatar: user.avatar || "👤",
+        avatar: user.avatar || "??",
         bio: user.bio || "",
         stats: user.stats,
         streak: user.streak,
@@ -634,7 +718,7 @@ app.get('/api/profile', async (req, res) => {
     res.json({
       username: user.username,
       nickname: user.nickname || user.username,
-      avatar: user.avatar || "👤",
+      avatar: user.avatar || "??",
       bio: user.bio || "",
       stats: user.stats,
       streak: user.streak,
@@ -656,18 +740,18 @@ app.post('/api/profile/update', async (req, res) => {
     const { nickname, bio, avatar, username } = req.body;
 
     const user = await User.findById(decoded.id);
-    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    if (!user) return res.status(404).json({ error: "Kullan?c? bulunamad?" });
 
-    // Username değişimi ve unique kontrolü
+    // Username de?i�imi ve unique kontrol�
     if (username && username !== user.username) {
-      // Format kontrolü (boşluk olmamalı, min 3 karakter)
+      // Format kontrol� (bo�luk olmamal?, min 3 karakter)
       if (username.length < 3 || /\s/.test(username)) {
-        return res.status(400).json({ error: "Kullanıcı adı en az 3 karakter olmalı ve boşluk içermemelidir." });
+        return res.status(400).json({ error: "Kullan?c? ad? en az 3 karakter olmal? ve bo�luk i�ermemelidir." });
       }
 
       const existing = await User.findOne({ username });
       if (existing) {
-        return res.status(400).json({ error: "Bu kullanıcı adı zaten alınmış." });
+        return res.status(400).json({ error: "Bu kullan?c? ad? zaten al?nm?�." });
       }
       user.username = username;
     }
@@ -729,17 +813,17 @@ app.get('/api/users/:username', async (req, res) => {
 
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    // STREAK'e göre sırala (Önce en yüksek seri, sonra en çok bilinen kelime)
+    // STREAK'e g�re s?rala (�nce en y�ksek seri, sonra en �ok bilinen kelime)
     const users = await User.find({
       username: { $exists: true, $ne: "" },
       "stats.known": { $exists: true },
-      isVerified: true // Sadece doğrulanmış kullanıcılar
+      isVerified: true // Sadece do?rulanm?� kullan?c?lar
     })
-      .sort({ "streak": -1, "stats.known": -1 }) // Önce seri, sonra puan
+      .sort({ "streak": -1, "stats.known": -1 }) // �nce seri, sonra puan
       .limit(50)
       .select("username nickname avatar stats badges streak");
 
-    // Boş kullanıcıları filtrele (ek güvenlik)
+    // Bo� kullan?c?lar? filtrele (ek g�venlik)
     const filteredUsers = users.filter(u => u.username && u.username.trim().length > 0);
 
     res.json(filteredUsers);
@@ -758,9 +842,9 @@ app.post('/api/stats/update', async (req, res) => {
     const { studied, known, unknown } = req.body;
 
     const user = await User.findById(decoded.id);
-    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    if (!user) return res.status(404).json({ error: "Kullan?c? bulunamad?" });
 
-    // Stats güncelle
+    // Stats g�ncelle
     if (studied) user.stats.studied += studied;
     if (known) user.stats.known += known;
     if (unknown) user.stats.unknown += unknown;
@@ -773,18 +857,18 @@ app.post('/api/stats/update', async (req, res) => {
     if (lastStudy) lastStudy.setHours(0, 0, 0, 0);
 
     if (!lastStudy) {
-      // İlk defa çalışıyor
+      // ?lk defa �al?�?yor
       user.streak = 1;
       user.lastStudyDate = new Date();
     } else if (today.getTime() === lastStudy.getTime()) {
-      // Bugün zaten çalışmış, streak değişmez
+      // Bug�n zaten �al?�m?�, streak de?i�mez
       user.lastStudyDate = new Date();
     } else if (today.getTime() === lastStudy.getTime() + 86400000) {
-      // Dün çalışmış, streak artar
+      // D�n �al?�m?�, streak artar
       user.streak += 1;
       user.lastStudyDate = new Date();
     } else {
-      // Dünden önce çalışmış, streak sıfırlanır (veya 1 olur)
+      // D�nden �nce �al?�m?�, streak s?f?rlan?r (veya 1 olur)
       user.streak = 1;
       user.lastStudyDate = new Date();
     }
@@ -844,7 +928,7 @@ app.post('/api/rooms', async (req, res) => {
       host: username,
       users: [{
         username,
-        avatar: avatar || "👤",
+        avatar: avatar || "??",
         studied: 0,
         known: 0,
         unknown: 0
@@ -859,7 +943,7 @@ app.post('/api/rooms', async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Room oluşturulamadı" });
+    res.status(500).json({ error: "Room olu�turulamad?" });
   }
 });
 
@@ -871,7 +955,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/words', async (req, res) => {
   try {
     console.log("Fetching words...");
-    // 5 saniye zaman aşımı ekleyelim
+    // 5 saniye zaman a�?m? ekleyelim
     const words = await Word.find().sort({ term: 1 }).maxTimeMS(5000); 
     console.log(`Fetched ${words.length} words.`);
     res.json(words);
@@ -890,9 +974,9 @@ app.get('/api/rooms/:code', async (req, res) => {
     res.status(404).json({ success: false, error: 'Room not found' });
   }
 });
-// TÜM KELİMELERİ GETİR
+// T�M KEL?MELER? GET?R
 
-// Yardımcı fonksiyon: Oda kullanıcılarını stats'tan oluştur
+// Yard?mc? fonksiyon: Oda kullan?c?lar?n? stats'tan olu�tur
 function getUsersFromStats(roomCode) {
   const stats = roomStats.get(roomCode) || {};
   const hostName = roomHosts.get(roomCode);
@@ -900,7 +984,7 @@ function getUsersFromStats(roomCode) {
   return Object.entries(stats).map(([username, userStat]) => ({
     username: username,
     isHost: hostName === username,
-    avatar: userStat.avatar || '👤',
+    avatar: userStat.avatar || '??',
     studied: userStat.studied || 0,
     known: userStat.known || 0
   }));
@@ -908,28 +992,28 @@ function getUsersFromStats(roomCode) {
 
 // Socket.IO
 io.on('connection', (socket) => {
-  console.log('✅ User connected:', socket.id);
+  console.log('? User connected:', socket.id);
  
-  // ODA OLUŞTURMA - Host burada belirlenir!
+  // ODA OLU�TURMA - Host burada belirlenir!
   socket.on('create-room', async ({ username, avatar }, callback) => {
   try {
 
     if (!username || username.trim().length < 2) {
-      callback?.({ success: false, error: 'Geçerli kullanıcı adı girin' });
+      callback?.({ success: false, error: 'Ge�erli kullan?c? ad? girin' });
       return;
     }
 
     const roomCode = generateRoomCode();
-    const userAvatar = avatar || '👤';
+    const userAvatar = avatar || '??';
 
-    console.log("Mongo'ya room yazılıyor...");
+    console.log("Mongo'ya room yaz?l?yor...");
 
     const mongoRoom = await Room.create({
       code: roomCode,
       host: username,
       users: [{
         username,
-        avatar: '👤',
+        avatar: '??',
         studied: 0,
         known: 0,
         unknown: 0
@@ -937,7 +1021,7 @@ io.on('connection', (socket) => {
       isActive: true
     });
 
-    console.log("Mongo room yazıldı:", mongoRoom.code);
+    console.log("Mongo room yaz?ld?:", mongoRoom.code);
 
     roomHosts.set(roomCode, username);
 
@@ -946,7 +1030,7 @@ io.on('connection', (socket) => {
         studied: 0,
         known: 0,
         unknown: 0,
-        avatar: '👤'
+        avatar: '??'
       }
     };
 
@@ -966,7 +1050,7 @@ io.on('connection', (socket) => {
     callback({
   success: true,
   roomCode,
-  avatar: '👤',
+  avatar: '??',
   isHost: true,
   users,
   stats: initialStats
@@ -987,42 +1071,42 @@ io.to(roomCode).emit('sync-stats', {
   socket.on('join-room', async ({ roomCode, username, avatar }, callback) => {
     
   try {
-    console.log(`🚪 Join attempt: ${username} -> ${roomCode}`);
+    console.log(`?? Join attempt: ${username} -> ${roomCode}`);
 
     if (!username || username.trim().length < 2) {
-      if (callback) callback({ success: false, error: 'Geçerli kullanıcı adı girin' });
+      if (callback) callback({ success: false, error: 'Ge�erli kullan?c? ad? girin' });
       return;
     }
 
     if (!roomCode || roomCode.length !== 6) {
-      if (callback) callback({ success: false, error: 'Geçerli oda kodu girin (6 haneli)' });
+      if (callback) callback({ success: false, error: 'Ge�erli oda kodu girin (6 haneli)' });
       return;
     }
 
     const room = await Room.findOne({ code: roomCode });
 
     if (!room || !room.isActive) {
-      console.log(`❌ Room not found: ${roomCode}`);
-      if (callback) callback({ success: false, error: 'Oda bulunamadı veya kapalı' });
+      console.log(`? Room not found: ${roomCode}`);
+      if (callback) callback({ success: false, error: 'Oda bulunamad? veya kapal?' });
       return;
     }
 
       
-      // Aynı kullanıcı adı kontrolü (odada aktif olanlar arasında)
+      // Ayn? kullan?c? ad? kontrol� (odada aktif olanlar aras?nda)
       const currentRoomStats = roomStats.get(roomCode) || {};
       if (currentRoomStats[username]) {
-        console.log(`❌ Username taken: ${username}`);
-        if (callback) callback({ success: false, error: 'Bu kullanıcı adı odada kullanılıyor' });
+        console.log(`? Username taken: ${username}`);
+        if (callback) callback({ success: false, error: 'Bu kullan?c? ad? odada kullan?l?yor' });
         return;
       }
       
-      // Socket odaya katıl
+      // Socket odaya kat?l
       socket.join(roomCode);
       
-      // Host mu kontrol et (server tarafında güvenlik!)
+      // Host mu kontrol et (server taraf?nda g�venlik!)
       const isHost = roomHosts.get(roomCode) === username;
       
-      // Kullanıcıyı kaydet
+      // Kullan?c?y? kaydet
       roomUsers.set(socket.id, { 
         roomCode, 
         username, 
@@ -1031,7 +1115,7 @@ io.to(roomCode).emit('sync-stats', {
       });
       
       // Avatar ata
-      const userAvatar = avatar || '👤';
+      const userAvatar = avatar || '??';
       
       // Stats'a ekle
       if (!roomStats.has(roomCode)) {
@@ -1042,49 +1126,49 @@ io.to(roomCode).emit('sync-stats', {
         studied: 0, 
         known: 0, 
         unknown: 0,
-        avatar: '👤'
+        avatar: '??'
       };
       
-      // Odadaki tüm kullanıcıları topla (güncel stats ile)
+      // Odadaki t�m kullan?c?lar? topla (g�ncel stats ile)
       const users = getUsersFromStats(roomCode);
       
-      console.log(`✅ ${username} joined ${roomCode}. Total users: ${users.length}`);
+      console.log(`? ${username} joined ${roomCode}. Total users: ${users.length}`);
       
-      // CALLBACK ile yanıt ver
+      // CALLBACK ile yan?t ver
       if (callback) {
         callback({ 
           success: true,
           roomCode, 
           users,
-          isHost,  // Server tarafında belirlenen değer!
+          isHost,  // Server taraf?nda belirlenen de?er!
           stats: stats,
-          avatar: '👤'
+          avatar: '??'
         });
       }
       
-      // Diğer kullanıcılara bildir
+      // Di?er kullan?c?lara bildir
       socket.to(roomCode).emit('user-joined', { 
         username, 
         socketId: socket.id,
         isHost,
-        avatar: '👤',
+        avatar: '??',
         studied: 0,
         known: 0
       });
       
-      // Tüm odadakilere güncel stats gönder (users ile birlikte)
+      // T�m odadakilere g�ncel stats g�nder (users ile birlikte)
       io.to(roomCode).emit('sync-stats', { 
         stats,
         users: users
       });
       
     } catch (error) {
-      console.error('❌ Error joining room:', error);
+      console.error('? Error joining room:', error);
       if (callback) callback({ success: false, error: error.message });
     }
   });
 
-  // STATS GÜNCELLEME
+  // STATS G�NCELLEME
   socket.on('update-stats', ({ roomCode, username, studied, known, unknown }) => {
   try {
     const roomStat = roomStats.get(roomCode);
@@ -1108,18 +1192,18 @@ io.to(roomCode).emit('sync-stats', {
   }
 });
 
-  // KELİME DEĞİŞTİRME (sadece host)
+  // KEL?ME DE??�T?RME (sadece host)
   socket.on('change-word', ({ roomCode, wordIndex }) => {
     try {
       const user = roomUsers.get(socket.id);
       const hostName = roomHosts.get(roomCode);
       
-      // Güvenlik kontrolü: Sadece gerçek host değiştirebilir
+      // G�venlik kontrol�: Sadece ger�ek host de?i�tirebilir
       if (user && user.roomCode === roomCode && user.username === hostName) {
         socket.to(roomCode).emit('sync-word', { wordIndex });
-        console.log(`📖 Word changed to ${wordIndex} by host ${user.username}`);
+        console.log(`?? Word changed to ${wordIndex} by host ${user.username}`);
       } else {
-        console.log(`⚠️ Unauthorized word change attempt by ${user?.username}`);
+        console.log(`?? Unauthorized word change attempt by ${user?.username}`);
       }
     } catch (error) {
       console.error('Error changing word:', error);
@@ -1131,16 +1215,16 @@ io.to(roomCode).emit('sync-stats', {
     handleUserLeave(socket, roomCode, username);
   });
   
-  // BAĞLANTI KOPMA
+  // BA?LANTI KOPMA
   socket.on('disconnect', (reason) => {
-    console.log('❌ User disconnected:', socket.id, 'Reason:', reason);
+    console.log('? User disconnected:', socket.id, 'Reason:', reason);
     const user = roomUsers.get(socket.id);
     if (user) {
       handleUserLeave(socket, user.roomCode, user.username);
     }
   });
   
-  // AYRILMA İŞLEYİCİSİ
+  // AYRILMA ?�LEY?C?S?
     async function handleUserLeave(socket, roomCode, username) {
   try {
     if (!roomCode || !username) return;
@@ -1167,7 +1251,7 @@ io.to(roomCode).emit('sync-stats', {
         roomStats.delete(roomCode);
         roomHosts.delete(roomCode);
 
-        console.log(`🗑️ Room ${roomCode} is now empty, cleaned up`);
+        console.log(`??? Room ${roomCode} is now empty, cleaned up`);
 
       } else {
 
@@ -1188,10 +1272,10 @@ const initialStats = {
     studied: 0,
     known: 0,
     unknown: 0,
-    avatar: '👤'
+    avatar: '??'
   }
 };
-            console.log(`👑 New host assigned: ${newHost}`);
+            console.log(`?? New host assigned: ${newHost}`);
           }
         }
 
@@ -1206,7 +1290,7 @@ const initialStats = {
     }
 
     socket.leave(roomCode);
-    console.log(`👋 ${username} left room ${roomCode}`);
+    console.log(`?? ${username} left room ${roomCode}`);
 
   } catch (error) {
     console.error('Error leaving room:', error);
@@ -1214,7 +1298,7 @@ const initialStats = {
 }
 });
 
-// Static files (production için)
+// Static files (production i�in)
 const clientPath = path.join(__dirname, 'ydt-kelime-pratigi', 'dist');
 app.use(express.static(clientPath));
 

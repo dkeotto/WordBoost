@@ -1,34 +1,33 @@
-
+require('dotenv').config();
 const nodemailer = require('nodemailer');
+
+const user = process.env.EMAIL_USER || 'wordboost.team@gmail.com';
+const pass = process.env.EMAIL_PASS || 'dtnc rugo nzan owfo';
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
   secure: false,
-  auth: {
-    user: 'wordboost.team@gmail.com',
-    pass: 'dtnc rugo nzan owfo'
-  },
-  tls: {
-    rejectUnauthorized: false
-  },
+  auth: { user, pass },
+  tls: { rejectUnauthorized: false },
   debug: true,
   logger: true
 });
 
 async function main() {
+  console.log('📧 Mail gönderme testi başlıyor...');
   try {
     const info = await transporter.sendMail({
-      from: '"WordBoost Test" <wordboost.team@gmail.com>',
-      to: 'wordboost.team@gmail.com', // Send to self to test
-      subject: 'Test Email',
-      text: 'If you receive this, email sending is working.',
-      html: '<b>If you receive this, email sending is working.</b>'
+      from: `"WordBoost Test" <${user}>`,
+      to: user,
+      subject: 'WordBoost Mail Testi',
+      text: 'Bu maili aldıysan mail gönderimi çalışıyor.',
+      html: '<p><b>Bu maili aldıysan mail gönderimi çalışıyor.</b></p>'
     });
-
-    console.log("Message sent: %s", info.messageId);
+    console.log('✅ Başarılı. Message ID:', info.messageId);
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error('❌ Hata:', error.message);
+    process.exit(1);
   }
 }
 
