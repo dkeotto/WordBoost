@@ -59,7 +59,22 @@ export default function LoginModal({ onLogin, onClose }) {
         body: JSON.stringify({ username: regUsername, email: regEmail, password: regPassword })
       });
 
-      const data = await res.json();
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = {};
+      }
+
+      // 5xx hatalarında backend mesajını değil, sabit ve düzgün bir Türkçe metin göster
+      if (!res.ok) {
+        if (res.status >= 500) {
+          alert("Doğrulama maili gönderilemedi. Lütfen birkaç dakika sonra tekrar deneyin.");
+        } else {
+          alert(data.error || "Kayıt başarısız");
+        }
+        return;
+      }
 
       if (data.success) {
         if (data.requireVerification) {
