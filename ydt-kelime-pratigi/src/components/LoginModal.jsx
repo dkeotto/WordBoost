@@ -18,12 +18,17 @@ export default function LoginModal({ onLogin, onClose }) {
   const [verifyEmail, setVerifyEmail] = useState(""); // Used for both register-verify and forgot-password
   const [newPassword, setNewPassword] = useState("");
 
+  // Global submit/loading state to prevent double clicks
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleLogin = async () => {
+    if (isSubmitting) return;
     if (!loginIdentifier || !loginPassword) {
       alert("Lütfen tüm alanları doldurun.");
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/login", {
         method: "POST",
@@ -43,15 +48,19 @@ export default function LoginModal({ onLogin, onClose }) {
       }
     } catch (err) {
       alert("Bağlantı hatası");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleRegister = async () => {
+    if (isSubmitting) return;
     if (!regEmail || !regUsername || !regPassword) {
       alert("Lütfen tüm alanları doldurun.");
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/register", {
         method: "POST",
@@ -92,15 +101,19 @@ export default function LoginModal({ onLogin, onClose }) {
       }
     } catch (err) {
       alert("Bağlantı hatası");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleVerify = async () => {
+    if (isSubmitting) return;
     if (!verifyCode) {
       alert("Lütfen kodu girin.");
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/verify-email", {
         method: "POST",
@@ -118,15 +131,19 @@ export default function LoginModal({ onLogin, onClose }) {
       }
     } catch (err) {
       alert("Bağlantı hatası");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleForgotPassword = async () => {
+    if (isSubmitting) return;
     if (!verifyEmail) {
       alert("Lütfen email adresinizi girin.");
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/forgot-password", {
         method: "POST",
@@ -144,15 +161,19 @@ export default function LoginModal({ onLogin, onClose }) {
       }
     } catch (err) {
       alert("Bağlantı hatası");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleResetPassword = async () => {
+    if (isSubmitting) return;
     if (!verifyCode || !newPassword) {
       alert("Lütfen kod ve yeni şifreyi girin.");
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/reset-password", {
         method: "POST",
@@ -170,6 +191,8 @@ export default function LoginModal({ onLogin, onClose }) {
       }
     } catch (err) {
       alert("Bağlantı hatası");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -235,7 +258,13 @@ export default function LoginModal({ onLogin, onClose }) {
                 </button>
               </div>
 
-              <button className="primary-btn" onClick={handleLogin}>Giriş Yap</button>
+              <button
+                className="primary-btn"
+                onClick={handleLogin}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Giriş yapılıyor..." : "Giriş Yap"}
+              </button>
             </div>
           ) : activeTab === 'register' ? (
             <div className="form-group">
@@ -259,7 +288,13 @@ export default function LoginModal({ onLogin, onClose }) {
                 onChange={(e) => setRegPassword(e.target.value)}
                 style={{ letterSpacing: 'normal' }}
               />
-              <button className="primary-btn" onClick={handleRegister}>Kayıt Ol</button>
+              <button
+                className="primary-btn"
+                onClick={handleRegister}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Kayıt olunuyor..." : "Kayıt Ol"}
+              </button>
             </div>
           ) : activeTab === 'verify' ? (
             <div className="form-group">
@@ -274,7 +309,13 @@ export default function LoginModal({ onLogin, onClose }) {
                 maxLength={6}
                 style={{textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}}
               />
-              <button className="primary-btn" onClick={handleVerify}>Doğrula ve Giriş Yap</button>
+              <button
+                className="primary-btn"
+                onClick={handleVerify}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Doğrulanıyor..." : "Doğrula ve Giriş Yap"}
+              </button>
               <button 
                 className="btn-guest" 
                 onClick={() => setActiveTab('register')}
@@ -294,7 +335,13 @@ export default function LoginModal({ onLogin, onClose }) {
                 onChange={(e) => setVerifyEmail(e.target.value)}
                 style={{ letterSpacing: 'normal' }}
               />
-              <button className="primary-btn" onClick={handleForgotPassword}>Kod Gönder</button>
+              <button
+                className="primary-btn"
+                onClick={handleForgotPassword}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Gönderiliyor..." : "Kod Gönder"}
+              </button>
               <button 
                 className="btn-guest" 
                 onClick={() => setActiveTab('login')}
@@ -321,7 +368,13 @@ export default function LoginModal({ onLogin, onClose }) {
                 onChange={(e) => setNewPassword(e.target.value)}
                 style={{ letterSpacing: 'normal' }}
               />
-              <button className="primary-btn" onClick={handleResetPassword}>Şifreyi Güncelle</button>
+              <button
+                className="primary-btn"
+                onClick={handleResetPassword}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Güncelleniyor..." : "Şifreyi Güncelle"}
+              </button>
             </div>
           ) : null}
         </div>
