@@ -400,6 +400,15 @@ async function sendMailViaResend({ to, subject, html, text }) {
   }
 }
 
+/**
+ * onboarding@resend.dev = Resend "sandbox" gonderici; sadece hesapta dogrulanmis
+ * alici adreslerine izin verir. Gercek kullanicilara mail icin domain dogrula veya SMTP kullan.
+ */
+function shouldSkipResendSandbox() {
+  const from = (process.env.RESEND_FROM || '').toLowerCase();
+  return from.includes('onboarding@resend.dev');
+}
+
 async function sendVerificationEmail(email, username, code) {
   console.log(`Sending verification email to ${email}...`);
 
@@ -419,11 +428,17 @@ async function sendVerificationEmail(email, username, code) {
         </div>
       `;
 
-  // 1) Resend (tercih)
-  if (process.env.RESEND_API_KEY) {
+  // 1) Resend (sadece sandbox DEGILSE veya MAIL_FORCE_SMTP yoksa)
+  const skipResend =
+    process.env.MAIL_FORCE_SMTP === 'true' ||
+    (shouldSkipResendSandbox() && process.env.EMAIL_USER && process.env.EMAIL_PASS);
+
+  if (process.env.RESEND_API_KEY && !skipResend) {
     const resendResult = await sendMailViaResend({ to: email, subject, html, text });
     if (resendResult.success) return resendResult;
     console.warn('Resend failed, trying SMTP:', resendResult.error);
+  } else if (skipResend && shouldSkipResendSandbox()) {
+    console.log('Skipping Resend (onboarding@resend.dev sandbox); using SMTP for all recipients.');
   }
 
   // 2) SMTP (Gmail vb.)
@@ -493,7 +508,11 @@ async function sendPasswordResetEmail(email, resetCode) {
     </div>
   `;
 
-  if (process.env.RESEND_API_KEY) {
+  const skipResend =
+    process.env.MAIL_FORCE_SMTP === 'true' ||
+    (shouldSkipResendSandbox() && process.env.EMAIL_USER && process.env.EMAIL_PASS);
+
+  if (process.env.RESEND_API_KEY && !skipResend) {
     const r = await sendMailViaResend({ to: email, subject, html, text });
     if (r.success) return r;
     console.warn('Resend password reset failed, trying SMTP:', r.error);
