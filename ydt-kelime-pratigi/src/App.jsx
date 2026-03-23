@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import LoginModal from "./components/LoginModal";
+import AdminPanel from "./components/AdminPanel";
 import Navbar from "./components/Navbar";
 import Flashcard from "./components/Flashcard";
 import StatsPanel from "./components/StatsPanel";
@@ -1722,7 +1723,8 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
           body: JSON.stringify({
             studied: 1,
             known: isKnown ? 1 : 0,
-            unknown: !isKnown ? 1 : 0
+            unknown: !isKnown ? 1 : 0,
+            wordTerm: currentWord.term
           })
         })
         .then(res => res.json())
@@ -1868,6 +1870,7 @@ if (loadingWords) {
       {currentView === 'wrong-words' && <WrongWordsView wrongWords={wrongWords} />}
       {currentView === 'room-menu' && <RoomMenuView username={username} createRoom={createRoom} joinRoom={joinRoom} loading={loading} error={error} />}
       {currentView === 'room' && <RoomView roomCode={roomCode} users={users} username={username} isHost={isHost} setCurrentView={setCurrentView} leaveRoom={leaveRoom} />}
+      {currentView === 'admin' && <AdminPanel setCurrentView={setCurrentView} />}
     </main>
 
     {showLogin && (

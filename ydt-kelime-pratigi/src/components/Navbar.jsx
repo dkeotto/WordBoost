@@ -105,6 +105,12 @@ const Navbar = ({
                 >
                   Favoriler ({favoritesCount})
                 </button>
+                <button
+                  className={`nav-link ${currentView === 'admin' ? 'active' : ''}`}
+                  onClick={() => handleNavClick('admin')}
+                >
+                  Yönetim
+                </button>
              </div>
           </li>
 

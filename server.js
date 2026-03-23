@@ -1,4 +1,10 @@
-require("dotenv").config();
+/**
+ * Yerel gelistirmede .env kullan. Railway/Render'da sadece platform "Variables"
+ * kullanilsin ? boylece repoya yanlislikla giren .env deploy'da okunmaz (Brevo key sizintisi).
+ */
+if (!process.env.RAILWAY_PUBLIC_DOMAIN && !process.env.RENDER_EXTERNAL_URL) {
+  require('dotenv').config();
+}
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -43,6 +49,17 @@ const WordSchema = new mongoose.Schema({
   }
 
 },{timestamps:true})
+
+/** Kelime bazli bilinmiyor / bildim sayaclari (admin analizi) */
+const WordStatSchema = new mongoose.Schema(
+  {
+    term: { type: String, required: true },
+    termNorm: { type: String, required: true, unique: true },
+    unknownCount: { type: Number, default: 0 },
+    knownCount: { type: Number, default: 0 }
+  },
+  { timestamps: true }
+);
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -265,6 +282,7 @@ const RoomSchema = new mongoose.Schema({
 const Room = mongoose.model("Room", RoomSchema);
 
 const Word = mongoose.model("Word", WordSchema);
+const WordStat = mongoose.model("WordStat", WordStatSchema);
 
 async function startServer() {
   try {
@@ -325,6 +343,52 @@ const rooms = new Map();        // roomCode -> room bilgileri
 const roomUsers = new Map();    // socket.id -> { roomCode, username, isHost }
 const roomStats = new Map();    // roomCode -> { username: { studied, known, unknown, avatar } }
 const roomHosts = new Map();    // roomCode -> hostUsername (g?venlik i?in)
+
+const adminErrorLog = [];
+function pushAdminError(msg, meta = {}) {
+  try {
+    adminErrorLog.unshift({
+      t: new Date().toISOString(),
+      msg: String(msg).slice(0, 500),
+      ...meta
+    });
+    if (adminErrorLog.length > 200) adminErrorLog.pop();
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+function requireAdmin(req, res, next) {
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret || String(secret).length < 12) {
+    return res.status(503).json({ error: 'Admin kapali: ADMIN_SECRET (min 12 karakter) .env / Railway' });
+  }
+  if (req.headers['x-admin-key'] !== secret) {
+    return res.status(401).json({ error: 'Yetkisiz' });
+  }
+  next();
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if (c === ',' && !inQuotes) {
+      result.push(cur.trim());
+      cur = '';
+      continue;
+    }
+    cur += c;
+  }
+  result.push(cur.trim());
+  return result;
+}
 
 function generateRoomCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -1173,7 +1237,7 @@ app.post('/api/stats/update', async (req, res) => {
     if (!token) return res.status(401).json({ error: "Token gerekli" });
 
     const decoded = jwt.verify(token, "SECRET_KEY");
-    const { studied, known, unknown } = req.body;
+    const { studied, known, unknown, wordTerm } = req.body;
 
     const user = await User.findById(decoded.id);
     if (!user) return res.status(404).json({ error: "Kullan?c? bulunamad?" });
@@ -1182,6 +1246,30 @@ app.post('/api/stats/update', async (req, res) => {
     if (studied) user.stats.studied += studied;
     if (known) user.stats.known += known;
     if (unknown) user.stats.unknown += unknown;
+
+    if (wordTerm && typeof wordTerm === 'string') {
+      const tn = wordTerm.trim().toLowerCase();
+      if (tn.length > 0 && tn.length < 200) {
+        try {
+          if (unknown) {
+            await WordStat.findOneAndUpdate(
+              { termNorm: tn },
+              { $inc: { unknownCount: 1 }, $setOnInsert: { term: wordTerm.trim() } },
+              { upsert: true }
+            );
+          } else if (known) {
+            await WordStat.findOneAndUpdate(
+              { termNorm: tn },
+              { $inc: { knownCount: 1 }, $setOnInsert: { term: wordTerm.trim() } },
+              { upsert: true }
+            );
+          }
+        } catch (e) {
+          console.error('WordStat update:', e);
+          pushAdminError(e.message, { where: 'WordStat' });
+        }
+      }
+    }
 
     // Streak Logic
     const today = new Date();
@@ -1295,7 +1383,127 @@ app.get('/api/words', async (req, res) => {
     res.json(words);
   } catch (err) {
     console.error("WORD FETCH ERROR:", err); 
+    pushAdminError(err.message, { path: '/api/words' });
     res.status(500).json({ error: "Database error: " + err.message });
+  }
+});
+
+// --- Admin (ADMIN_SECRET + header X-Admin-Key) ---
+app.get('/api/admin/summary', requireAdmin, async (req, res) => {
+  try {
+    const [userCount, wordCount, statCount] = await Promise.all([
+      User.countDocuments(),
+      Word.countDocuments(),
+      WordStat.countDocuments()
+    ]);
+    const mem = process.memoryUsage();
+    res.json({
+      ok: true,
+      userCount,
+      wordCount,
+      wordStatDocuments: statCount,
+      uptimeSec: Math.floor(process.uptime()),
+      rssMb: Math.round(mem.rss / 1024 / 1024),
+      recentErrors: adminErrorLog.slice(0, 40)
+    });
+  } catch (e) {
+    pushAdminError(e.message, { path: 'admin/summary' });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/word-difficulty', requireAdmin, async (req, res) => {
+  try {
+    const limit = Math.min(100, Math.max(5, parseInt(req.query.limit, 10) || 50));
+    const sort = req.query.sort === 'known' ? 'knownCount' : 'unknownCount';
+    const top = await WordStat.find()
+      .sort({ [sort]: -1 })
+      .limit(limit)
+      .lean();
+    res.json({ ok: true, sort, items: top });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/words', requireAdmin, async (req, res) => {
+  try {
+    const { term, meaning, hint, example, level } = req.body;
+    if (!term || !meaning) {
+      return res.status(400).json({ error: 'term ve meaning zorunlu' });
+    }
+    const lv = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(level) ? level : 'B1';
+    const doc = await Word.create({
+      term: String(term).trim(),
+      meaning: String(meaning).trim(),
+      hint: hint ? String(hint) : '',
+      example: example ? String(example) : '',
+      level: lv
+    });
+    res.json({ ok: true, word: doc });
+  } catch (e) {
+    if (e.code === 11000) {
+      return res.status(409).json({ error: 'Bu kelime zaten var (duplicate)' });
+    }
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/words/import', requireAdmin, async (req, res) => {
+  try {
+    const raw = req.body.csv || req.body.text || '';
+    if (!raw || typeof raw !== 'string') {
+      return res.status(400).json({ error: 'csv veya text alani gerekli (JSON)' });
+    }
+    const lines = raw.split(/\r?\n/).filter((l) => l.trim());
+    if (lines.length < 1) {
+      return res.status(400).json({ error: 'Bos CSV' });
+    }
+    const header = parseCSVLine(lines[0]).map((h) => h.toLowerCase().replace(/^\uFEFF/, ''));
+    const hasHeader =
+      header.includes('term') && header.includes('meaning');
+    let start = 0;
+    let col = { term: 0, meaning: 1, hint: 2, example: 3, level: 4 };
+    if (hasHeader) {
+      col.term = header.indexOf('term');
+      col.meaning = header.indexOf('meaning');
+      col.hint = header.indexOf('hint');
+      col.example = header.indexOf('example');
+      col.level = header.indexOf('level');
+      start = 1;
+    }
+    let inserted = 0;
+    let skipped = 0;
+    const errors = [];
+    for (let i = start; i < lines.length; i++) {
+      const cells = parseCSVLine(lines[i]);
+      const term = cells[col.term];
+      const meaning = cells[col.meaning];
+      if (!term || !meaning) {
+        skipped++;
+        continue;
+      }
+      const hint = col.hint >= 0 ? cells[col.hint] || '' : '';
+      const example = col.example >= 0 ? cells[col.example] || '' : '';
+      let level = col.level >= 0 ? cells[col.level] || 'B1' : 'B1';
+      if (!['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(level)) level = 'B1';
+      try {
+        await Word.create({
+          term: term.trim(),
+          meaning: meaning.trim(),
+          hint: String(hint).trim(),
+          example: String(example).trim(),
+          level
+        });
+        inserted++;
+      } catch (e) {
+        if (e.code === 11000) skipped++;
+        else errors.push({ line: i + 1, msg: e.message });
+      }
+    }
+    res.json({ ok: true, inserted, skipped, errorCount: errors.length, errors: errors.slice(0, 20) });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -1643,8 +1851,10 @@ app.get('*', (req, res) => {
 // Hata yakalama
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
+  pushAdminError(err && err.message ? err.message : String(err), { type: 'uncaughtException' });
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  pushAdminError(String(reason), { type: 'unhandledRejection' });
 });
