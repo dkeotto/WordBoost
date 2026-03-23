@@ -485,6 +485,13 @@ async function sendMailViaBrevo({ to, subject, html, text }) {
   }
 }
 
+console.log(
+  '[Mail] MAIL_FORCE_SMTP=%s | BREVO_API_KEY=%s | BREVO_FROM_EMAIL=%s',
+  envIsTrue('MAIL_FORCE_SMTP') ? 'true (Brevo/Resend API atlanir, sadece SMTP)' : 'false/empty',
+  process.env.BREVO_API_KEY ? 'set' : 'MISSING',
+  brevoSenderEmail() || '(bos ? BREVO_FROM_EMAIL veya EMAIL_USER gerek)'
+);
+
 /**
  * onboarding@resend.dev = Resend "sandbox" gonderici; sadece hesapta dogrulanmis
  * alici adreslerine izin verir. Gercek kullanicilara mail icin domain dogrula veya SMTP kullan.
