@@ -38,14 +38,25 @@ export default function LoginModal({ onLogin, onClose }) {
 
       const data = await res.json();
 
-      if (data.success) {
+      if (data.success && data.token) {
         if (rememberMe) {
           localStorage.setItem("remember_me", "true");
         }
         onLogin({ ...data.user, token: data.token });
-      } else {
-        alert(data.error || "Giriş başarısız");
+        return;
       }
+
+      // Hesap var ama e-posta henüz doğrulanmamış
+      if (data.requireVerification && data.email) {
+        setVerifyEmail(data.email);
+        setActiveTab("verify");
+        alert(
+          "Bu hesap için önce e-posta doğrulaması gerekli. Gelen kutunu kontrol et veya aşağıya kodu gir."
+        );
+        return;
+      }
+
+      alert("Giriş başarısız. Bilgileri kontrol edin.");
     } catch (err) {
       alert("Bağlantı hatası");
     } finally {
@@ -77,31 +88,24 @@ export default function LoginModal({ onLogin, onClose }) {
 
       // Backend metnindeki encoding sorunlarını kullanıcıya yansıtma.
       if (!res.ok) {
-        if (res.status >= 500) {
-          alert("Doğrulama maili gönderilemedi. Lütfen birkaç dakika sonra tekrar deneyin.");
+        if (res.status === 503 || res.status >= 500) {
+          alert(
+            "Doğrulama e-postası gönderilemedi. Resend API anahtarını (.env / Railway) kontrol edin veya birkaç dakika sonra tekrar deneyin."
+          );
         } else {
           alert("Kayıt başarısız. Bilgileri kontrol edip tekrar deneyin.");
         }
         return;
       }
 
-      if (data.success) {
-        if (data.requireVerification) {
-          setVerifyEmail(regEmail); // Backend'den gelen maili de kullanabiliriz
-          setActiveTab("verify");
-          alert("Doğrulama kodu mail adresinize gönderildi.");
-        } else if (data.token && data.user) {
-          alert("Hesabınız oluşturuldu, giriş yapılıyor.");
-          onLogin({ ...data.user, token: data.token });
-        } else {
-          alert("Hesap başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.");
-          setActiveTab("login");
-          setLoginIdentifier(regUsername);
-          setLoginPassword(regPassword);
-        }
-      } else {
-        alert("Kayıt başarısız. Lütfen tekrar deneyin.");
+      if (data.success && data.requireVerification) {
+        setVerifyEmail(regEmail);
+        setActiveTab("verify");
+        alert("Doğrulama kodu e-posta adresinize gönderildi. Gelen kutusu ve spam klasörünü kontrol et.");
+        return;
       }
+
+      alert("Kayıt tamamlanamadı. Lütfen tekrar deneyin.");
     } catch (err) {
       alert("Bağlantı hatası");
     } finally {

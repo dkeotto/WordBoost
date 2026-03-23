@@ -577,38 +577,15 @@ app.post('/api/register', async (req, res) => {
             success: true,
             requireVerification: true,
             email: email,
-            message: "Do?rulama kodu tekrar g?nderildi"
+            message: "verification_code_sent"
           });
         }
 
-        // Fallback: Mail sa?lay?c?s? ba?ar?s?zsa kullan?c?y? bloklama.
-        // Kullan?c? deneyimini korumak i?in hesab? do?rulanm??a ?ekiyoruz.
         console.error("Register re-send mail error:", mailResult.error);
-        user.isVerified = true;
-        user.verificationCode = undefined;
-        user.verificationCodeExpires = undefined;
-        await user.save();
-
-        const token = jwt.sign(
-          { id: user._id, username: user.username },
-          "SECRET_KEY",
-          { expiresIn: "30d" }
-        );
-
-        return res.json({
-          success: true,
-          requireVerification: false,
-          token,
-          user: {
-            username: user.username,
-            nickname: user.nickname || user.username,
-            avatar: user.avatar || "??",
-            bio: user.bio || "",
-            stats: user.stats,
-            streak: user.streak,
-            badges: user.badges
-          },
-          message: "Mail g?nderimi ba?ar?s?z oldu?u i?in hesap otomatik do?ruland?."
+        return res.status(503).json({
+          success: false,
+          error: "verification_mail_failed",
+          detail: mailResult.error || "unknown"
         });
       }
 
@@ -635,37 +612,15 @@ app.post('/api/register', async (req, res) => {
         success: true,
         requireVerification: true,
         email: email,
-        message: "Do?rulama kodu g?nderildi"
+        message: "verification_code_sent"
       });
     }
 
-    // Fallback: Mail g?nderimi ba?ar?s?zsa kullan?c?y? bloke etme.
     console.error("Register mail error:", mailResult.error);
-    user.isVerified = true;
-    user.verificationCode = undefined;
-    user.verificationCodeExpires = undefined;
-    await user.save();
-
-    const token = jwt.sign(
-      { id: user._id, username: user.username },
-      "SECRET_KEY",
-      { expiresIn: "30d" }
-    );
-
-    return res.json({
-      success: true,
-      requireVerification: false,
-      token,
-      user: {
-        username: user.username,
-        nickname: user.nickname || user.username,
-        avatar: user.avatar || "??",
-        bio: user.bio || "",
-        stats: user.stats,
-        streak: user.streak,
-        badges: user.badges
-      },
-      message: "Mail g?nderimi ba?ar?s?z oldu?u i?in hesap otomatik do?ruland?."
+    return res.status(503).json({
+      success: false,
+      error: "verification_mail_failed",
+      detail: mailResult.error || "unknown"
     });
 
   } catch (err) {
@@ -796,17 +751,14 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ error: "?ifre yanl??" });
     }
 
-    // Do?rulama kontrol? (Opsiyonel: E?er zorunluysa buray? a?)
-    /*
     if (!user.isVerified) {
-      return res.json({ 
-        success: false, 
-        requireVerification: true, 
+      return res.status(403).json({
+        success: false,
+        requireVerification: true,
         email: user.email,
-        error: "L?tfen ?nce mail adresinizi do?rulay?n" 
+        error: "email_not_verified"
       });
     }
-    */
 
     const token = jwt.sign(
       { id: user._id, username: user.username },
