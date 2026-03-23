@@ -340,6 +340,15 @@ function envIsTrue(name) {
 const SMTP_USER = String(process.env.EMAIL_USER || '').trim();
 const SMTP_PASS = String(process.env.EMAIL_PASS || '').replace(/\s+/g, '').trim();
 
+/** Brevo SMTP: auth kullanici genelde xxx@smtp-brevo.com; From ayri dogrulanmis adres olmali */
+function smtpFromHeader() {
+  const raw = String(process.env.EMAIL_FROM || process.env.SMTP_FROM || '').trim();
+  if (raw) {
+    return raw.replace(/^["']+|["']+$/g, '');
+  }
+  return `"WordBoost" <${SMTP_USER}>`;
+}
+
 // NODEMAILER CONFIG (SMTP fallback; Railway/Render IP'lerinde Gmail bazen reddeder)
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
@@ -411,6 +420,72 @@ async function sendMailViaResend({ to, subject, html, text }) {
 }
 
 /**
+ * Brevo (Sendinblue) Transactional API
+ * Domain gerekmez: app.brevo.com -> Senders & IP -> gonderici e-postayi dogrula
+ * https://developers.brevo.com/reference/sendtransacemail
+ */
+function brevoSenderEmail() {
+  return String(process.env.BREVO_FROM_EMAIL || process.env.EMAIL_USER || SMTP_USER || '').trim();
+}
+
+async function sendMailViaBrevo({ to, subject, html, text }) {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    return { success: false, error: 'BREVO_API_KEY not set' };
+  }
+
+  const fromEmail = brevoSenderEmail();
+  const fromName = String(process.env.BREVO_FROM_NAME || 'WordBoost').trim();
+
+  if (!fromEmail) {
+    return {
+      success: false,
+      error: 'BREVO_FROM_EMAIL veya EMAIL_USER (gonderici) ayarla; Brevo panelinde bu adresi dogrula'
+    };
+  }
+
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), MAIL_SEND_TIMEOUT_MS);
+
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': apiKey
+      },
+      body: JSON.stringify({
+        sender: { name: fromName, email: fromEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+        textContent: text || undefined
+      }),
+      signal: controller.signal
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      console.error('Brevo API error:', res.status, data);
+      return {
+        success: false,
+        error: data.message || data.code || `Brevo ${res.status}`
+      };
+    }
+
+    console.log('Brevo mail sent:', data.messageId);
+    return { success: true, messageId: data.messageId };
+  } catch (err) {
+    console.error('Brevo request failed:', err);
+    return { success: false, error: err.message || 'Brevo failed' };
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/**
  * onboarding@resend.dev = Resend "sandbox" gonderici; sadece hesapta dogrulanmis
  * alici adreslerine izin verir. Gercek kullanicilara mail icin domain dogrula veya SMTP kullan.
  */
@@ -438,10 +513,49 @@ async function sendVerificationEmail(email, username, code) {
         </div>
       `;
 
-  // 1) Resend (MAIL_FORCE_SMTP veya onboarding sandbox + SMTP varsa atla)
-  const skipResend =
-    envIsTrue('MAIL_FORCE_SMTP') ||
-    (shouldSkipResendSandbox() && SMTP_USER && SMTP_PASS);
+  // Zorunlu SMTP (Gmail vb.) ? Brevo/Resend kullanma
+  if (envIsTrue('MAIL_FORCE_SMTP')) {
+    if (!SMTP_USER || !SMTP_PASS) {
+      console.error('SMTP skipped: EMAIL_USER / EMAIL_PASS not set');
+      return { success: false, error: 'No mail provider configured (set BREVO_API_KEY, RESEND_API_KEY or EMAIL_*)' };
+    }
+    const mailPromise = transporter.sendMail({
+      from: smtpFromHeader(),
+      to: email,
+      subject,
+      text,
+      html
+    });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('SMTP timeout')), MAIL_SEND_TIMEOUT_MS)
+    );
+    try {
+      const info = await Promise.race([mailPromise, timeoutPromise]);
+      console.log('SMTP mail sent:', info.messageId);
+      const accepted = Array.isArray(info.accepted) ? info.accepted : [];
+      const rejected = Array.isArray(info.rejected) ? info.rejected : [];
+      if (!accepted.includes(email)) {
+        return {
+          success: false,
+          error: `SMTP rejected: ${rejected.join(', ') || 'unknown'}`
+        };
+      }
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      console.error('SMTP send failed:', error);
+      return { success: false, error: error.message || 'Mail sending failed' };
+    }
+  }
+
+  // 1) Brevo ? domain gerekmez; gonderici adresi Brevo'da dogrulanmis olmali
+  if (process.env.BREVO_API_KEY) {
+    const br = await sendMailViaBrevo({ to: email, subject, html, text });
+    if (br.success) return br;
+    console.warn('Brevo failed, trying next:', br.error);
+  }
+
+  // 2) Resend (onboarding sandbox + SMTP varsa Resend'i atla)
+  const skipResend = shouldSkipResendSandbox() && SMTP_USER && SMTP_PASS;
 
   if (process.env.RESEND_API_KEY && !skipResend) {
     const resendResult = await sendMailViaResend({ to: email, subject, html, text });
@@ -451,14 +565,14 @@ async function sendVerificationEmail(email, username, code) {
     console.log('Skipping Resend (onboarding@resend.dev sandbox); using SMTP for all recipients.');
   }
 
-  // 2) SMTP (Gmail vb.)
+  // 3) SMTP (Gmail vb.)
   if (!SMTP_USER || !SMTP_PASS) {
     console.error('SMTP skipped: EMAIL_USER / EMAIL_PASS not set');
-    return { success: false, error: 'No mail provider configured (set RESEND_API_KEY or EMAIL_*)' };
+    return { success: false, error: 'No mail provider configured (set BREVO_API_KEY, RESEND_API_KEY or EMAIL_*)' };
   }
 
   const mailPromise = transporter.sendMail({
-    from: `"WordBoost" <${SMTP_USER}>`,
+    from: smtpFromHeader(),
     to: email,
     subject,
     text,
@@ -516,9 +630,44 @@ async function sendPasswordResetEmail(email, resetCode) {
     </div>
   `;
 
-  const skipResend =
-    envIsTrue('MAIL_FORCE_SMTP') ||
-    (shouldSkipResendSandbox() && SMTP_USER && SMTP_PASS);
+  if (envIsTrue('MAIL_FORCE_SMTP')) {
+    if (!SMTP_USER || !SMTP_PASS) {
+      return { success: false, error: 'No mail provider configured' };
+    }
+    const transportOk = await ensureMailTransport();
+    if (!transportOk) {
+      return { success: false, error: 'Mail transport is not ready' };
+    }
+    try {
+      const info = await transporter.sendMail({
+        from: smtpFromHeader(),
+        to: email,
+        subject,
+        text,
+        html
+      });
+      const accepted = Array.isArray(info.accepted) ? info.accepted : [];
+      const rejected = Array.isArray(info.rejected) ? info.rejected : [];
+      if (!accepted.includes(email)) {
+        return {
+          success: false,
+          error: `SMTP rejected: ${rejected.join(', ') || 'unknown'}`
+        };
+      }
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      console.error('Password reset mail failed:', error);
+      return { success: false, error: error.message || 'Mail sending failed' };
+    }
+  }
+
+  if (process.env.BREVO_API_KEY) {
+    const br = await sendMailViaBrevo({ to: email, subject, html, text });
+    if (br.success) return br;
+    console.warn('Brevo password reset failed:', br.error);
+  }
+
+  const skipResend = shouldSkipResendSandbox() && SMTP_USER && SMTP_PASS;
 
   if (process.env.RESEND_API_KEY && !skipResend) {
     const r = await sendMailViaResend({ to: email, subject, html, text });
@@ -537,7 +686,7 @@ async function sendPasswordResetEmail(email, resetCode) {
 
   try {
     const info = await transporter.sendMail({
-      from: `"WordBoost" <${SMTP_USER}>`,
+      from: smtpFromHeader(),
       to: email,
       subject,
       text,

@@ -20,6 +20,7 @@ export default function LoginModal({ onLogin, onClose }) {
 
   // Global submit/loading state to prevent double clicks
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registerError, setRegisterError] = useState("");
 
   const handleLogin = async () => {
     if (isSubmitting) return;
@@ -71,6 +72,7 @@ export default function LoginModal({ onLogin, onClose }) {
       return;
     }
 
+    setRegisterError("");
     setIsSubmitting(true);
     try {
       const res = await fetch("/api/register", {
@@ -89,9 +91,7 @@ export default function LoginModal({ onLogin, onClose }) {
       // Backend metnindeki encoding sorunlarını kullanıcıya yansıtma.
       if (!res.ok) {
         if (res.status === 503 || res.status >= 500) {
-          alert(
-            "Doğrulama e-postası gönderilemedi. Sunucuda EMAIL_USER / EMAIL_PASS (Gmail uygulama şifresi) doğru mu kontrol et; birkaç dakika sonra tekrar dene."
-          );
+          setRegisterError("mail_failed");
         } else {
           alert("Kayıt başarısız. Bilgileri kontrol edip tekrar deneyin.");
         }
@@ -101,6 +101,7 @@ export default function LoginModal({ onLogin, onClose }) {
       if (data.success && data.requireVerification) {
         setVerifyEmail(regEmail);
         setActiveTab("verify");
+        setRegisterError("");
         alert("Doğrulama kodu e-posta adresinize gönderildi. Gelen kutusu ve spam klasörünü kontrol et.");
         return;
       }
@@ -214,13 +215,13 @@ export default function LoginModal({ onLogin, onClose }) {
           <div className="login-tabs">
             <button 
               className={`tab-btn ${activeTab === 'login' ? 'active' : ''}`}
-              onClick={() => setActiveTab('login')}
+              onClick={() => { setRegisterError(""); setActiveTab('login'); }}
             >
               Giriş Yap
             </button>
             <button 
               className={`tab-btn ${activeTab === 'register' ? 'active' : ''}`}
-              onClick={() => setActiveTab('register')}
+              onClick={() => { setRegisterError(""); setActiveTab('register'); }}
             >
               Kayıt Ol
             </button>
@@ -275,6 +276,20 @@ export default function LoginModal({ onLogin, onClose }) {
             </div>
           ) : activeTab === 'register' ? (
             <div className="form-group">
+              {registerError === "mail_failed" && (
+                <div className="login-inline-error" role="alert">
+                  <strong>Doğrulama e-postası gönderilemedi</strong>
+                  Birkaç dakika sonra tekrar dene. Sorun sürerse e-posta ayarları (sunucu) kontrol edilmeli.
+                  <p className="hint">
+                    Gmail SMTP bulut sunucudan sık reddedilir. Domain yokken: Brevo’da{" "}
+                    <code style={{ fontSize: "0.78em", opacity: 0.9 }}>BREVO_API_KEY</code> + gönderici
+                    e-postayı doğrula ({" "}
+                    <code style={{ fontSize: "0.78em", opacity: 0.9 }}>BREVO_FROM_EMAIL</code> ),{" "}
+                    <code style={{ fontSize: "0.78em", opacity: 0.9 }}>MAIL_FORCE_SMTP</code>’yi kapat.
+                    Domain varsa Resend de kullanılabilir. Loglarda tam hata görünür.
+                  </p>
+                </div>
+              )}
               <input
                 type="email"
                 placeholder="Email Adresi"
