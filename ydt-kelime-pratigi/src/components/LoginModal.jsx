@@ -75,12 +75,12 @@ export default function LoginModal({ onLogin, onClose }) {
         data = {};
       }
 
-      // 5xx hatalarında backend mesajını değil, sabit ve düzgün bir Türkçe metin göster
+      // Backend metnindeki encoding sorunlarını kullanıcıya yansıtma.
       if (!res.ok) {
         if (res.status >= 500) {
           alert("Doğrulama maili gönderilemedi. Lütfen birkaç dakika sonra tekrar deneyin.");
         } else {
-          alert(data.error || "Kayıt başarısız");
+          alert("Kayıt başarısız. Bilgileri kontrol edip tekrar deneyin.");
         }
         return;
       }
@@ -91,7 +91,7 @@ export default function LoginModal({ onLogin, onClose }) {
           setActiveTab("verify");
           alert("Doğrulama kodu mail adresinize gönderildi.");
         } else if (data.token && data.user) {
-          alert(data.message || "Hesabınız oluşturuldu, giriş yapılıyor.");
+          alert("Hesabınız oluşturuldu, giriş yapılıyor.");
           onLogin({ ...data.user, token: data.token });
         } else {
           alert("Hesap başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.");
@@ -100,7 +100,7 @@ export default function LoginModal({ onLogin, onClose }) {
           setLoginPassword(regPassword);
         }
       } else {
-        alert(data.error || "Kayıt başarısız");
+        alert("Kayıt başarısız. Lütfen tekrar deneyin.");
       }
     } catch (err) {
       alert("Bağlantı hatası");
