@@ -330,14 +330,24 @@ function generateRoomCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+/** Railway bazen True/1; MAIL_FORCE_SMTP string karsilastirmasi yanlis sonuc vermesin */
+function envIsTrue(name) {
+  const v = String(process.env[name] ?? '').trim().toLowerCase();
+  return v === 'true' || v === '1' || v === 'yes';
+}
+
+/** Gmail app sifresi genelde 16 karakter; aradaki bosluklar SMTP'de hata yapabiliyor */
+const SMTP_USER = String(process.env.EMAIL_USER || '').trim();
+const SMTP_PASS = String(process.env.EMAIL_PASS || '').replace(/\s+/g, '').trim();
+
 // NODEMAILER CONFIG (SMTP fallback; Railway/Render IP'lerinde Gmail bazen reddeder)
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: Number(process.env.EMAIL_PORT) || 587,
   secure: process.env.EMAIL_SECURE === 'true',
   auth: {
-    user: process.env.EMAIL_USER || '',
-    pass: process.env.EMAIL_PASS || ''
+    user: SMTP_USER,
+    pass: SMTP_PASS
   },
   tls: {
     rejectUnauthorized: false
@@ -428,10 +438,10 @@ async function sendVerificationEmail(email, username, code) {
         </div>
       `;
 
-  // 1) Resend (sadece sandbox DEGILSE veya MAIL_FORCE_SMTP yoksa)
+  // 1) Resend (MAIL_FORCE_SMTP veya onboarding sandbox + SMTP varsa atla)
   const skipResend =
-    process.env.MAIL_FORCE_SMTP === 'true' ||
-    (shouldSkipResendSandbox() && process.env.EMAIL_USER && process.env.EMAIL_PASS);
+    envIsTrue('MAIL_FORCE_SMTP') ||
+    (shouldSkipResendSandbox() && SMTP_USER && SMTP_PASS);
 
   if (process.env.RESEND_API_KEY && !skipResend) {
     const resendResult = await sendMailViaResend({ to: email, subject, html, text });
@@ -442,15 +452,13 @@ async function sendVerificationEmail(email, username, code) {
   }
 
   // 2) SMTP (Gmail vb.)
-  const sender = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
-  if (!sender || !pass) {
+  if (!SMTP_USER || !SMTP_PASS) {
     console.error('SMTP skipped: EMAIL_USER / EMAIL_PASS not set');
     return { success: false, error: 'No mail provider configured (set RESEND_API_KEY or EMAIL_*)' };
   }
 
   const mailPromise = transporter.sendMail({
-    from: `"WordBoost" <${sender}>`,
+    from: `"WordBoost" <${SMTP_USER}>`,
     to: email,
     subject,
     text,
@@ -509,8 +517,8 @@ async function sendPasswordResetEmail(email, resetCode) {
   `;
 
   const skipResend =
-    process.env.MAIL_FORCE_SMTP === 'true' ||
-    (shouldSkipResendSandbox() && process.env.EMAIL_USER && process.env.EMAIL_PASS);
+    envIsTrue('MAIL_FORCE_SMTP') ||
+    (shouldSkipResendSandbox() && SMTP_USER && SMTP_PASS);
 
   if (process.env.RESEND_API_KEY && !skipResend) {
     const r = await sendMailViaResend({ to: email, subject, html, text });
@@ -518,9 +526,7 @@ async function sendPasswordResetEmail(email, resetCode) {
     console.warn('Resend password reset failed, trying SMTP:', r.error);
   }
 
-  const sender = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
-  if (!sender || !pass) {
+  if (!SMTP_USER || !SMTP_PASS) {
     return { success: false, error: 'No mail provider configured' };
   }
 
@@ -531,7 +537,7 @@ async function sendPasswordResetEmail(email, resetCode) {
 
   try {
     const info = await transporter.sendMail({
-      from: `"WordBoost" <${sender}>`,
+      from: `"WordBoost" <${SMTP_USER}>`,
       to: email,
       subject,
       text,

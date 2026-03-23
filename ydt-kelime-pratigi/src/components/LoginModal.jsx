@@ -90,7 +90,7 @@ export default function LoginModal({ onLogin, onClose }) {
       if (!res.ok) {
         if (res.status === 503 || res.status >= 500) {
           alert(
-            "Doğrulama e-postası gönderilemedi. Resend API anahtarını (.env / Railway) kontrol edin veya birkaç dakika sonra tekrar deneyin."
+            "Doğrulama e-postası gönderilemedi. Sunucuda EMAIL_USER / EMAIL_PASS (Gmail uygulama şifresi) doğru mu kontrol et; birkaç dakika sonra tekrar dene."
           );
         } else {
           alert("Kayıt başarısız. Bilgileri kontrol edip tekrar deneyin.");
