@@ -504,21 +504,35 @@ function shouldSkipResendSandbox() {
 async function sendVerificationEmail(email, username, code) {
   console.log(`Sending verification email to ${email}...`);
 
-  const subject = 'WordBoost Dogrulama Kodu';
-  const text = `Merhaba ${username},\n\nHesabini dogrulamak icin kodun: ${code}\n\nBu kod 1 saat gecerlidir.\n\nWordBoost`;
-  const html = `
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+  // Unicode escapes: e-posta istemcilerinde UTF-8 dogru gorunsun (kaynak dosya kodlamasindan bagimsiz)
+  const subject = 'WordBoost \u2014 Do\u011frulama kodu';
+  const text = `Merhaba ${username},
+
+Hesab\u0131n\u0131 do\u011frulamak i\u00E7in kodun: ${code}
+
+Bu kod 1 saat s\u00FCreyle ge\u00E7erlidir.
+
+\u2014 WordBoost`;
+  const html = `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta charset="utf-8" />
+</head>
+<body style="margin:0;padding:0;background:#fafafa;">
+        <div style="font-family: 'Segoe UI', Arial, Helvetica, sans-serif; padding: 24px; color: #333; max-width: 560px;">
           <h2 style="color: #FF9F1C;">WordBoost</h2>
           <p>Merhaba <strong>${username}</strong>,</p>
-          <p>Hesabini dogrulamak icin asagidaki kodu kullanabilirsin:</p>
+          <p>Hesab\u0131n\u0131 do\u011frulamak i\u00E7in a\u015fa\u011f\u0131daki kodu kullanabilirsin:</p>
           <div style="background: #f4f4f4; padding: 15px; border-radius: 10px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 5px; color: #333;">
             ${code}
           </div>
-          <p>Bu kod 1 saat sureyle gecerlidir.</p>
+          <p>Bu kod 1 saat s\u00FCreyle ge\u00E7erlidir.</p>
           <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-          <p style="font-size: 12px; color: #999;">Bu islemi sen yapmad?ysan bu maili yok sayabilirsin.</p>
+          <p style="font-size: 12px; color: #999;">Bu i\u015Flemi sen yapmad\u0131ysan bu e-postay\u0131 yok sayabilirsin.</p>
         </div>
-      `;
+</body>
+</html>`;
 
   // Zorunlu SMTP (Gmail vb.) ? Brevo/Resend kullanma
   if (envIsTrue('MAIL_FORCE_SMTP')) {
@@ -639,16 +653,30 @@ async function ensureMailTransport() {
 }
 
 async function sendPasswordResetEmail(email, resetCode) {
-  const subject = 'WordBoost Sifre Sifirlama';
-  const text = `Sifreni sifirlamak icin kodun: ${resetCode}\n\nBu kod 1 saat gecerlidir.\n\nWordBoost`;
-  const html = `
-    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-      <h2 style="color: #FF9F1C;">Sifre sifirlama</h2>
-      <p>Kodun:</p>
+  const subject = 'WordBoost \u2014 \u015Eifre s\u0131f\u0131rlama';
+  const text = `Merhaba,
+
+\u015Eifreni s\u0131f\u0131rlamak i\u00E7in kodun: ${resetCode}
+
+Bu kod 1 saat s\u00FCreyle ge\u00E7erlidir.
+
+\u2014 WordBoost`;
+  const html = `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta charset="utf-8" />
+</head>
+<body style="margin:0;padding:0;background:#fafafa;">
+    <div style="font-family: 'Segoe UI', Arial, Helvetica, sans-serif; padding: 24px; color: #333; max-width: 560px;">
+      <h2 style="color: #FF9F1C;">\u015Eifre s\u0131f\u0131rlama</h2>
+      <p>\u015Eifreni s\u0131f\u0131rlamak i\u00E7in a\u015fa\u011f\u0131daki kodu kullan:</p>
       <div style="background: #f4f4f4; padding: 15px; border-radius: 10px; font-size: 24px; font-weight: bold; text-align: center;">${resetCode}</div>
-      <p style="font-size: 12px; color: #999; margin-top: 16px;">Bu kod 1 saat gecerlidir.</p>
+      <p style="font-size: 12px; color: #999; margin-top: 16px;">Bu kod 1 saat s\u00FCreyle ge\u00E7erlidir.</p>
+      <p style="font-size: 12px; color: #999;">Bu i\u015Flemi sen yapmad\u0131ysan bu e-postay\u0131 yok sayabilirsin.</p>
     </div>
-  `;
+</body>
+</html>`;
 
   if (envIsTrue('MAIL_FORCE_SMTP')) {
     if (!SMTP_USER || !SMTP_PASS) {
@@ -742,87 +770,101 @@ async function sendPasswordResetEmail(email, resetCode) {
   }
 }
 
+function normalizeEmail(s) {
+  return String(s || '').trim().toLowerCase();
+}
+
+function normalizeVerificationCode(code) {
+  return String(code || '').replace(/\s/g, '');
+}
+
+/** Email buyuk/kucuk harf farkiyle DB'de bulunamama sorununu cozer */
+async function findUserByEmail(emailRaw) {
+  const emailNorm = normalizeEmail(emailRaw);
+  if (!emailNorm || !emailNorm.includes('@')) return null;
+  return User.findOne({
+    $expr: { $eq: [{ $toLower: '$email' }, emailNorm] }
+  });
+}
+
 // API Routes
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
+    const emailNorm = normalizeEmail(email);
+    const usernameTrim = String(username || '').trim();
 
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: "Kullan?c? ad?, email ve ?ifre gerekli" });
+    if (!usernameTrim || !emailNorm || !password) {
+      return res.status(400).json({ error: 'Kullanici adi, email ve sifre gerekli' });
     }
 
-    // Email format kontrol?
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: "Ge?ersiz email format?" });
+    if (!emailRegex.test(emailNorm)) {
+      return res.status(400).json({ error: 'Gecersiz email formati' });
     }
 
-    let user = await User.findOne({ 
-      $or: [
-        { username }, 
-        { email }
-      ] 
-    });
+    let user = await User.findOne({ username: usernameTrim });
+    if (!user) user = await findUserByEmail(emailNorm);
 
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const hashed = await bcrypt.hash(password, 10);
 
     if (user) {
-      // Kullan?c? var ama do?rulanmam??sa kayd? g?ncelle ve mail dene.
       if (!user.isVerified) {
-        user.username = username;
-        user.email = email;
+        user.username = usernameTrim;
+        user.email = emailNorm;
         user.password = hashed;
         user.verificationCode = verificationCode;
         user.verificationCodeExpires = Date.now() + 3600000;
         await user.save();
 
-        const mailResult = await sendVerificationEmail(email, username, verificationCode);
+        const mailResult = await sendVerificationEmail(emailNorm, usernameTrim, verificationCode);
         if (mailResult.success) {
           return res.json({
             success: true,
             requireVerification: true,
-            email: email,
-            message: "verification_code_sent"
+            email: emailNorm,
+            message: 'verification_code_sent'
           });
         }
 
-        console.error("Register re-send mail error:", mailResult.error);
+        console.error('Register re-send mail error:', mailResult.error);
         return res.status(503).json({
           success: false,
-          error: "verification_mail_failed",
-          detail: mailResult.error || "unknown"
+          error: 'verification_mail_failed',
+          detail: mailResult.error || 'unknown'
         });
       }
 
-      if (user.email === email) return res.status(400).json({ error: "Email zaten kullan?l?yor" });
-      return res.status(400).json({ error: "Kullan?c? ad? zaten kullan?l?yor" });
+      if (normalizeEmail(user.email) === emailNorm) {
+        return res.status(400).json({ error: 'Email zaten kullaniliyor' });
+      }
+      return res.status(400).json({ error: 'Kullanici adi zaten kullaniliyor' });
     }
 
     user = await User.create({
-      username,
-      email,
+      username: usernameTrim,
+      email: emailNorm,
       password: hashed,
-      nickname: username,
+      nickname: usernameTrim,
       badges: [BADGES.NEWBIE.id],
       isVerified: false,
       verificationCode,
       verificationCodeExpires: Date.now() + 3600000 // 1 saat ge?erli
     });
 
-    // Mail G?nderme
-    const mailResult = await sendVerificationEmail(email, username, verificationCode);
+    const mailResult = await sendVerificationEmail(emailNorm, usernameTrim, verificationCode);
 
     if (mailResult.success) {
       return res.json({
         success: true,
         requireVerification: true,
-        email: email,
-        message: "verification_code_sent"
+        email: emailNorm,
+        message: 'verification_code_sent'
       });
     }
 
-    console.error("Register mail error:", mailResult.error);
+    console.error('Register mail error:', mailResult.error);
     return res.status(503).json({
       success: false,
       error: "verification_mail_failed",
@@ -839,7 +881,7 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
+    const user = await findUserByEmail(email);
 
     if (!user) {
       // G?venlik: Kullan?c? yoksa bile "g?nderildi" de (User enumeration prevention)
@@ -852,7 +894,7 @@ app.post('/api/forgot-password', async (req, res) => {
     user.verificationCodeExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const mailResult = await sendPasswordResetEmail(email, resetCode);
+    const mailResult = await sendPasswordResetEmail(user.email, resetCode);
 
     if (!mailResult.success) {
       return res.status(500).json({ error: "?ifre s?f?rlama maili g?nderilemedi" });
@@ -870,12 +912,13 @@ app.post('/api/forgot-password', async (req, res) => {
 app.post('/api/reset-password', async (req, res) => {
   try {
     const { email, code, newPassword } = req.body;
-    const user = await User.findOne({ email });
+    const user = await findUserByEmail(email);
 
-    if (!user) return res.status(404).json({ error: "Kullan?c? bulunamad?" });
-    
-    if (user.verificationCode !== code || user.verificationCodeExpires < Date.now()) {
-      return res.status(400).json({ error: "Ge?ersiz veya s?resi dolmu? kod" });
+    if (!user) return res.status(404).json({ error: 'Kullanici bulunamadi' });
+
+    const codeNorm = normalizeVerificationCode(code);
+    if (user.verificationCode !== codeNorm || user.verificationCodeExpires < Date.now()) {
+      return res.status(400).json({ error: 'Gecersiz veya suresi dolmus kod' });
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);
@@ -895,13 +938,20 @@ app.post('/api/reset-password', async (req, res) => {
 app.post('/api/verify-email', async (req, res) => {
   try {
     const { email, code } = req.body;
-    const user = await User.findOne({ email });
+    const emailNorm = normalizeEmail(email);
+    const codeNorm = normalizeVerificationCode(code);
 
-    if (!user) return res.status(400).json({ error: "Kullan?c? bulunamad?" });
-    if (user.isVerified) return res.status(400).json({ error: "Hesap zaten do?rulanm??" });
+    if (!emailNorm || !codeNorm) {
+      return res.status(400).json({ error: 'Email ve kod gerekli' });
+    }
 
-    if (user.verificationCode !== code || user.verificationCodeExpires < Date.now()) {
-      return res.status(400).json({ error: "Ge?ersiz veya s?resi dolmu? kod" });
+    const user = await findUserByEmail(emailNorm);
+
+    if (!user) return res.status(400).json({ error: 'Kullanici bulunamadi' });
+    if (user.isVerified) return res.status(400).json({ error: 'Hesap zaten dogrulanmis' });
+
+    if (user.verificationCode !== codeNorm || user.verificationCodeExpires < Date.now()) {
+      return res.status(400).json({ error: 'Gecersiz veya suresi dolmus kod' });
     }
 
     user.isVerified = true;
@@ -938,17 +988,13 @@ app.post('/api/verify-email', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
+    const loginId = String(username || '').trim();
 
-    // Email veya kullan?c? ad? ile giri?
-    const user = await User.findOne({
-      $or: [
-        { username: username },
-        { email: username }
-      ]
-    });
+    let user = await User.findOne({ username: loginId });
+    if (!user) user = await findUserByEmail(loginId);
 
     if (!user) {
-      return res.status(400).json({ error: "Kullan?c? bulunamad?" });
+      return res.status(400).json({ error: 'Kullanici bulunamadi' });
     }
 
     // ?ifre kontrol?

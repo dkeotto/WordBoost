@@ -104,7 +104,11 @@ export default function LoginModal({ onLogin, onClose }) {
       }
 
       if (data.success && data.requireVerification) {
-        setVerifyEmail(regEmail);
+        setVerifyEmail(
+          typeof data.email === "string" && data.email
+            ? data.email
+            : String(regEmail || "").trim().toLowerCase()
+        );
         setActiveTab("verify");
         setRegisterError("");
         setRegisterErrorDetail("");
@@ -129,10 +133,14 @@ export default function LoginModal({ onLogin, onClose }) {
 
     setIsSubmitting(true);
     try {
+      const emailNorm = String(verifyEmail || "")
+        .trim()
+        .toLowerCase();
+      const codeNorm = String(verifyCode || "").replace(/\s/g, "");
       const res = await fetch("/api/verify-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: verifyEmail, code: verifyCode })
+        body: JSON.stringify({ email: emailNorm, code: codeNorm })
       });
 
       const data = await res.json();
