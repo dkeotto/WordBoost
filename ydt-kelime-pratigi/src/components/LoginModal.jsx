@@ -90,6 +90,9 @@ export default function LoginModal({ onLogin, onClose }) {
           setVerifyEmail(regEmail); // Backend'den gelen maili de kullanabiliriz
           setActiveTab("verify");
           alert("Doğrulama kodu mail adresinize gönderildi.");
+        } else if (data.token && data.user) {
+          alert(data.message || "Hesabınız oluşturuldu, giriş yapılıyor.");
+          onLogin({ ...data.user, token: data.token });
         } else {
           alert("Hesap başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.");
           setActiveTab("login");

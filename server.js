@@ -474,7 +474,7 @@ app.post('/api/register', async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
 
     if (user) {
-      // E?er kullan?c? var ama do?rulanmam??sa, kayd? güncelle ve tekrar mail at
+      // Kullan?c? var ama do?rulanmam?ºsa kayd? güncelle ve mail dene.
       if (!user.isVerified) {
         user.username = username;
         user.email = email;
@@ -483,21 +483,44 @@ app.post('/api/register', async (req, res) => {
         user.verificationCodeExpires = Date.now() + 3600000;
         await user.save();
 
-        // Mail Gönder
         const mailResult = await sendVerificationEmail(email, username, verificationCode);
-
-        if (!mailResult.success) {
-          console.error("Register re-send mail error:", mailResult.error);
-          return res.status(500).json({
-            error: "Do?rulama maili gönderilemedi. Lütfen daha sonra tekrar deneyin."
+        if (mailResult.success) {
+          return res.json({
+            success: true,
+            requireVerification: true,
+            email: email,
+            message: "Do?rulama kodu tekrar gönderildi"
           });
         }
 
+        // Fallback: Mail sa?lay?c?s? baºar?s?zsa kullan?c?y? bloklama.
+        // Kullan?c? deneyimini korumak için hesab? do?rulanm?ºa çekiyoruz.
+        console.error("Register re-send mail error:", mailResult.error);
+        user.isVerified = true;
+        user.verificationCode = undefined;
+        user.verificationCodeExpires = undefined;
+        await user.save();
+
+        const token = jwt.sign(
+          { id: user._id, username: user.username },
+          "SECRET_KEY",
+          { expiresIn: "30d" }
+        );
+
         return res.json({
           success: true,
-          requireVerification: true,
-          email: email,
-          message: "Do?rulama kodu tekrar gönderildi"
+          requireVerification: false,
+          token,
+          user: {
+            username: user.username,
+            nickname: user.nickname || user.username,
+            avatar: user.avatar || "??",
+            bio: user.bio || "",
+            stats: user.stats,
+            streak: user.streak,
+            badges: user.badges
+          },
+          message: "Mail gönderimi baºar?s?z oldu?u için hesap otomatik do?ruland?."
         });
       }
 
@@ -519,19 +542,42 @@ app.post('/api/register', async (req, res) => {
     // Mail Gönderme
     const mailResult = await sendVerificationEmail(email, username, verificationCode);
 
-    if (!mailResult.success) {
-      console.error("Register mail error:", mailResult.error);
-      // Hesab? olu?turduk ama mail gidemedi -> Kullan?c?ya aç?kça söyle
-      return res.status(500).json({
-        error: "Do?rulama maili gönderilemedi. Lütfen birkaç dakika sonra tekrar kay?t olmay? deneyin."
+    if (mailResult.success) {
+      return res.json({
+        success: true,
+        requireVerification: true,
+        email: email,
+        message: "Do?rulama kodu gönderildi"
       });
     }
 
-    res.json({
+    // Fallback: Mail gönderimi baºar?s?zsa kullan?c?y? bloke etme.
+    console.error("Register mail error:", mailResult.error);
+    user.isVerified = true;
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+    await user.save();
+
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      "SECRET_KEY",
+      { expiresIn: "30d" }
+    );
+
+    return res.json({
       success: true,
-      requireVerification: true,
-      email: email,
-      message: "Do?rulama kodu gönderildi"
+      requireVerification: false,
+      token,
+      user: {
+        username: user.username,
+        nickname: user.nickname || user.username,
+        avatar: user.avatar || "??",
+        bio: user.bio || "",
+        stats: user.stats,
+        streak: user.streak,
+        badges: user.badges
+      },
+      message: "Mail gönderimi baºar?s?z oldu?u için hesap otomatik do?ruland?."
     });
 
   } catch (err) {
