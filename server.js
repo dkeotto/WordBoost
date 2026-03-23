@@ -554,25 +554,38 @@ async function sendVerificationEmail(email, username, code) {
     }
   }
 
-  // 1) Brevo ? domain gerekmez; gonderici adresi Brevo'da dogrulanmis olmali
+  // 1) Brevo ? domain gerekmez; gonderici Brevo'da dogrulanmis olmali
+  // 2) Resend ? yedek
+  // BREVO_API_KEY varken basarisizlikta Gmail SMTP'ye DUSME (Railway'de timeout + yaniltici "SMTP timeout")
+  const skipResend = shouldSkipResendSandbox() && SMTP_USER && SMTP_PASS;
+  let lastMailError = null;
+
   if (process.env.BREVO_API_KEY) {
     const br = await sendMailViaBrevo({ to: email, subject, html, text });
     if (br.success) return br;
-    console.warn('Brevo failed, trying next:', br.error);
+    lastMailError = br.error;
+    console.warn('Brevo failed:', br.error);
   }
-
-  // 2) Resend (onboarding sandbox + SMTP varsa Resend'i atla)
-  const skipResend = shouldSkipResendSandbox() && SMTP_USER && SMTP_PASS;
 
   if (process.env.RESEND_API_KEY && !skipResend) {
     const resendResult = await sendMailViaResend({ to: email, subject, html, text });
     if (resendResult.success) return resendResult;
-    console.warn('Resend failed, trying SMTP:', resendResult.error);
+    lastMailError = resendResult.error;
+    console.warn('Resend failed:', resendResult.error);
   } else if (skipResend && shouldSkipResendSandbox()) {
     console.log('Skipping Resend (onboarding@resend.dev sandbox); using SMTP for all recipients.');
   }
 
-  // 3) SMTP (Gmail vb.)
+  if (process.env.BREVO_API_KEY) {
+    return {
+      success: false,
+      error:
+        lastMailError ||
+        'Brevo failed. Panelde API anahtarini etkinlestir (Transactional / Send emails).'
+    };
+  }
+
+  // 3) SMTP (Gmail vb.) ? sadece BREVO_API_KEY yokken
   if (!SMTP_USER || !SMTP_PASS) {
     console.error('SMTP skipped: EMAIL_USER / EMAIL_PASS not set');
     return { success: false, error: 'No mail provider configured (set BREVO_API_KEY, RESEND_API_KEY or EMAIL_*)' };
@@ -668,18 +681,30 @@ async function sendPasswordResetEmail(email, resetCode) {
     }
   }
 
+  const skipResend = shouldSkipResendSandbox() && SMTP_USER && SMTP_PASS;
+  let lastPwMailError = null;
+
   if (process.env.BREVO_API_KEY) {
     const br = await sendMailViaBrevo({ to: email, subject, html, text });
     if (br.success) return br;
+    lastPwMailError = br.error;
     console.warn('Brevo password reset failed:', br.error);
   }
-
-  const skipResend = shouldSkipResendSandbox() && SMTP_USER && SMTP_PASS;
 
   if (process.env.RESEND_API_KEY && !skipResend) {
     const r = await sendMailViaResend({ to: email, subject, html, text });
     if (r.success) return r;
-    console.warn('Resend password reset failed, trying SMTP:', r.error);
+    lastPwMailError = r.error;
+    console.warn('Resend password reset failed:', r.error);
+  }
+
+  if (process.env.BREVO_API_KEY) {
+    return {
+      success: false,
+      error:
+        lastPwMailError ||
+        'Brevo failed. Panelde API anahtarini etkinlestir (Transactional / Send emails).'
+    };
   }
 
   if (!SMTP_USER || !SMTP_PASS) {
