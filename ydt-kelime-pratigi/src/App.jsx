@@ -9,6 +9,7 @@ import DashboardView from "./components/DashboardView";
 import SynonymsView from "./components/SynonymsView";
 import PhrasalVerbsView from "./components/PhrasalVerbsView";
 import { sanitizeWordList } from "./utils/wordQuality";
+import { buildSynonymQuestionPool, buildPhrasalQuestionPool } from "./utils/questionGenerators";
 import { io } from "socket.io-client";
 import "./App.css";
 
@@ -253,31 +254,146 @@ const WordListView = ({
   );
 };
 
-const FavoritesView = ({ favorites, toggleFavorite }) => (
+const SynonymListView = ({ items, level, setLevel, searchTerm, setSearchTerm, favorites, toggleFavorite, speakWord }) => {
+  const filtered = items.filter((q) => {
+    const byLevel = level === "ALL" || q.level === level;
+    const qText = `${q.question} ${q.correct} ${q.meaning || ""}`.toLowerCase();
+    const bySearch = !searchTerm || qText.includes(searchTerm.toLowerCase());
+    return byLevel && bySearch;
+  });
+  return (
     <div className="word-list">
-      <h2>⭐ Favoriler ({favorites.length})</h2>
+      <h2>Synonyms Listesi ({filtered.length})</h2>
+      <div className="search-box">
+        <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Synonym ara..." />
+        <select value={level} onChange={(e) => setLevel(e.target.value)}>
+          <option value="ALL">ALL</option><option value="A1">A1</option><option value="A2">A2</option>
+          <option value="B1">B1</option><option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
+        </select>
+      </div>
+      <div className="word-grid">
+        {filtered.map((q) => {
+          const key = `${q.question}__${q.correct}__${q.level}`;
+          const fav = favorites.includes(key);
+          return (
+            <div key={key} className="word-card">
+              <div className="list-card-top">
+                <span className="list-card-type">Synonym</span>
+                <button
+                  className="list-speak-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    speakWord({ term: q.question });
+                  }}
+                  title="Telaffuz"
+                >
+                  🔊
+                </button>
+              </div>
+              <button className="fav-btn" onClick={() => toggleFavorite(key)}>{fav ? "⭐" : "☆"}</button>
+              <h4>{q.question} <span className="level">{q.level}</span></h4>
+              <p className="meaning">Doğru: {q.correct}</p>
+              {q.meaning && <p className="hint">Anlam: {q.meaning}</p>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
-      {favorites.length === 0 ? (
-        <p className="empty">Henüz favori kelime yok.</p>
-      ) : (
+const PhrasalListView = ({ items, level, setLevel, searchTerm, setSearchTerm, favorites, toggleFavorite, speakWord }) => {
+  const filtered = items.filter((q) => {
+    const byLevel = level === "ALL" || q.level === level;
+    const qText = `${q.base} ${q.correct} ${q.meaning || ""}`.toLowerCase();
+    const bySearch = !searchTerm || qText.includes(searchTerm.toLowerCase());
+    return byLevel && bySearch;
+  });
+  return (
+    <div className="word-list">
+      <h2>Phrasal Verbs Listesi ({filtered.length})</h2>
+      <div className="search-box">
+        <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Phrasal ara..." />
+        <select value={level} onChange={(e) => setLevel(e.target.value)}>
+          <option value="ALL">ALL</option><option value="A1">A1</option><option value="A2">A2</option>
+          <option value="B1">B1</option><option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
+        </select>
+      </div>
+      <div className="word-grid">
+        {filtered.map((q) => {
+          const key = `${q.base}__${q.correct}__${q.level}`;
+          const fav = favorites.includes(key);
+          return (
+            <div key={key} className="word-card">
+              <div className="list-card-top">
+                <span className="list-card-type">Phrasal</span>
+                <button
+                  className="list-speak-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    speakWord({ term: q.correct });
+                  }}
+                  title="Telaffuz"
+                >
+                  🔊
+                </button>
+              </div>
+              <button className="fav-btn" onClick={() => toggleFavorite(key)}>{fav ? "⭐" : "☆"}</button>
+              <h4>{q.base} <span className="level">{q.level}</span></h4>
+              <p className="meaning">Doğru: {q.correct}</p>
+              {q.meaning && <p className="hint">Not: {q.meaning}</p>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const FavoritesView = ({ wordFavorites, synonymFavorites, phrasalFavorites, toggleWordFavorite, toggleSynFavorite, togglePhrasalFavorite }) => {
+  const [tab, setTab] = useState("words");
+  const total = wordFavorites.length + synonymFavorites.length + phrasalFavorites.length;
+  return (
+    <div className="word-list">
+      <h2>⭐ Favoriler ({total})</h2>
+      <div className="syn-controls">
+        <button className={`syn-prev-btn ${tab==="words"?"active":""}`} onClick={() => setTab("words")}>Kelimeler</button>
+        <button className={`syn-prev-btn ${tab==="synonyms"?"active":""}`} onClick={() => setTab("synonyms")}>Synonyms</button>
+        <button className={`syn-prev-btn ${tab==="phrasal"?"active":""}`} onClick={() => setTab("phrasal")}>Phrasal</button>
+      </div>
+      {tab === "words" && (
         <div className="word-grid">
-          {favorites.map((word, idx) => (
-            <div key={idx} className="word-card">
-              <button
-                className="fav-btn"
-                onClick={() => toggleFavorite(word)}
-              >
-                ⭐
-              </button>
-              <h4>{word.term}</h4>
-              <p className="meaning">{word.meaning}</p>
-              <p className="hint">{word.hint}</p>
+          {wordFavorites.map((word, idx) => (
+            <div key={`${word.term}-${idx}`} className="word-card">
+              <button className="fav-btn" onClick={() => toggleWordFavorite(word)}>⭐</button>
+              <h4>{word.term}</h4><p className="meaning">{word.meaning}</p><p className="hint">{word.hint}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {tab === "synonyms" && (
+        <div className="word-grid">
+          {synonymFavorites.map((key) => (
+            <div key={key} className="word-card">
+              <button className="fav-btn" onClick={() => toggleSynFavorite(key)}>⭐</button>
+              <h4>{key.split("__")[0]}</h4><p className="meaning">Synonym: {key.split("__")[1]}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {tab === "phrasal" && (
+        <div className="word-grid">
+          {phrasalFavorites.map((key) => (
+            <div key={key} className="word-card">
+              <button className="fav-btn" onClick={() => togglePhrasalFavorite(key)}>⭐</button>
+              <h4>{key.split("__")[0]}</h4><p className="meaning">Phrasal: {key.split("__")[1]}</p>
             </div>
           ))}
         </div>
       )}
     </div>
-);
+  );
+};
 
 const WrongWordsView = ({ wrongWords }) => (
     <div className="wrong-words">
@@ -1368,8 +1484,14 @@ function App() {
   const [user, setUser] = useState(null);
 
   const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem("ydt_favorites");
-    return saved ? JSON.parse(saved) : [];
+    const savedBundle = localStorage.getItem("ydt_favorites_bundle");
+    if (savedBundle) return JSON.parse(savedBundle);
+    const legacy = localStorage.getItem("ydt_favorites");
+    return {
+      words: legacy ? JSON.parse(legacy) : [],
+      synonyms: [],
+      phrasal: [],
+    };
   });
 
   const logout = () => {
@@ -1533,6 +1655,10 @@ function App() {
   const [isInRoom, setIsInRoom] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [synListLevel, setSynListLevel] = useState("ALL");
+  const [phrasalListLevel, setPhrasalListLevel] = useState("ALL");
+  const [synListSearch, setSynListSearch] = useState("");
+  const [phrasalListSearch, setPhrasalListSearch] = useState("");
 
   useEffect(() => {
     localStorage.setItem('ydt_stats', JSON.stringify(stats));
@@ -1549,6 +1675,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem("ydt_moduleStats", JSON.stringify(moduleStats));
   }, [moduleStats]);
+
+  useEffect(() => {
+    localStorage.setItem("ydt_favorites_bundle", JSON.stringify(favorites));
+  }, [favorites]);
 
   const trackModuleAnswer = (moduleName, isCorrect, level) => {
     setModuleStats((prev) => {
@@ -1676,6 +1806,9 @@ const filteredWords = useMemo(() => {
 return result.sort((a,b)=>a.term.localeCompare(b.term));
 
 }, [uniqueWords, searchTerm, selectedLevel]);
+
+const synonymQuestions = useMemo(() => buildSynonymQuestionPool(words), [words]);
+const phrasalQuestions = useMemo(() => buildPhrasalQuestionPool(words), [words]);
 
   const createRoom = async () => {
     const usernameInput = document.getElementById('username-input');
@@ -1933,15 +2066,28 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
   };
 
   const toggleFavorite = (word) => {
-    const exists = favorites.find(w => w.term === word.term);
+    const exists = favorites.words.find(w => w.term === word.term);
     let newFavs;
     if (exists) {
-      newFavs = favorites.filter(w => w.term !== word.term);
+      newFavs = favorites.words.filter(w => w.term !== word.term);
     } else {
-      newFavs = [...favorites, word];
+      newFavs = [...favorites.words, word];
     }
-    setFavorites(newFavs);
-    localStorage.setItem("ydt_favorites", JSON.stringify(newFavs));
+    setFavorites((prev) => ({ ...prev, words: newFavs }));
+  };
+
+  const toggleSynFavorite = (key) => {
+    setFavorites((prev) => ({
+      ...prev,
+      synonyms: prev.synonyms.includes(key) ? prev.synonyms.filter((x) => x !== key) : [...prev.synonyms, key],
+    }));
+  };
+
+  const togglePhrasalFavorite = (key) => {
+    setFavorites((prev) => ({
+      ...prev,
+      phrasal: prev.phrasal.includes(key) ? prev.phrasal.filter((x) => x !== key) : [...prev.phrasal, key],
+    }));
   };
 
   const flipCard = () => setIsFlipped(!isFlipped);
@@ -1989,7 +2135,7 @@ if (loadingWords) {
           isInRoom={isInRoom}
           wordsCount={words.length}
           wrongWordsCount={wrongWordsCount}
-          favoritesCount={favorites.length}
+          favoritesCount={favorites.words.length + favorites.synonyms.length + favorites.phrasal.length}
         />
     </header>
 
@@ -2019,13 +2165,22 @@ if (loadingWords) {
           setShowExample={setShowExample}
           feedback={feedback}
           feedbackMessage={feedbackMessage}
-          favorites={favorites}
+          favorites={favorites.words}
           toggleFavorite={toggleFavorite}
           speakWord={speakWord}
         />
       )}
       {currentView === 'test' && <TestManager words={words} setCurrentView={setCurrentView} setWrongWords={setWrongWords} />}
-      {currentView === 'favorites' && <FavoritesView favorites={favorites} toggleFavorite={toggleFavorite} />}
+      {currentView === 'favorites' && (
+        <FavoritesView
+          wordFavorites={favorites.words}
+          synonymFavorites={favorites.synonyms}
+          phrasalFavorites={favorites.phrasal}
+          toggleWordFavorite={toggleFavorite}
+          toggleSynFavorite={toggleSynFavorite}
+          togglePhrasalFavorite={togglePhrasalFavorite}
+        />
+      )}
       {currentView === 'matching-game' && <MatchingGameView words={words} setCurrentView={setCurrentView} />}
       {currentView === 'profile' && <ProfileView user={user} setUser={setUser} logout={logout} setCurrentView={setCurrentView} />}
       {currentView === 'public-profile' && <PublicProfileView selectedUser={selectedUser} setCurrentView={setCurrentView} />}
@@ -2038,18 +2193,42 @@ if (loadingWords) {
           moduleStats={moduleStats}
         />
       )}
-      {currentView === 'synonyms' && <SynonymsView playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
-      {currentView === 'phrasal-verbs' && <PhrasalVerbsView playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
+      {currentView === 'synonyms' && <SynonymsView words={words} playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
+      {currentView === 'phrasal-verbs' && <PhrasalVerbsView words={words} playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
       {currentView === 'word-list' && (
         <WordListView
           words={uniqueWords}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           filteredWords={filteredWords}
-          favorites={favorites}
+          favorites={favorites.words}
           toggleFavorite={toggleFavorite}
           selectedLevel={selectedLevel}
           setSelectedLevel={setSelectedLevel}
+          speakWord={speakWord}
+        />
+      )}
+      {currentView === 'synonyms-list' && (
+        <SynonymListView
+          items={synonymQuestions}
+          level={synListLevel}
+          setLevel={setSynListLevel}
+          searchTerm={synListSearch}
+          setSearchTerm={setSynListSearch}
+          favorites={favorites.synonyms}
+          toggleFavorite={toggleSynFavorite}
+          speakWord={speakWord}
+        />
+      )}
+      {currentView === 'phrasal-list' && (
+        <PhrasalListView
+          items={phrasalQuestions}
+          level={phrasalListLevel}
+          setLevel={setPhrasalListLevel}
+          searchTerm={phrasalListSearch}
+          setSearchTerm={setPhrasalListSearch}
+          favorites={favorites.phrasal}
+          toggleFavorite={togglePhrasalFavorite}
           speakWord={speakWord}
         />
       )}

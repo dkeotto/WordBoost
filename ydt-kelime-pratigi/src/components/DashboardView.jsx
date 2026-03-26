@@ -87,32 +87,52 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats }) => {
   const phr = moduleStats?.phrasal || { attempted: 0, correct: 0, wrong: 0, bestStreak: 0 };
   const synRate = syn.attempted ? Math.round((syn.correct / syn.attempted) * 100) : 0;
   const phrRate = phr.attempted ? Math.round((phr.correct / phr.attempted) * 100) : 0;
+  const donutRate = Math.round((successRate + synRate + phrRate) / 3);
+  const donutGradient = `conic-gradient(#ffb300 0% ${donutRate}%, rgba(255,255,255,0.08) ${donutRate}% 100%)`;
 
   return (
     <div className="dashboard-view">
-      <h2>Ilerleme Takip Paneli</h2>
+      <h2>İlerleme Takip Paneli</h2>
 
       <div className="dashboard-cards">
         <div className="dashboard-card">
-          <span>Toplam Ogrenilen Kelime</span>
+          <span>Toplam Öğrenilen Kelime</span>
           <strong>{stats.known}</strong>
         </div>
         <div className="dashboard-card">
-          <span>Bu Hafta Calisilan Kelime</span>
+          <span>Bu Hafta Çalışılan Kelime</span>
           <strong>{weeklyStudied}</strong>
         </div>
         <div className="dashboard-card">
-          <span>Haftalik Basari Orani</span>
+          <span>Haftalık Başarı Oranı</span>
           <strong>%{successRate}</strong>
         </div>
         <div className="dashboard-card">
-          <span>Aktif Calisilan Gun</span>
+          <span>Aktif Çalışılan Gün</span>
           <strong>{activeDays}</strong>
         </div>
       </div>
 
+      <div className="dashboard-donut-box">
+        <div className="dash-donut" style={{ background: donutGradient }}>
+          <div className="dash-donut-center">
+            <strong>%{donutRate}</strong>
+            <span>Genel</span>
+          </div>
+        </div>
+        <div className="dash-donut-info">
+          <h3>Genel Başarı Özeti</h3>
+          <p>Kelime, Synonyms ve Phrasal Verbs performanslarının birleşik göstergesi.</p>
+          <div className="dash-donut-legend">
+            <span>Kelime: %{successRate}</span>
+            <span>Synonyms: %{synRate}</span>
+            <span>Phrasal: %{phrRate}</span>
+          </div>
+        </div>
+      </div>
+
       <div className="weekly-chart-box">
-        <h3>Haftalik Calisma Grafigi</h3>
+        <h3>Haftalık Çalışma Grafiği</h3>
         <div className="weekly-chart">
           {chartData.map((item) => (
             <div className="bar-col" key={item.key}>
@@ -130,16 +150,16 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats }) => {
       </div>
 
       <div className="hard-words-box">
-        <h3>En Cok Zorlanilan Kelimeler</h3>
+        <h3>En Çok Zorlanılan Kelimeler</h3>
         {hardestWords.length === 0 ? (
-          <p className="empty">Henuz yeterli veri yok. Biraz daha calis ve tekrar bak.</p>
+          <p className="empty">Henüz yeterli veri yok. Biraz daha çalış ve tekrar bak.</p>
         ) : (
           <div className="hard-word-grid">
             {hardestWords.map((w) => (
               <div key={w.term} className="hard-word-item">
                 <strong>{w.term}</strong>
                 <span>{w.level}</span>
-                <em>{w.count} kez zorlandi</em>
+                <em>{w.count} kez zorlanıldı</em>
               </div>
             ))}
           </div>
@@ -147,27 +167,27 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats }) => {
       </div>
 
       <div className="module-stats-box">
-        <h3>Modul Istatistikleri</h3>
+        <h3>Modül İstatistikleri</h3>
         <div className="module-grid">
           <div className="module-card">
             <h4>Synonyms</h4>
             <p>Toplam Soru: {syn.attempted}</p>
-            <p>Basari: %{synRate}</p>
-            <p>En Iyi Seri: {syn.bestStreak}</p>
+            <p>Başarı: %{synRate}</p>
+            <p>En İyi Seri: {syn.bestStreak}</p>
           </div>
           <div className="module-card">
             <h4>Phrasal Verbs</h4>
             <p>Toplam Soru: {phr.attempted}</p>
-            <p>Basari: %{phrRate}</p>
-            <p>En Iyi Seri: {phr.bestStreak}</p>
+            <p>Başarı: %{phrRate}</p>
+            <p>En İyi Seri: {phr.bestStreak}</p>
           </div>
         </div>
       </div>
 
       <div className="recent-words-box">
-        <h3>Son Calisilan Kelimeler</h3>
+        <h3>Son Çalışılan Kelimeler</h3>
         {recentWords.length === 0 ? (
-          <p className="empty">Henuz calisma gecmisi yok.</p>
+          <p className="empty">Henüz çalışma geçmişi yok.</p>
         ) : (
           <div className="recent-tags">
             {recentWords.map((term, idx) => (

@@ -13,6 +13,7 @@ const Navbar = ({
   favoritesCount
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isListsOpen, setIsListsOpen] = useState(false);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -21,6 +22,7 @@ const Navbar = ({
   const handleNavClick = (view) => {
     setCurrentView(view);
     setIsMenuOpen(false); // Menüyü kapat
+    setIsListsOpen(false);
   };
 
   return (
@@ -95,6 +97,14 @@ const Navbar = ({
             </button>
           </li>
           <li className="nav-item">
+            <button
+              className={`nav-link ${currentView === 'word-list' ? 'active' : ''}`}
+              onClick={() => handleNavClick('word-list')}
+            >
+              📖 Tüm Kelimeler
+            </button>
+          </li>
+          <li className="nav-item">
             <button 
               className={`nav-link ${currentView === 'room-menu' || isInRoom ? 'active' : ''}`}
               onClick={() => handleNavClick(isInRoom ? 'room' : 'room-menu')}
@@ -103,19 +113,34 @@ const Navbar = ({
             </button>
           </li>
           
-          <li className="nav-item dropdown">
-             <span className="dropdown-title">
+          <li className={`nav-item dropdown ${isListsOpen ? 'open' : ''}`}>
+             <button
+               className="dropdown-title"
+               onClick={() => setIsListsOpen((v) => !v)}
+             >
                <div className="title-content">
-                 <span style={{marginRight: '5px'}}>📚</span> 
+                 <span style={{marginRight: '5px'}}>📚</span>
                  Listeler
                </div>
-             </span>
-             <div className="dropdown-content">
+             </button>
+             <div className={`dropdown-content ${isListsOpen ? 'show' : ''}`}>
                 <button 
                   className={`nav-link ${currentView === 'word-list' ? 'active' : ''}`}
                   onClick={() => handleNavClick('word-list')}
                 >
                   Tüm Kelimeler ({wordsCount})
+                </button>
+                <button
+                  className={`nav-link ${currentView === 'synonyms-list' ? 'active' : ''}`}
+                  onClick={() => handleNavClick('synonyms-list')}
+                >
+                  Synonyms Listesi
+                </button>
+                <button
+                  className={`nav-link ${currentView === 'phrasal-list' ? 'active' : ''}`}
+                  onClick={() => handleNavClick('phrasal-list')}
+                >
+                  Phrasal Listesi
                 </button>
                 <button 
                   className={`nav-link ${currentView === 'wrong-words' ? 'active' : ''}`}

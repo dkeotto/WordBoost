@@ -1,18 +1,21 @@
-import React, { useMemo, useState } from "react";
-import { CURATED_SYNONYMS } from "../data/curatedSynonyms";
+import React, { useMemo, useRef, useState } from "react";
+import { buildSynonymQuestionPool } from "../utils/questionGenerators";
 
 const LEVELS = ["ALL", "A1", "A2", "B1", "B2", "C1", "C2"];
 
-const SynonymsView = ({ playSound, onTrackAnswer }) => {
+const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
   const [level, setLevel] = useState("ALL");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selected, setSelected] = useState("");
+  const [isLocked, setIsLocked] = useState(false);
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
+  const autoNextTimer = useRef(null);
 
+  const allQuestions = useMemo(() => buildSynonymQuestionPool(words), [words]);
   const questionPool = useMemo(() => {
-    if (level === "ALL") return CURATED_SYNONYMS;
-    return CURATED_SYNONYMS.filter((item) => item.level === level);
-  }, [level]);
+    if (level === "ALL") return allQuestions;
+    return allQuestions.filter((item) => item.level === level);
+  }, [allQuestions, level]);
 
   const question = questionPool[questionIndex % Math.max(1, questionPool.length)];
   const correct = question?.correct || "";
@@ -26,7 +29,8 @@ const SynonymsView = ({ playSound, onTrackAnswer }) => {
   }, [question]);
 
   const answer = (value) => {
-    if (!question || selected) return;
+    if (!question || selected || isLocked) return;
+    setIsLocked(true);
     setSelected(value);
     const isCorrect = value === correct;
     if (isCorrect) {
@@ -39,11 +43,29 @@ const SynonymsView = ({ playSound, onTrackAnswer }) => {
     if (onTrackAnswer) {
       onTrackAnswer("synonyms", isCorrect, question.level || "ALL");
     }
+    if (isCorrect) {
+      autoNextTimer.current = setTimeout(() => {
+        setSelected("");
+        setQuestionIndex((i) => i + 1);
+        setIsLocked(false);
+      }, 650);
+    } else {
+      setIsLocked(false);
+    }
   };
 
   const next = () => {
+    if (autoNextTimer.current) clearTimeout(autoNextTimer.current);
     setSelected("");
     setQuestionIndex((i) => i + 1);
+    setIsLocked(false);
+  };
+
+  const prev = () => {
+    if (autoNextTimer.current) clearTimeout(autoNextTimer.current);
+    setSelected("");
+    setQuestionIndex((i) => Math.max(0, i - 1));
+    setIsLocked(false);
   };
 
   return (
@@ -51,7 +73,7 @@ const SynonymsView = ({ playSound, onTrackAnswer }) => {
       <div className="syn-header">
         <h2>Eş Anlamlı Kelime Çalışması</h2>
         <p>
-          Seviye seç, en uygun eş anlamı bul. Manuel curated havuzda <strong>{questionPool.length}</strong> soru
+          Seviye seç, en uygun eş anlamı bul. Havuzda <strong>{questionPool.length}</strong> soru
           var.
         </p>
       </div>
@@ -86,6 +108,8 @@ const SynonymsView = ({ playSound, onTrackAnswer }) => {
           </div>
           <h3>{question.question}</h3>
           <p>Bu kelimenin en yakın eş anlamlısını seç:</p>
+          {question.meaning && <p className="syn-sub">Anlam: {question.meaning}</p>}
+          {question.example && <p className="syn-sub">Örnek: {question.example}</p>}
           <div className="syn-options">
             {options.map((opt) => (
               <button
@@ -103,7 +127,10 @@ const SynonymsView = ({ playSound, onTrackAnswer }) => {
               {selected === correct ? "Harika! Doğru cevap." : `Doğru cevap: ${correct}`}
             </div>
           )}
-          <button className="syn-next-btn" onClick={next}>Sonraki Soru</button>
+          <div className="syn-nav-buttons">
+            <button className="syn-prev-btn" onClick={prev} disabled={questionIndex === 0}>Önceki Soru</button>
+            <button className="syn-next-btn" onClick={next}>Sonraki Soru</button>
+          </div>
         </div>
       )}
     </div>

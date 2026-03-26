@@ -1,17 +1,20 @@
-import React, { useMemo, useState } from "react";
-import { CURATED_PHRASAL_VERBS } from "../data/curatedPhrasalVerbs";
+import React, { useMemo, useRef, useState } from "react";
+import { buildPhrasalQuestionPool } from "../utils/questionGenerators";
 
 const LEVELS = ["ALL", "A1", "A2", "B1", "B2", "C1", "C2"];
 
-const PhrasalVerbsView = ({ playSound, onTrackAnswer }) => {
+const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
   const [level, setLevel] = useState("ALL");
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState("");
+  const [isLocked, setIsLocked] = useState(false);
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
+  const autoNextTimer = useRef(null);
 
+  const allQuestions = useMemo(() => buildPhrasalQuestionPool(words), [words]);
   const filtered = useMemo(
-    () => (level === "ALL" ? CURATED_PHRASAL_VERBS : CURATED_PHRASAL_VERBS.filter((item) => item.level === level)),
-    [level]
+    () => (level === "ALL" ? allQuestions : allQuestions.filter((item) => item.level === level)),
+    [allQuestions, level]
   );
 
   const question = filtered[index % Math.max(1, filtered.length)];
@@ -25,7 +28,8 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer }) => {
   }, [question, index]);
 
   const answer = (value) => {
-    if (!question || selected) return;
+    if (!question || selected || isLocked) return;
+    setIsLocked(true);
     setSelected(value);
     const isCorrect = value === question.correct;
     if (isCorrect) {
@@ -38,11 +42,29 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer }) => {
     if (onTrackAnswer) {
       onTrackAnswer("phrasal", isCorrect, question.level || "ALL");
     }
+    if (isCorrect) {
+      autoNextTimer.current = setTimeout(() => {
+        setSelected("");
+        setIndex((i) => i + 1);
+        setIsLocked(false);
+      }, 650);
+    } else {
+      setIsLocked(false);
+    }
   };
 
   const next = () => {
+    if (autoNextTimer.current) clearTimeout(autoNextTimer.current);
     setSelected("");
     setIndex((i) => i + 1);
+    setIsLocked(false);
+  };
+
+  const prev = () => {
+    if (autoNextTimer.current) clearTimeout(autoNextTimer.current);
+    setSelected("");
+    setIndex((i) => Math.max(0, i - 1));
+    setIsLocked(false);
   };
 
   return (
@@ -50,7 +72,7 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer }) => {
       <div className="syn-header">
         <h2>Phrasal Verbs Çalışması</h2>
         <p>
-          Seviye seç, doğru phrasal verb seçeneğini bul. Havuzda <strong>{filtered.length}</strong> alıştırma var.
+          Seviye seç, doğru phrasal verb seçeneğini bul. Havuzda <strong>{filtered.length}</strong> soru var.
         </p>
       </div>
 
@@ -89,6 +111,8 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer }) => {
           </div>
           <h3>Base Verb: {question.base}</h3>
           <p>Doğru phrasal verb seçeneğini seç:</p>
+          {question.meaning && <p className="syn-sub">Not: {question.meaning}</p>}
+          {question.example && <p className="syn-sub">Örnek: {question.example}</p>}
           <div className="syn-options">
             {options.map((opt) => (
               <button
@@ -108,9 +132,10 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer }) => {
               {selected === question.correct ? "Harika! Doğru cevap." : `Doğru cevap: ${question.correct}`}
             </div>
           )}
-          <button className="syn-next-btn" onClick={next}>
-            Sonraki Soru
-          </button>
+          <div className="syn-nav-buttons">
+            <button className="syn-prev-btn" onClick={prev} disabled={index === 0}>Önceki Soru</button>
+            <button className="syn-next-btn" onClick={next}>Sonraki Soru</button>
+          </div>
         </div>
       )}
     </div>

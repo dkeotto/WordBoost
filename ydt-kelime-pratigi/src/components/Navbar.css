@@ -24,7 +24,7 @@
   max-width: 100%;
   padding: 0 16px;
   gap: 10px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .navbar-logo {
@@ -71,8 +71,7 @@
   flex: 1;
   min-width: 0;
   justify-content: flex-end;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: visible;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 159, 28, 0.4) transparent;
 }
@@ -150,6 +149,11 @@
   align-items: center;
   transition: color 0.3s;
   font-weight: 600;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  box-shadow: none;
+  text-transform: none;
 }
 
 .dropdown-title::after {
@@ -157,6 +161,11 @@
   font-size: 0.7em;
   margin-left: 8px;
   color: white;
+  transition: transform 0.2s ease;
+}
+
+.dropdown.open .dropdown-title::after {
+  transform: rotate(180deg);
 }
 
 .dropdown-title:hover {
@@ -180,7 +189,7 @@
   gap: 5px;
 }
 
-.dropdown:hover .dropdown-content {
+.dropdown-content.show {
   display: flex;
   animation: fadeIn 0.2s ease;
 }
@@ -286,13 +295,8 @@
   }
 
   /* Mobile Dropdown Fix */
-  .dropdown:hover .dropdown-content {
-    display: flex; /* Keep visible on hover/tap */
-    animation: none; /* Disable animation on hover */
-  }
-  
   .dropdown-content {
-    display: flex;
+    display: none;
     position: static;
     transform: none;
     background: transparent;
@@ -302,6 +306,11 @@
     width: 100%;
     align-items: center;
     margin-top: 10px;
+  }
+
+  .dropdown-content.show {
+    display: flex;
+    animation: none;
   }
   
   .dropdown-title {
@@ -353,6 +362,56 @@
 
   .navbar-logo h1 {
     font-size: 1.5rem;
+  }
+}
+
+@media screen and (max-width: 1320px) {
+  .menu-icon {
+    display: flex;
+    position: absolute;
+    right: 20px;
+    top: 20px;
+  }
+
+  .nav-menu {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    position: fixed;
+    top: 74px;
+    left: -100%;
+    opacity: 0;
+    transition: all 0.5s ease;
+    background: rgba(18, 18, 18, 0.98);
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(255, 159, 28, 0.2);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+    height: calc(100vh - 74px);
+    overflow-y: auto;
+    justify-content: flex-start;
+    gap: 16px;
+  }
+
+  .nav-menu.active {
+    left: 0;
+    opacity: 1;
+    z-index: 1000;
+  }
+
+  .nav-item {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .nav-link, .dropdown-title {
+    width: 80%;
+    justify-content: center;
+    padding: 1rem;
+    font-size: 1rem;
+    background: rgba(255,255,255,0.05);
   }
 }
 
