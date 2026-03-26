@@ -8,6 +8,7 @@ import AvatarBuilder from "./components/AvatarBuilder";
 import DashboardView from "./components/DashboardView";
 import SynonymsView from "./components/SynonymsView";
 import PhrasalVerbsView from "./components/PhrasalVerbsView";
+import { sanitizeWordList } from "./utils/wordQuality";
 import { io } from "socket.io-client";
 import "./App.css";
 
@@ -564,6 +565,35 @@ const PublicProfileView = ({ selectedUser, setCurrentView }) => {
     const [selectedBadge, setSelectedBadge] = useState(null);
 
     if (!selectedUser) return <div className="loading">Kullanıcı bulunamadı</div>;
+    const studied = selectedUser.stats?.studied || 0;
+    const known = selectedUser.stats?.known || 0;
+    const unknown = selectedUser.stats?.unknown || 0;
+    const successRate = studied > 0 ? Math.round((known / studied) * 100) : 0;
+    const joinedDays = selectedUser.createdAt
+      ? Math.max(1, Math.floor((Date.now() - new Date(selectedUser.createdAt).getTime()) / 86400000))
+      : 0;
+    const consistencyScore = Math.min(100, (selectedUser.streak || 0) * 4);
+    const baseProgress = Math.min(100, Math.round((known * 0.6 + (selectedUser.streak || 0) * 2 + successRate) / 2));
+    const levelEstimate = {
+      A1: Math.max(5, 28 - Math.round(baseProgress * 0.12)),
+      A2: Math.max(8, 24 - Math.round(baseProgress * 0.09)),
+      B1: Math.max(12, 22 - Math.round(baseProgress * 0.05)),
+      B2: Math.max(10, 12 + Math.round(baseProgress * 0.05)),
+      C1: Math.max(8, 8 + Math.round(baseProgress * 0.08)),
+      C2: Math.max(5, 6 + Math.round(baseProgress * 0.1)),
+    };
+    const levelTotal = Object.values(levelEstimate).reduce((acc, n) => acc + n, 0) || 1;
+    const levelPercent = Object.fromEntries(
+      Object.entries(levelEstimate).map(([lv, val]) => [lv, Math.round((val / levelTotal) * 100)])
+    );
+    const donutGradient = `conic-gradient(
+      #4caf50 0% ${levelPercent.A1}%,
+      #8bc34a ${levelPercent.A1}% ${levelPercent.A1 + levelPercent.A2}%,
+      #ffeb3b ${levelPercent.A1 + levelPercent.A2}% ${levelPercent.A1 + levelPercent.A2 + levelPercent.B1}%,
+      #ff9800 ${levelPercent.A1 + levelPercent.A2 + levelPercent.B1}% ${levelPercent.A1 + levelPercent.A2 + levelPercent.B1 + levelPercent.B2}%,
+      #ff5722 ${levelPercent.A1 + levelPercent.A2 + levelPercent.B1 + levelPercent.B2}% ${levelPercent.A1 + levelPercent.A2 + levelPercent.B1 + levelPercent.B2 + levelPercent.C1}%,
+      #9c27b0 ${levelPercent.A1 + levelPercent.A2 + levelPercent.B1 + levelPercent.B2 + levelPercent.C1}% 100%
+    )`;
 
     return (
       <div className="profile-view">
@@ -624,6 +654,79 @@ const PublicProfileView = ({ selectedUser, setCurrentView }) => {
             ) : (
               <p className="no-badges">Henüz rozet kazanmamış.</p>
             )}
+          </div>
+        </div>
+
+        <div className="public-dashboard">
+          <h3>📊 Genel İlerleme Özeti</h3>
+          <p className="public-dashboard-note">
+            Bu alan, profil sahibinin herkese açık performans özetidir.
+          </p>
+
+          <div className="public-dashboard-grid">
+            <div className="public-kpi">
+              <span>Başarı Oranı</span>
+              <strong>%{successRate}</strong>
+            </div>
+            <div className="public-kpi">
+              <span>Günlük Seri</span>
+              <strong>{selectedUser.streak || 0} gün</strong>
+            </div>
+            <div className="public-kpi">
+              <span>Toplam Çalışma</span>
+              <strong>{studied}</strong>
+            </div>
+            <div className="public-kpi">
+              <span>Katılım Süresi</span>
+              <strong>{joinedDays} gün</strong>
+            </div>
+          </div>
+
+          <div className="public-progress-bars">
+            <div className="public-progress-item">
+              <div className="label-row">
+                <span>Bilinen Kelime Oranı</span>
+                <span>%{successRate}</span>
+              </div>
+              <div className="bar-bg">
+                <div className="bar-fill known" style={{ width: `${successRate}%` }} />
+              </div>
+            </div>
+            <div className="public-progress-item">
+              <div className="label-row">
+                <span>Devamlılık Skoru</span>
+                <span>%{consistencyScore}</span>
+              </div>
+              <div className="bar-bg">
+                <div className="bar-fill streak" style={{ width: `${consistencyScore}%` }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="public-mini-stats">
+            <span>✅ Bilinen: {known}</span>
+            <span>❌ Bilinmeyen: {unknown}</span>
+          </div>
+
+          <div className="public-level-estimate">
+            <h4>🎯 Tahmini Seviye Dağılımı</h4>
+            <div className="public-level-estimate-content">
+              <div className="level-donut" style={{ background: donutGradient }}>
+                <div className="donut-center">
+                  <strong>%{successRate}</strong>
+                  <span>Başarı</span>
+                </div>
+              </div>
+              <div className="level-legend">
+                {Object.entries(levelPercent).map(([lv, val]) => (
+                  <div key={lv} className="level-legend-item">
+                    <span className={`dot ${lv.toLowerCase()}`} />
+                    <span>{lv}</span>
+                    <strong>%{val}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1353,7 +1456,8 @@ function App() {
       })
       .then(data => {
         if (Array.isArray(data)) {
-          const shuffled = [...data].sort(() => Math.random() - 0.5);
+          const cleaned = sanitizeWordList(data);
+          const shuffled = [...cleaned].sort(() => Math.random() - 0.5);
           setWords(shuffled);
         } else {
           console.error("API'den beklenen veri gelmedi:", data);
@@ -1406,6 +1510,12 @@ function App() {
   const [stats, setStats] = useState(() => loadFromStorage('stats', { studied: 0, known: 0, unknown: 0 }));
   const [wrongWords, setWrongWords] = useState(() => loadFromStorage('wrongWords', []));
   const [practiceHistory, setPracticeHistory] = useState(() => loadFromStorage('practiceHistory', []));
+  const [moduleStats, setModuleStats] = useState(() =>
+    loadFromStorage("moduleStats", {
+      synonyms: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+      phrasal: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+    })
+  );
   const wrongWordsCount = wrongWords.length; // Add this derived state
   const [buttonCooldown, setButtonCooldown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1435,6 +1545,44 @@ function App() {
   useEffect(() => {
     localStorage.setItem('ydt_practiceHistory', JSON.stringify(practiceHistory));
   }, [practiceHistory]);
+
+  useEffect(() => {
+    localStorage.setItem("ydt_moduleStats", JSON.stringify(moduleStats));
+  }, [moduleStats]);
+
+  const trackModuleAnswer = (moduleName, isCorrect, level) => {
+    setModuleStats((prev) => {
+      const current = prev[moduleName] || {
+        attempted: 0,
+        correct: 0,
+        wrong: 0,
+        streak: 0,
+        bestStreak: 0,
+        byLevel: {},
+      };
+      const nextStreak = isCorrect ? current.streak + 1 : 0;
+      const currentLevel = current.byLevel[level] || { attempted: 0, correct: 0, wrong: 0 };
+      return {
+        ...prev,
+        [moduleName]: {
+          ...current,
+          attempted: current.attempted + 1,
+          correct: isCorrect ? current.correct + 1 : current.correct,
+          wrong: !isCorrect ? current.wrong + 1 : current.wrong,
+          streak: nextStreak,
+          bestStreak: Math.max(current.bestStreak, nextStreak),
+          byLevel: {
+            ...current.byLevel,
+            [level]: {
+              attempted: currentLevel.attempted + 1,
+              correct: isCorrect ? currentLevel.correct + 1 : currentLevel.correct,
+              wrong: !isCorrect ? currentLevel.wrong + 1 : currentLevel.wrong,
+            },
+          },
+        },
+      };
+    });
+  };
 
   useEffect(() => {
     socket.on('connect_error', (err) => {
@@ -1802,9 +1950,14 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     setStats({ studied: 0, known: 0, unknown: 0 });
     setWrongWords([]);
     setPracticeHistory([]);
+    setModuleStats({
+      synonyms: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+      phrasal: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+    });
     localStorage.removeItem('ydt_stats');
     localStorage.removeItem('ydt_wrongWords');
     localStorage.removeItem('ydt_practiceHistory');
+    localStorage.removeItem("ydt_moduleStats");
   };
 
   const leaveRoom = () => {
@@ -1878,10 +2031,15 @@ if (loadingWords) {
       {currentView === 'public-profile' && <PublicProfileView selectedUser={selectedUser} setCurrentView={setCurrentView} />}
       {currentView === 'leaderboard' && <LeaderboardView user={user} setCurrentView={setCurrentView} setSelectedUser={setSelectedUser} />}
       {currentView === 'dashboard' && (
-        <DashboardView stats={stats} practiceHistory={practiceHistory} wrongWords={wrongWords} />
+        <DashboardView
+          stats={stats}
+          practiceHistory={practiceHistory}
+          wrongWords={wrongWords}
+          moduleStats={moduleStats}
+        />
       )}
-      {currentView === 'synonyms' && <SynonymsView words={words} />}
-      {currentView === 'phrasal-verbs' && <PhrasalVerbsView words={words} />}
+      {currentView === 'synonyms' && <SynonymsView playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
+      {currentView === 'phrasal-verbs' && <PhrasalVerbsView playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
       {currentView === 'word-list' && (
         <WordListView
           words={uniqueWords}

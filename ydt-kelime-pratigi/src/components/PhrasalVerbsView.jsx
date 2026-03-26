@@ -1,120 +1,42 @@
 import React, { useMemo, useState } from "react";
+import { CURATED_PHRASAL_VERBS } from "../data/curatedPhrasalVerbs";
 
 const LEVELS = ["ALL", "A1", "A2", "B1", "B2", "C1", "C2"];
 
-const PARTICLES = [
-  "up",
-  "down",
-  "out",
-  "in",
-  "on",
-  "off",
-  "over",
-  "away",
-  "back",
-  "through",
-  "around",
-  "about",
-  "into",
-];
-
-const normalize = (value) =>
-  String(value || "")
-    .toLowerCase()
-    .replace(/[^a-z\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const buildPhrasalBank = (words) => {
-  const list = Array.isArray(words) ? words : [];
-  const result = [];
-  const seen = new Set();
-
-  const byLevel = new Map();
-  list.forEach((w) => {
-    if (!w?.term) return;
-    const lv = w.level || "B1";
-    if (!byLevel.has(lv)) byLevel.set(lv, []);
-    byLevel.get(lv).push(w);
-  });
-
-  byLevel.forEach((levelWords, level) => {
-    const dictionary = new Set(levelWords.map((w) => normalize(w.term)));
-    const levelLimit = levelWords.slice(0, 2200);
-
-    levelLimit.forEach((w) => {
-      const base = normalize(w.term);
-      if (!base || base.includes(" ")) return;
-      if (base.length < 3) return;
-
-      const candidates = [
-        `${base} up`,
-        `${base} out`,
-        `${base} off`,
-        `${base} on`,
-        `${base} down`,
-        `${base} back`,
-        `${base} in`,
-      ];
-
-      let chosen = candidates.find((c) => dictionary.has(c));
-
-      if (!chosen) {
-        const tokenText = normalize(`${w.meaning} ${w.hint} ${w.example}`);
-        const hintedParticle = PARTICLES.find((p) => tokenText.includes(` ${p} `));
-        if (hintedParticle) chosen = `${base} ${hintedParticle}`;
-      }
-
-      if (!chosen) return;
-      const key = `${chosen}__${level}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-
-      const distractors = levelWords
-        .filter((x) => x?.term && normalize(x.term) !== chosen)
-        .slice(0, 140)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3)
-        .map((x) => x.term);
-
-      result.push({
-        base: w.term,
-        phrasal: chosen,
-        level,
-        distractors,
-      });
-    });
-  });
-
-  return result.slice(0, 5000);
-};
-
-const PhrasalVerbsView = ({ words }) => {
+const PhrasalVerbsView = ({ playSound, onTrackAnswer }) => {
   const [level, setLevel] = useState("ALL");
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState("");
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
 
-  const bank = useMemo(() => buildPhrasalBank(words), [words]);
   const filtered = useMemo(
-    () => (level === "ALL" ? bank : bank.filter((item) => item.level === level)),
-    [bank, level]
+    () => (level === "ALL" ? CURATED_PHRASAL_VERBS : CURATED_PHRASAL_VERBS.filter((item) => item.level === level)),
+    [level]
   );
 
   const question = filtered[index % Math.max(1, filtered.length)];
+  const questionNo = (index % Math.max(1, filtered.length)) + 1;
+  const total = Math.max(1, filtered.length);
+  const progress = Math.round((questionNo / total) * 100);
   const options = useMemo(() => {
     if (!question) return [];
-    const list = [question.phrasal, ...(question.distractors || [])];
+    const list = [...(question.options || [])];
     return Array.from(new Set(list)).slice(0, 4).sort(() => Math.random() - 0.5);
   }, [question, index]);
 
   const answer = (value) => {
     if (!question || selected) return;
     setSelected(value);
-    if (value === question.phrasal) {
+    const isCorrect = value === question.correct;
+    if (isCorrect) {
       setScore((s) => ({ ...s, correct: s.correct + 1 }));
+      if (playSound) playSound("correct");
     } else {
       setScore((s) => ({ ...s, wrong: s.wrong + 1 }));
+      if (playSound) playSound("wrong");
+    }
+    if (onTrackAnswer) {
+      onTrackAnswer("phrasal", isCorrect, question.level || "ALL");
     }
   };
 
@@ -125,10 +47,12 @@ const PhrasalVerbsView = ({ words }) => {
 
   return (
     <div className="synonyms-view">
-      <h2>Phrasal Verbs Calismasi</h2>
-      <p>
-        Seviye sec, uygun phrasal verb secenegini bul. Havuzda <strong>{filtered.length}</strong> alistirma var.
-      </p>
+      <div className="syn-header">
+        <h2>Phrasal Verbs Çalışması</h2>
+        <p>
+          Seviye seç, doğru phrasal verb seçeneğini bul. Havuzda <strong>{filtered.length}</strong> alıştırma var.
+        </p>
+      </div>
 
       <div className="syn-controls">
         <label>Seviye:</label>
@@ -147,23 +71,30 @@ const PhrasalVerbsView = ({ words }) => {
           ))}
         </select>
         <div className="syn-score">
-          <span>Dogru: {score.correct}</span>
-          <span>Yanlis: {score.wrong}</span>
+          <span>✅ Doğru: {score.correct}</span>
+          <span>❌ Yanlış: {score.wrong}</span>
         </div>
+      </div>
+      <div className="syn-progress">
+        <div className="syn-progress-fill" style={{ width: `${progress}%` }} />
       </div>
 
       {filtered.length === 0 ? (
-        <div className="empty-state">Bu seviyede phrasal verb verisi bulunamadi.</div>
+        <div className="empty-state">Bu seviyede phrasal verb verisi bulunamadı.</div>
       ) : (
         <div className="syn-quiz-card">
+          <div className="syn-meta">
+            <span className="syn-level-badge">{question.level}</span>
+            <span className="syn-qno">Soru {questionNo}/{total}</span>
+          </div>
           <h3>Base Verb: {question.base}</h3>
-          <p>Dogru phrasal verb secenegini sec:</p>
+          <p>Doğru phrasal verb seçeneğini seç:</p>
           <div className="syn-options">
             {options.map((opt) => (
               <button
                 key={opt}
                 className={`syn-option ${
-                  selected ? (opt === question.phrasal ? "correct" : opt === selected ? "wrong" : "") : ""
+                  selected ? (opt === question.correct ? "correct" : opt === selected ? "wrong" : "") : ""
                 }`}
                 onClick={() => answer(opt)}
                 disabled={Boolean(selected)}
@@ -174,7 +105,7 @@ const PhrasalVerbsView = ({ words }) => {
           </div>
           {selected && (
             <div className="syn-result">
-              {selected === question.phrasal ? "Harika! Dogru cevap." : `Dogru cevap: ${question.phrasal}`}
+              {selected === question.correct ? "Harika! Doğru cevap." : `Doğru cevap: ${question.correct}`}
             </div>
           )}
           <button className="syn-next-btn" onClick={next}>

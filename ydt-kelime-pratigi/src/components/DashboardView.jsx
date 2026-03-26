@@ -9,7 +9,7 @@ const formatDayKey = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-const DashboardView = ({ stats, practiceHistory, wrongWords }) => {
+const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats }) => {
   const last7Days = useMemo(() => {
     const now = new Date();
     const days = [];
@@ -64,6 +64,30 @@ const DashboardView = ({ stats, practiceHistory, wrongWords }) => {
       .slice(0, 8);
   }, [practiceHistory]);
 
+  const activeDays = useMemo(() => {
+    const days = new Set();
+    practiceHistory.forEach((item) => {
+      if (!item?.date) return;
+      const date = new Date(item.date);
+      if (Number.isNaN(date.getTime())) return;
+      days.add(formatDayKey(date));
+    });
+    return days.size;
+  }, [practiceHistory]);
+
+  const recentWords = useMemo(() => {
+    return [...practiceHistory]
+      .slice(-5)
+      .reverse()
+      .map((item) => item.term)
+      .filter(Boolean);
+  }, [practiceHistory]);
+
+  const syn = moduleStats?.synonyms || { attempted: 0, correct: 0, wrong: 0, bestStreak: 0 };
+  const phr = moduleStats?.phrasal || { attempted: 0, correct: 0, wrong: 0, bestStreak: 0 };
+  const synRate = syn.attempted ? Math.round((syn.correct / syn.attempted) * 100) : 0;
+  const phrRate = phr.attempted ? Math.round((phr.correct / phr.attempted) * 100) : 0;
+
   return (
     <div className="dashboard-view">
       <h2>Ilerleme Takip Paneli</h2>
@@ -80,6 +104,10 @@ const DashboardView = ({ stats, practiceHistory, wrongWords }) => {
         <div className="dashboard-card">
           <span>Haftalik Basari Orani</span>
           <strong>%{successRate}</strong>
+        </div>
+        <div className="dashboard-card">
+          <span>Aktif Calisilan Gun</span>
+          <strong>{activeDays}</strong>
         </div>
       </div>
 
@@ -113,6 +141,37 @@ const DashboardView = ({ stats, practiceHistory, wrongWords }) => {
                 <span>{w.level}</span>
                 <em>{w.count} kez zorlandi</em>
               </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="module-stats-box">
+        <h3>Modul Istatistikleri</h3>
+        <div className="module-grid">
+          <div className="module-card">
+            <h4>Synonyms</h4>
+            <p>Toplam Soru: {syn.attempted}</p>
+            <p>Basari: %{synRate}</p>
+            <p>En Iyi Seri: {syn.bestStreak}</p>
+          </div>
+          <div className="module-card">
+            <h4>Phrasal Verbs</h4>
+            <p>Toplam Soru: {phr.attempted}</p>
+            <p>Basari: %{phrRate}</p>
+            <p>En Iyi Seri: {phr.bestStreak}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="recent-words-box">
+        <h3>Son Calisilan Kelimeler</h3>
+        {recentWords.length === 0 ? (
+          <p className="empty">Henuz calisma gecmisi yok.</p>
+        ) : (
+          <div className="recent-tags">
+            {recentWords.map((term, idx) => (
+              <span key={`${term}-${idx}`}>{term}</span>
             ))}
           </div>
         )}

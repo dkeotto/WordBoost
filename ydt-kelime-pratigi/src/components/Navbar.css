@@ -24,6 +24,7 @@
   max-width: 100%;
   padding: 0 16px;
   gap: 10px;
+  overflow: hidden;
 }
 
 .navbar-logo {
@@ -67,6 +68,22 @@
   margin: 0;
   padding: 0;
   align-items: center;
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-end;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 159, 28, 0.4) transparent;
+}
+
+.nav-menu::-webkit-scrollbar {
+  height: 6px;
+}
+
+.nav-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 159, 28, 0.35);
+  border-radius: 999px;
 }
 
 .nav-item {
@@ -234,6 +251,7 @@
     box-shadow: 0 10px 20px rgba(0,0,0,0.8);
     height: calc(100vh - 74px);
     overflow-y: auto;
+    overflow-x: hidden;
     justify-content: flex-start;
     gap: 20px;
   }
