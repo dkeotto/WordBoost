@@ -5,6 +5,8 @@ import Navbar from "./components/Navbar";
 import Flashcard from "./components/Flashcard";
 import StatsPanel from "./components/StatsPanel";
 import AvatarBuilder from "./components/AvatarBuilder";
+import DashboardView from "./components/DashboardView";
+import SynonymsView from "./components/SynonymsView";
 import { io } from "socket.io-client";
 import "./App.css";
 
@@ -1402,6 +1404,7 @@ function App() {
   const [showExample, setShowExample] = useState(false);
   const [stats, setStats] = useState(() => loadFromStorage('stats', { studied: 0, known: 0, unknown: 0 }));
   const [wrongWords, setWrongWords] = useState(() => loadFromStorage('wrongWords', []));
+  const [practiceHistory, setPracticeHistory] = useState(() => loadFromStorage('practiceHistory', []));
   const wrongWordsCount = wrongWords.length; // Add this derived state
   const [buttonCooldown, setButtonCooldown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1427,6 +1430,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('ydt_wrongWords', JSON.stringify(wrongWords));
   }, [wrongWords]);
+
+  useEffect(() => {
+    localStorage.setItem('ydt_practiceHistory', JSON.stringify(practiceHistory));
+  }, [practiceHistory]);
 
   useEffect(() => {
     socket.on('connect_error', (err) => {
@@ -1755,6 +1762,19 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
       });
     }
 
+    setPracticeHistory((prev) => {
+      const next = [
+        ...prev,
+        {
+          term: currentWord.term,
+          level: currentWord.level || "?",
+          isKnown,
+          date: new Date().toISOString()
+        }
+      ];
+      return next.slice(-5000);
+    });
+
     playSound(isKnown ? 'correct' : 'wrong');
     showFeedbackAnim(isKnown ? 'correct' : 'wrong');
     
@@ -1780,8 +1800,10 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
   const resetStats = () => {
     setStats({ studied: 0, known: 0, unknown: 0 });
     setWrongWords([]);
+    setPracticeHistory([]);
     localStorage.removeItem('ydt_stats');
     localStorage.removeItem('ydt_wrongWords');
+    localStorage.removeItem('ydt_practiceHistory');
   };
 
   const leaveRoom = () => {
@@ -1854,6 +1876,10 @@ if (loadingWords) {
       {currentView === 'profile' && <ProfileView user={user} setUser={setUser} logout={logout} setCurrentView={setCurrentView} />}
       {currentView === 'public-profile' && <PublicProfileView selectedUser={selectedUser} setCurrentView={setCurrentView} />}
       {currentView === 'leaderboard' && <LeaderboardView user={user} setCurrentView={setCurrentView} setSelectedUser={setSelectedUser} />}
+      {currentView === 'dashboard' && (
+        <DashboardView stats={stats} practiceHistory={practiceHistory} wrongWords={wrongWords} />
+      )}
+      {currentView === 'synonyms' && <SynonymsView words={words} />}
       {currentView === 'word-list' && (
         <WordListView
           words={uniqueWords}

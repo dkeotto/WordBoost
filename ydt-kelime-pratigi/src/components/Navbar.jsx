@@ -71,6 +71,22 @@ const Navbar = ({
             </button>
           </li>
           <li className="nav-item">
+            <button
+              className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`}
+              onClick={() => handleNavClick('dashboard')}
+            >
+              📊 Dashboard
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${currentView === 'synonyms' ? 'active' : ''}`}
+              onClick={() => handleNavClick('synonyms')}
+            >
+              🔁 Synonyms
+            </button>
+          </li>
+          <li className="nav-item">
             <button 
               className={`nav-link ${currentView === 'room-menu' || isInRoom ? 'active' : ''}`}
               onClick={() => handleNavClick(isInRoom ? 'room' : 'room-menu')}
