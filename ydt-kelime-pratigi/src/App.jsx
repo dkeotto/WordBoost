@@ -254,13 +254,16 @@ const WordListView = ({
   );
 };
 
-const SynonymListView = ({ items, level, setLevel, searchTerm, setSearchTerm, favorites, toggleFavorite, speakWord }) => {
-  const filtered = items.filter((q) => {
-    const byLevel = level === "ALL" || q.level === level;
-    const qText = `${q.question} ${q.correct} ${q.meaning || ""}`.toLowerCase();
-    const bySearch = !searchTerm || qText.includes(searchTerm.toLowerCase());
-    return byLevel && bySearch;
-  });
+const SynonymListView = ({ words, level, setLevel, searchTerm, setSearchTerm, favorites, toggleFavorite, speakWord }) => {
+  const items = useMemo(() => buildSynonymQuestionPool(words), [words]);
+  const filtered = useMemo(() => {
+    return items.filter((q) => {
+      const byLevel = level === "ALL" || q.level === level;
+      const qText = `${q.question} ${q.correct} ${q.meaning || ""}`.toLowerCase();
+      const bySearch = !searchTerm || qText.includes(searchTerm.toLowerCase());
+      return byLevel && bySearch;
+    });
+  }, [items, level, searchTerm]);
   return (
     <div className="word-list">
       <h2>Synonyms Listesi ({filtered.length})</h2>
@@ -302,13 +305,16 @@ const SynonymListView = ({ items, level, setLevel, searchTerm, setSearchTerm, fa
   );
 };
 
-const PhrasalListView = ({ items, level, setLevel, searchTerm, setSearchTerm, favorites, toggleFavorite, speakWord }) => {
-  const filtered = items.filter((q) => {
-    const byLevel = level === "ALL" || q.level === level;
-    const qText = `${q.base} ${q.correct} ${q.meaning || ""}`.toLowerCase();
-    const bySearch = !searchTerm || qText.includes(searchTerm.toLowerCase());
-    return byLevel && bySearch;
-  });
+const PhrasalListView = ({ words, level, setLevel, searchTerm, setSearchTerm, favorites, toggleFavorite, speakWord }) => {
+  const items = useMemo(() => buildPhrasalQuestionPool(words), [words]);
+  const filtered = useMemo(() => {
+    return items.filter((q) => {
+      const byLevel = level === "ALL" || q.level === level;
+      const qText = `${q.base} ${q.correct} ${q.meaning || ""}`.toLowerCase();
+      const bySearch = !searchTerm || qText.includes(searchTerm.toLowerCase());
+      return byLevel && bySearch;
+    });
+  }, [items, level, searchTerm]);
   return (
     <div className="word-list">
       <h2>Phrasal Verbs Listesi ({filtered.length})</h2>
@@ -1481,6 +1487,16 @@ function App() {
       return defaultValue;
     }
   };
+
+  const shuffleArray = (arr) => {
+    // O(n) Fisher-Yates shuffle; sort(Math.random) gibi pahalı random-sort kullanmıyoruz.
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
   const [user, setUser] = useState(null);
 
   const [favorites, setFavorites] = useState(() => {
@@ -1567,9 +1583,30 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // 10 saniyelik zaman aşımı
+    const cacheKey = "ydt_words_cache_v1";
+    const cacheMaxAgeMs = 12 * 60 * 60 * 1000; // 12 saat
+
+    // 1) Önce cache dene
+    try {
+      const saved = localStorage.getItem(cacheKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const cachedWords = parsed?.words;
+        const ts = parsed?.ts;
+        if (Array.isArray(cachedWords) && typeof ts === "number" && Date.now() - ts < cacheMaxAgeMs) {
+          const cleaned = sanitizeWordList(cachedWords);
+          setWords(shuffleArray(cleaned));
+          setLoadingWords(false);
+          return;
+        }
+      }
+    } catch (e) {
+      // cache bozuk olabilir, sessizce geç
+    }
+
+    // 2) Cache yoksa API'den çek (daha uzun timeout, daha az UI donması)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     fetch('/api/words', { signal: controller.signal })
       .then(res => {
@@ -1579,8 +1616,13 @@ function App() {
       .then(data => {
         if (Array.isArray(data)) {
           const cleaned = sanitizeWordList(data);
-          const shuffled = [...cleaned].sort(() => Math.random() - 0.5);
+          const shuffled = shuffleArray(cleaned);
           setWords(shuffled);
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), words: cleaned }));
+          } catch {
+            // localStorage dolu olabilir; umursama
+          }
         } else {
           console.error("API'den beklenen veri gelmedi:", data);
           setWords([]); // Boş array set et
@@ -1831,8 +1873,8 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
 
 }, [uniqueWords, searchTerm, selectedLevel]);
 
-const synonymQuestions = useMemo(() => buildSynonymQuestionPool(words), [words]);
-const phrasalQuestions = useMemo(() => buildPhrasalQuestionPool(words), [words]);
+// NOTE: Synonyms/Phrasal listleri ağır soru havuzlarını gerektirdiği için
+// bu hesaplar `synonyms-list` ve `phrasal-list` view'ları açılınca yapılır.
 
   const createRoom = async () => {
     const usernameInput = document.getElementById('username-input');
@@ -2234,7 +2276,7 @@ if (loadingWords) {
       )}
       {currentView === 'synonyms-list' && (
         <SynonymListView
-          items={synonymQuestions}
+          words={words}
           level={synListLevel}
           setLevel={setSynListLevel}
           searchTerm={synListSearch}
@@ -2246,7 +2288,7 @@ if (loadingWords) {
       )}
       {currentView === 'phrasal-list' && (
         <PhrasalListView
-          items={phrasalQuestions}
+          words={words}
           level={phrasalListLevel}
           setLevel={setPhrasalListLevel}
           searchTerm={phrasalListSearch}

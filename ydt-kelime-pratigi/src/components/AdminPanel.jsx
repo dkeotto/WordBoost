@@ -5,7 +5,7 @@ const STORAGE_TOKEN_KEY = "wb_admin_token";
 
 export default function AdminPanel({ setCurrentView }) {
   const [token, setToken] = useState(() => sessionStorage.getItem(STORAGE_TOKEN_KEY) || "");
-  const [username, setUsername] = useState(() => localStorage.getItem("wb_admin_user") || "");
+  const [username, setUsername] = useState(() => localStorage.getItem("wb_admin_user") || "dkeotto");
   const [password, setPassword] = useState("");
   const [isAuthed, setIsAuthed] = useState(() => Boolean(sessionStorage.getItem(STORAGE_TOKEN_KEY)));
   const [summary, setSummary] = useState(null);

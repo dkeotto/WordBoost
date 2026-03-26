@@ -362,9 +362,6 @@ function pushAdminError(msg, meta = {}) {
 
 function requireAdmin(req, res, next) {
   const secret = process.env.ADMIN_SECRET;
-  if (!secret || String(secret).length < 12) {
-    return res.status(503).json({ error: 'Admin kapali: ADMIN_SECRET (min 12 karakter) .env / Railway' });
-  }
   const adminToken = req.headers['x-admin-token'];
   if (adminToken && adminSessions.has(adminToken)) {
     const expiresAt = adminSessions.get(adminToken);
@@ -372,6 +369,11 @@ function requireAdmin(req, res, next) {
       return next();
     }
     adminSessions.delete(adminToken);
+  }
+
+  // ADMIN_SECRET yoksa sadece token ile izin ver (login ile token üretilir).
+  if (!secret || String(secret).length < 12) {
+    return res.status(401).json({ error: 'Yetkisiz (ADMIN_SECRET eksik)' });
   }
   if (req.headers['x-admin-key'] !== secret) {
     return res.status(401).json({ error: 'Yetkisiz' });
@@ -1387,8 +1389,12 @@ app.get('/api/health', (req, res) => {
 app.get('/api/words', async (req, res) => {
   try {
     console.log("Fetching words...");
-    // 5 saniye zaman a??m? ekleyelim
-    const words = await Word.find().sort({ term: 1 }).maxTimeMS(5000); 
+    // Sadece practice/list için gerekli alanları çekiyoruz.
+    const words = await Word.find()
+      .select('term meaning hint example level')
+      .lean()
+      .sort({ term: 1 })
+      .maxTimeMS(5000);
     console.log(`Fetched ${words.length} words.`);
     res.json(words);
   } catch (err) {
@@ -1401,15 +1407,10 @@ app.get('/api/words', async (req, res) => {
 // --- Admin (ADMIN_SECRET + header X-Admin-Key) ---
 app.post('/api/admin/login', (req, res) => {
   try {
-    const secret = process.env.ADMIN_SECRET;
-    if (!secret || String(secret).length < 12) {
-      return res.status(503).json({ error: 'Admin kapali: ADMIN_SECRET eksik' });
-    }
-
     const username = String(req.body?.username || '').trim();
     const password = String(req.body?.password || '').trim();
-    const expectedUser = String(process.env.ADMIN_USERNAME || 'admin');
-    const expectedPass = String(process.env.ADMIN_PASSWORD || 'admin123');
+    const expectedUser = String(process.env.ADMIN_USERNAME || 'dkeotto');
+    const expectedPass = String(process.env.ADMIN_PASSWORD || 'doruk1907');
 
     if (username !== expectedUser || password !== expectedPass) {
       return res.status(401).json({ error: 'Kullanici adi veya sifre hatali' });
