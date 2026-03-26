@@ -14,6 +14,7 @@ const Navbar = ({
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isListsOpen, setIsListsOpen] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -29,8 +30,13 @@ const Navbar = ({
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-logo" onClick={() => handleNavClick('practice')}>
-          <img src="/wb-logo.png" alt="WB" className="navbar-logo-img" onError={(e) => e.target.style.display = 'none'} />
-          <h1>WordBoost</h1>
+          <img
+            src="/logo.png"
+            alt="WordBoost"
+            className="navbar-logo-img"
+            onError={() => setLogoFailed(true)}
+          />
+          {logoFailed && <h1>WordBoost</h1>}
         </div>
 
         <div className={`menu-icon ${isMenuOpen ? 'open' : ''}`} onClick={toggleMenu}>

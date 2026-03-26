@@ -1462,6 +1462,140 @@ app.get('/api/admin/word-difficulty', requireAdmin, async (req, res) => {
   }
 });
 
+app.get('/api/admin/levels', requireAdmin, async (req, res) => {
+  try {
+    const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
+    const raw = await Word.aggregate([
+      { $group: { _id: "$level", count: { $sum: 1 } } }
+    ]);
+    const map = new Map(raw.map((x) => [x._id, x.count]));
+    const items = levels.map((lv) => ({ level: lv, count: map.get(lv) || 0 }));
+    res.json({ ok: true, items });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/activity', requireAdmin, async (req, res) => {
+  try {
+    const days = Math.min(60, Math.max(1, parseInt(req.query.days, 10) || 7));
+    const limit = Math.min(200, Math.max(5, parseInt(req.query.limit, 10) || 50));
+
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    since.setHours(0, 0, 0, 0);
+
+    const activeUsers = await User.find({ lastStudyDate: { $gte: since } })
+      .sort({ lastStudyDate: -1 })
+      .limit(limit)
+      .select("username nickname avatar stats streak lastStudyDate badges")
+      .lean();
+
+    const activeCount = await User.countDocuments({ lastStudyDate: { $gte: since } });
+
+    // Streak histogram (bucket'lar)
+    const streakBucketsRaw = await User.aggregate([
+      {
+        $bucket: {
+          groupBy: "$streak",
+          boundaries: [0, 1, 3, 7, 14, 30, 60, 100, 200],
+          default: "200+",
+          output: { count: { $sum: 1 } }
+        }
+      }
+    ]);
+
+    const streakBuckets = (streakBucketsRaw || []).map((b) => ({
+      streak: String(b._id),
+      count: b.count || 0
+    }));
+
+    res.json({
+      ok: true,
+      days,
+      sinceISO: since.toISOString(),
+      activeCount,
+      activeUsers,
+      streakBuckets
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/word-quality', requireAdmin, async (req, res) => {
+  try {
+    const limit = Math.min(100, Math.max(5, parseInt(req.query.limit, 10) || 20));
+
+    const totals = await WordStat.aggregate([
+      {
+        $group: {
+          _id: null,
+          sumKnown: { $sum: "$knownCount" },
+          sumUnknown: { $sum: "$unknownCount" },
+          wordStatDocuments: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const t = totals?.[0] || { sumKnown: 0, sumUnknown: 0, wordStatDocuments: 0 };
+    const totalAnswers = (t.sumKnown || 0) + (t.sumUnknown || 0);
+    const successRate = totalAnswers > 0 ? (t.sumKnown / totalAnswers) : 0;
+
+    const hardest = await WordStat.aggregate([
+      {
+        $addFields: {
+          total: { $add: ["$knownCount", "$unknownCount"] },
+          unknownRatio: {
+            $cond: [
+              { $eq: [{ $add: ["$knownCount", "$unknownCount"] }, 0] },
+              0,
+              { $divide: ["$unknownCount", { $add: ["$knownCount", "$unknownCount"] }] }
+            ]
+          }
+        }
+      },
+      { $match: { total: { $gt: 0 } } },
+      { $sort: { unknownRatio: -1, unknownCount: -1 } },
+      { $limit: limit },
+      { $project: { term: 1, termNorm: 1, unknownCount: 1, knownCount: 1, unknownRatio: 1 } }
+    ]);
+
+    const easiest = await WordStat.aggregate([
+      {
+        $addFields: {
+          total: { $add: ["$knownCount", "$unknownCount"] },
+          knownRatio: {
+            $cond: [
+              { $eq: [{ $add: ["$knownCount", "$unknownCount"] }, 0] },
+              0,
+              { $divide: ["$knownCount", { $add: ["$knownCount", "$unknownCount"] }] }
+            ]
+          }
+        }
+      },
+      { $match: { total: { $gt: 0 } } },
+      { $sort: { knownRatio: -1, knownCount: -1 } },
+      { $limit: limit },
+      { $project: { term: 1, termNorm: 1, unknownCount: 1, knownCount: 1, knownRatio: 1 } }
+    ]);
+
+    res.json({
+      ok: true,
+      successRate,
+      totals: {
+        sumKnown: t.sumKnown || 0,
+        sumUnknown: t.sumUnknown || 0,
+        wordStatDocuments: t.wordStatDocuments || 0
+      },
+      hardest,
+      easiest
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/admin/words', requireAdmin, async (req, res) => {
   try {
     const { term, meaning, hint, example, level } = req.body;

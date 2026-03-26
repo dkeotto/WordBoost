@@ -198,3 +198,16 @@
   font-size: 0.85rem;
   color: #999;
 }
+
+.admin-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .admin-two-col {
+    grid-template-columns: 1fr;
+  }
+}

@@ -10,6 +10,9 @@ export default function AdminPanel({ setCurrentView }) {
   const [isAuthed, setIsAuthed] = useState(() => Boolean(sessionStorage.getItem(STORAGE_TOKEN_KEY)));
   const [summary, setSummary] = useState(null);
   const [difficulty, setDifficulty] = useState(null);
+  const [levels, setLevels] = useState(null);
+  const [activity, setActivity] = useState(null);
+  const [wordQuality, setWordQuality] = useState(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
@@ -38,9 +41,12 @@ export default function AdminPanel({ setCurrentView }) {
     try {
       sessionStorage.setItem(STORAGE_TOKEN_KEY, token);
       const h = headers();
-      const [s, d] = await Promise.all([
+      const [s, d, lv, act, q] = await Promise.all([
         fetch("/api/admin/summary", { headers: h }).then((r) => r.json()),
-        fetch("/api/admin/word-difficulty?limit=50", { headers: h }).then((r) => r.json())
+        fetch("/api/admin/word-difficulty?limit=50&sort=unknown", { headers: h }).then((r) => r.json()),
+        fetch("/api/admin/levels", { headers: h }).then((r) => r.json()),
+        fetch("/api/admin/activity?days=7&limit=50", { headers: h }).then((r) => r.json()),
+        fetch("/api/admin/word-quality?limit=20", { headers: h }).then((r) => r.json())
       ]);
       if (s.error) {
         setErr(s.error);
@@ -54,6 +60,12 @@ export default function AdminPanel({ setCurrentView }) {
       } else {
         setDifficulty(d);
       }
+      if (lv.error) setLevels(null);
+      else setLevels(lv);
+      if (act.error) setActivity(null);
+      else setActivity(act);
+      if (q.error) setWordQuality(null);
+      else setWordQuality(q);
     } catch (e) {
       setErr(e.message || "İstek başarısız");
     } finally {
@@ -70,9 +82,12 @@ export default function AdminPanel({ setCurrentView }) {
     const h = { "Content-Type": "application/json", "X-Admin-Token": t };
     Promise.all([
       fetch("/api/admin/summary", { headers: h }).then((r) => r.json()),
-      fetch("/api/admin/word-difficulty?limit=50", { headers: h }).then((r) => r.json())
+      fetch("/api/admin/word-difficulty?limit=50&sort=unknown", { headers: h }).then((r) => r.json()),
+      fetch("/api/admin/levels", { headers: h }).then((r) => r.json()),
+      fetch("/api/admin/activity?days=7&limit=50", { headers: h }).then((r) => r.json()),
+      fetch("/api/admin/word-quality?limit=20", { headers: h }).then((r) => r.json())
     ])
-      .then(([s, d]) => {
+      .then(([s, d, lv, act, q]) => {
         if (s.error) {
           setErr(s.error);
           setIsAuthed(false);
@@ -81,6 +96,9 @@ export default function AdminPanel({ setCurrentView }) {
         else setSummary(s);
         if (d.error) setErr(d.error);
         else setDifficulty(d);
+        if (!lv.error) setLevels(lv);
+        if (!act.error) setActivity(act);
+        if (!q.error) setWordQuality(q);
       })
       .catch((e) => setErr(e.message || "İstek başarısız"))
       .finally(() => setLoading(false));
@@ -120,6 +138,9 @@ export default function AdminPanel({ setCurrentView }) {
     sessionStorage.removeItem(STORAGE_TOKEN_KEY);
     setSummary(null);
     setDifficulty(null);
+    setLevels(null);
+    setActivity(null);
+    setWordQuality(null);
     setMsg("Çıkış yapıldı.");
   };
 
@@ -260,6 +281,165 @@ export default function AdminPanel({ setCurrentView }) {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+      )}
+
+      {isAuthed && levels && levels.items && (
+        <section className="admin-section">
+          <h3>Seviyelere göre kelime dağılımı</h3>
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Seviye</th>
+                  <th>Kelime sayısı</th>
+                </tr>
+              </thead>
+              <tbody>
+                {levels.items.map((row) => (
+                  <tr key={row.level}>
+                    <td>{row.level}</td>
+                    <td>{row.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {isAuthed && activity && (
+        <section className="admin-section">
+          <h3>Aktif kullanıcılar (son {activity.days} gün)</h3>
+          <ul className="admin-stats">
+            <li>Aktif kullanıcı sayısı: <strong>{activity.activeCount}</strong></li>
+          </ul>
+          <div className="admin-two-col">
+            <div>
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Kullanıcı</th>
+                      <th>Streak</th>
+                      <th>Son çalışma</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(activity.activeUsers || []).map((u) => (
+                      <tr key={u._id || u.username}>
+                        <td>{u.username || u.nickname}</td>
+                        <td>{u.streak}</td>
+                        <td>{u.lastStudyDate ? new Date(u.lastStudyDate).toLocaleDateString() : "-"}</td>
+                      </tr>
+                    ))}
+                    {(activity.activeUsers || []).length === 0 && (
+                      <tr>
+                        <td colSpan={3}>Aktif kullanıcı yok</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <div className="admin-small" style={{ marginBottom: "0.6rem" }}>
+                Streak dağılımı
+              </div>
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Streak</th>
+                      <th>Kişi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(activity.streakBuckets || []).map((b, idx) => (
+                      <tr key={String(b.streak) + idx}>
+                        <td>{b.streak}</td>
+                        <td>{b.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {isAuthed && wordQuality && (
+        <section className="admin-section">
+          <h3>Kelime zorluk / başarı özeti</h3>
+          <ul className="admin-stats">
+            <li>Genel başarı oranı: <strong>{(wordQuality.successRate * 100).toFixed(1)}%</strong></li>
+            <li>Toplam bilinen sayısı: <strong>{wordQuality.totals?.sumKnown ?? 0}</strong></li>
+            <li>Toplam bilinmeyen sayısı: <strong>{wordQuality.totals?.sumUnknown ?? 0}</strong></li>
+            <li>WordStat kaydı: <strong>{wordQuality.totals?.wordStatDocuments ?? 0}</strong></li>
+          </ul>
+          <div className="admin-two-col">
+            <div>
+              <h4 style={{ marginTop: 0, color: "#ff7b4a" }}>En zor kelimeler</h4>
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Kelime</th>
+                      <th>Bilinmeyen</th>
+                      <th>Bilinen</th>
+                      <th>Oran</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(wordQuality.hardest || []).map((row) => (
+                      <tr key={row.termNorm || row.term}>
+                        <td>{row.term}</td>
+                        <td>{row.unknownCount}</td>
+                        <td>{row.knownCount}</td>
+                        <td>{(row.unknownRatio * 100).toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                    {(wordQuality.hardest || []).length === 0 && (
+                      <tr>
+                        <td colSpan={4}>Veri yok</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <h4 style={{ marginTop: 0, color: "#7bf0aa" }}>En kolay kelimeler</h4>
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Kelime</th>
+                      <th>Bilinen</th>
+                      <th>Bilinmeyen</th>
+                      <th>Oran</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(wordQuality.easiest || []).map((row) => (
+                      <tr key={row.termNorm || row.term}>
+                        <td>{row.term}</td>
+                        <td>{row.knownCount}</td>
+                        <td>{row.unknownCount}</td>
+                        <td>{(row.knownRatio * 100).toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                    {(wordQuality.easiest || []).length === 0 && (
+                      <tr>
+                        <td colSpan={4}>Veri yok</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
       )}
