@@ -30,15 +30,17 @@ const STOP_WORDS = new Set([
 const cleanToken = (value) =>
   value
     .toLowerCase()
-    .replace(/[^a-zA-Z0-9cCgGiIoOsSuU]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
     .trim();
 
 const buildBank = (words) => {
+  const safeWords = Array.isArray(words) ? words : [];
   const bank = [];
   const seen = new Set();
   const byLevel = new Map();
 
-  words.forEach((w) => {
+  safeWords.forEach((w) => {
+    if (!w?.term) return;
     const key = w.level || "B1";
     if (!byLevel.has(key)) byLevel.set(key, []);
     byLevel.get(key).push(w);
@@ -46,7 +48,8 @@ const buildBank = (words) => {
 
   byLevel.forEach((levelWords, level) => {
     const tokenMap = new Map();
-    levelWords.forEach((w) => {
+    // Yuksek veri setlerinde UI kilitlenmesini onlemek icin seviye basi limit
+    levelWords.slice(0, 1800).forEach((w) => {
       const raw = `${w.meaning || ""},${w.hint || ""},${w.example || ""}`;
       raw.split(/[\s,.;:!?()/-]+/g).forEach((part) => {
         const token = cleanToken(part);
@@ -56,24 +59,23 @@ const buildBank = (words) => {
       });
     });
 
-    tokenMap.forEach((tokenWords) => {
+    tokenMap.forEach((tokenWords, token) => {
       if (tokenWords.length < 2) return;
-      const sample = tokenWords.slice(0, 35);
-      for (let i = 0; i < sample.length; i += 1) {
-        for (let j = 0; j < sample.length; j += 1) {
-          if (i === j) continue;
-          const a = sample[i];
-          const b = sample[j];
-          if (!a?.term || !b?.term || a.term === b.term) continue;
-          const key = `${a.term}__${b.term}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          bank.push({
-            term: a.term,
-            synonym: b.term,
-            level,
-            token,
-          });
+      // O(n^2) yerine anchor tabanli iliski: cok daha hizli ve stabil
+      const sample = tokenWords.slice(0, 10);
+      const anchor = sample[0];
+      for (let i = 1; i < sample.length; i += 1) {
+        const b = sample[i];
+        if (!anchor?.term || !b?.term || anchor.term === b.term) continue;
+        const key1 = `${anchor.term}__${b.term}__${level}`;
+        const key2 = `${b.term}__${anchor.term}__${level}`;
+        if (!seen.has(key1)) {
+          seen.add(key1);
+          bank.push({ term: anchor.term, synonym: b.term, level, token });
+        }
+        if (!seen.has(key2)) {
+          seen.add(key2);
+          bank.push({ term: b.term, synonym: anchor.term, level, token });
         }
       }
     });
@@ -116,9 +118,9 @@ const SynonymsView = ({ words }) => {
 
   const options = useMemo(() => {
     if (!question || !correct) return [];
-    const distractors = words
+    const distractors = (Array.isArray(words) ? words : [])
       .filter((w) => w.term !== question.term && w.term !== correct)
-      .slice(0, 200)
+      .slice(0, 300)
       .sort(() => Math.random() - 0.5)
       .slice(0, 3)
       .map((w) => w.term);
@@ -143,10 +145,10 @@ const SynonymsView = ({ words }) => {
 
   return (
     <div className="synonyms-view">
-      <h2>Synonyms Calisma</h2>
+      <h2>Es Anlamli Kelime Calismasi</h2>
       <p>
-        Seviye sec, yakin anlamli kelimeyi bul. Havuzda <strong>{filteredBank.length}</strong> synonym
-        iliskisi var.
+        Seviye sec, en yakin es anlami bul. Havuzda <strong>{filteredBank.length}</strong> es anlam iliskisi
+        var.
       </p>
 
       <div className="syn-controls">
@@ -167,11 +169,11 @@ const SynonymsView = ({ words }) => {
       </div>
 
       {questionPool.length === 0 ? (
-        <div className="empty-state">Bu seviyede synonym verisi bulunamadi.</div>
+        <div className="empty-state">Bu seviyede es anlam verisi bulunamadi.</div>
       ) : (
         <div className="syn-quiz-card">
           <h3>{question.term}</h3>
-          <p>Bu kelimeye en yakin anlami sec:</p>
+          <p>Bu kelimenin en yakin es anlamlisini sec:</p>
           <div className="syn-options">
             {options.map((opt) => (
               <button

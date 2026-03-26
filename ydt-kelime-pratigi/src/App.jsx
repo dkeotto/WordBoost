@@ -7,6 +7,7 @@ import StatsPanel from "./components/StatsPanel";
 import AvatarBuilder from "./components/AvatarBuilder";
 import DashboardView from "./components/DashboardView";
 import SynonymsView from "./components/SynonymsView";
+import PhrasalVerbsView from "./components/PhrasalVerbsView";
 import { io } from "socket.io-client";
 import "./App.css";
 
@@ -1880,6 +1881,7 @@ if (loadingWords) {
         <DashboardView stats={stats} practiceHistory={practiceHistory} wrongWords={wrongWords} />
       )}
       {currentView === 'synonyms' && <SynonymsView words={words} />}
+      {currentView === 'phrasal-verbs' && <PhrasalVerbsView words={words} />}
       {currentView === 'word-list' && (
         <WordListView
           words={uniqueWords}

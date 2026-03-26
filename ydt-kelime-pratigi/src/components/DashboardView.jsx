@@ -66,32 +66,32 @@ const DashboardView = ({ stats, practiceHistory, wrongWords }) => {
 
   return (
     <div className="dashboard-view">
-      <h2>Progress Tracking Dashboard</h2>
+      <h2>Ilerleme Takip Paneli</h2>
 
       <div className="dashboard-cards">
         <div className="dashboard-card">
-          <span>Toplam Ogrenilen</span>
+          <span>Toplam Ogrenilen Kelime</span>
           <strong>{stats.known}</strong>
         </div>
         <div className="dashboard-card">
-          <span>Bu Hafta Calisilan</span>
+          <span>Bu Hafta Calisilan Kelime</span>
           <strong>{weeklyStudied}</strong>
         </div>
         <div className="dashboard-card">
-          <span>Haftalik Basari</span>
+          <span>Haftalik Basari Orani</span>
           <strong>%{successRate}</strong>
         </div>
       </div>
 
       <div className="weekly-chart-box">
-        <h3>Haftalik Grafik</h3>
+        <h3>Haftalik Calisma Grafigi</h3>
         <div className="weekly-chart">
           {chartData.map((item) => (
             <div className="bar-col" key={item.key}>
               <div className="bar-track">
                 <div
                   className="bar-fill"
-                  style={{ height: `${Math.max(8, (item.studied / maxValue) * 100)}%` }}
+                  style={{ height: item.studied > 0 ? `${Math.max(6, (item.studied / maxValue) * 100)}%` : "0%" }}
                   title={`${item.studied} kelime`}
                 />
               </div>
@@ -102,7 +102,7 @@ const DashboardView = ({ stats, practiceHistory, wrongWords }) => {
       </div>
 
       <div className="hard-words-box">
-        <h3>En Cok Zorlandigin Kelimeler</h3>
+        <h3>En Cok Zorlanilan Kelimeler</h3>
         {hardestWords.length === 0 ? (
           <p className="empty">Henuz yeterli veri yok. Biraz daha calis ve tekrar bak.</p>
         ) : (

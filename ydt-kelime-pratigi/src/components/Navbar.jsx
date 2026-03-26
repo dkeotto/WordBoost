@@ -87,6 +87,14 @@ const Navbar = ({
             </button>
           </li>
           <li className="nav-item">
+            <button
+              className={`nav-link ${currentView === 'phrasal-verbs' ? 'active' : ''}`}
+              onClick={() => handleNavClick('phrasal-verbs')}
+            >
+              🧩 Phrasal Verbs
+            </button>
+          </li>
+          <li className="nav-item">
             <button 
               className={`nav-link ${currentView === 'room-menu' || isInRoom ? 'active' : ''}`}
               onClick={() => handleNavClick(isInRoom ? 'room' : 'room-menu')}
