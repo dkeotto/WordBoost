@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import "./AdminPanel.css";
 
-const STORAGE_KEY = "wb_admin_key";
+const STORAGE_TOKEN_KEY = "wb_admin_token";
 
 export default function AdminPanel({ setCurrentView }) {
-  const [key, setKey] = useState(() => sessionStorage.getItem(STORAGE_KEY) || "");
+  const [token, setToken] = useState(() => sessionStorage.getItem(STORAGE_TOKEN_KEY) || "");
+  const [username, setUsername] = useState(() => localStorage.getItem("wb_admin_user") || "");
+  const [password, setPassword] = useState("");
+  const [isAuthed, setIsAuthed] = useState(() => Boolean(sessionStorage.getItem(STORAGE_TOKEN_KEY)));
   const [summary, setSummary] = useState(null);
   const [difficulty, setDifficulty] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -22,18 +25,18 @@ export default function AdminPanel({ setCurrentView }) {
 
   const headers = () => ({
     "Content-Type": "application/json",
-    "X-Admin-Key": key
+    "X-Admin-Token": token
   });
 
   const loadAll = useCallback(async () => {
-    if (!key || key.length < 12) {
-      setErr("Admin anahtarı en az 12 karakter (Railway ADMIN_SECRET ile aynı)");
+    if (!token) {
+      setErr("Admin oturumu gerekli.");
       return;
     }
     setLoading(true);
     setErr("");
     try {
-      sessionStorage.setItem(STORAGE_KEY, key);
+      sessionStorage.setItem(STORAGE_TOKEN_KEY, token);
       const h = headers();
       const [s, d] = await Promise.all([
         fetch("/api/admin/summary", { headers: h }).then((r) => r.json()),
@@ -56,20 +59,25 @@ export default function AdminPanel({ setCurrentView }) {
     } finally {
       setLoading(false);
     }
-  }, [key]);
+  }, [token]);
 
   useEffect(() => {
-    const k = sessionStorage.getItem(STORAGE_KEY);
-    if (!k || k.length < 12) return;
-    setKey(k);
+    const t = sessionStorage.getItem(STORAGE_TOKEN_KEY);
+    if (!t) return;
+    setToken(t);
+    setIsAuthed(true);
     setLoading(true);
-    const h = { "Content-Type": "application/json", "X-Admin-Key": k };
+    const h = { "Content-Type": "application/json", "X-Admin-Token": t };
     Promise.all([
       fetch("/api/admin/summary", { headers: h }).then((r) => r.json()),
       fetch("/api/admin/word-difficulty?limit=50", { headers: h }).then((r) => r.json())
     ])
       .then(([s, d]) => {
-        if (s.error) setErr(s.error);
+        if (s.error) {
+          setErr(s.error);
+          setIsAuthed(false);
+          sessionStorage.removeItem(STORAGE_TOKEN_KEY);
+        }
         else setSummary(s);
         if (d.error) setErr(d.error);
         else setDifficulty(d);
@@ -77,6 +85,43 @@ export default function AdminPanel({ setCurrentView }) {
       .catch((e) => setErr(e.message || "İstek başarısız"))
       .finally(() => setLoading(false));
   }, []);
+
+  const login = async (e) => {
+    e.preventDefault();
+    setErr("");
+    setMsg("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Giriş başarısız");
+      setToken(data.token);
+      setIsAuthed(true);
+      sessionStorage.setItem(STORAGE_TOKEN_KEY, data.token);
+      localStorage.setItem("wb_admin_user", username);
+      setPassword("");
+      setMsg("Giriş başarılı.");
+      setTimeout(() => loadAll(), 50);
+    } catch (e2) {
+      setErr(e2.message);
+      setIsAuthed(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    setToken("");
+    setIsAuthed(false);
+    sessionStorage.removeItem(STORAGE_TOKEN_KEY);
+    setSummary(null);
+    setDifficulty(null);
+    setMsg("Çıkış yapıldı.");
+  };
 
   const addWord = async (e) => {
     e.preventDefault();
@@ -129,29 +174,45 @@ export default function AdminPanel({ setCurrentView }) {
         </button>
       </div>
 
-      <p className="admin-hint">
-        Railway’de <code>ADMIN_SECRET</code> tanımlı olmalı. Aynı değeri aşağıya yaz; tarayıcıda{" "}
-        <strong>saklanır</strong> (sadece bu cihaz).
-      </p>
+      {!isAuthed && (
+        <form className="admin-login-card" onSubmit={login}>
+          <h3>Admin Girişi</h3>
+          <p className="admin-hint">Bu alan gizli yönetim erişimi içindir.</p>
+          <input
+            className="admin-input-wide"
+            placeholder="Kullanıcı adı"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+          />
+          <input
+            className="admin-input-wide"
+            type="password"
+            placeholder="Şifre"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+          />
+          <button type="submit" disabled={loading}>{loading ? "Giriş yapılıyor..." : "Giriş Yap"}</button>
+        </form>
+      )}
 
-      <div className="admin-key-row">
-        <input
-          type="password"
-          autoComplete="off"
-          placeholder="ADMIN_SECRET (X-Admin-Key)"
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-          className="admin-input-wide"
-        />
-        <button type="button" onClick={loadAll} disabled={loading}>
-          {loading ? "Yükleniyor…" : "Yenile"}
-        </button>
-      </div>
+      {isAuthed && (
+        <div className="admin-key-row">
+          <div className="admin-session-ok">✅ Oturum açık</div>
+          <button type="button" onClick={loadAll} disabled={loading}>
+            {loading ? "Yükleniyor…" : "Yenile"}
+          </button>
+          <button type="button" className="admin-logout-btn" onClick={logout}>
+            Çıkış Yap
+          </button>
+        </div>
+      )}
 
       {err && <div className="admin-error">{err}</div>}
       {msg && <div className="admin-msg">{msg}</div>}
 
-      {summary && (
+      {isAuthed && summary && (
         <section className="admin-section">
           <h3>Özet</h3>
           <ul className="admin-stats">
@@ -177,7 +238,7 @@ export default function AdminPanel({ setCurrentView }) {
         </section>
       )}
 
-      {difficulty && difficulty.items && (
+      {isAuthed && difficulty && difficulty.items && (
         <section className="admin-section">
           <h3>En çok “bilinmiyor” işaretlenen kelimeler</h3>
           <div className="admin-table-wrap">
@@ -203,7 +264,7 @@ export default function AdminPanel({ setCurrentView }) {
         </section>
       )}
 
-      <section className="admin-section">
+      {isAuthed && <section className="admin-section">
         <h3>Tek kelime ekle</h3>
         <form className="admin-form" onSubmit={addWord}>
           <input
@@ -240,9 +301,9 @@ export default function AdminPanel({ setCurrentView }) {
           </select>
           <button type="submit">Ekle</button>
         </form>
-      </section>
+      </section>}
 
-      <section className="admin-section">
+      {isAuthed && <section className="admin-section">
         <h3>CSV içe aktar</h3>
         <p className="admin-small">
           İlk satır başlık: <code>term,meaning,hint,example,level</code> — hint/example opsiyonel.
@@ -257,7 +318,7 @@ export default function AdminPanel({ setCurrentView }) {
           />
           <button type="submit">CSV yükle</button>
         </form>
-      </section>
+      </section>}
     </div>
   );
 }

@@ -1677,6 +1677,30 @@ function App() {
   }, [moduleStats]);
 
   useEffect(() => {
+    const openAdminShortcut = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        setCurrentView("admin");
+        window.location.hash = "admin";
+      }
+    };
+    window.addEventListener("keydown", openAdminShortcut);
+    return () => window.removeEventListener("keydown", openAdminShortcut);
+  }, []);
+
+  useEffect(() => {
+    const checkHashForAdmin = () => {
+      const hash = window.location.hash.replace("#", "").toLowerCase();
+      if (hash === "admin") {
+        setCurrentView("admin");
+      }
+    };
+    checkHashForAdmin();
+    window.addEventListener("hashchange", checkHashForAdmin);
+    return () => window.removeEventListener("hashchange", checkHashForAdmin);
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem("ydt_favorites_bundle", JSON.stringify(favorites));
   }, [favorites]);
 

@@ -16,6 +16,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 const app = express();
 app.set('trust proxy', 1); // Proxy arkas?nda (Render/Railway) ?al??t??? i?in gerekli
@@ -345,6 +346,7 @@ const roomStats = new Map();    // roomCode -> { username: { studied, known, unk
 const roomHosts = new Map();    // roomCode -> hostUsername (g?venlik i?in)
 
 const adminErrorLog = [];
+const adminSessions = new Map(); // token -> expiresAt
 function pushAdminError(msg, meta = {}) {
   try {
     adminErrorLog.unshift({
@@ -362,6 +364,14 @@ function requireAdmin(req, res, next) {
   const secret = process.env.ADMIN_SECRET;
   if (!secret || String(secret).length < 12) {
     return res.status(503).json({ error: 'Admin kapali: ADMIN_SECRET (min 12 karakter) .env / Railway' });
+  }
+  const adminToken = req.headers['x-admin-token'];
+  if (adminToken && adminSessions.has(adminToken)) {
+    const expiresAt = adminSessions.get(adminToken);
+    if (Date.now() < expiresAt) {
+      return next();
+    }
+    adminSessions.delete(adminToken);
   }
   if (req.headers['x-admin-key'] !== secret) {
     return res.status(401).json({ error: 'Yetkisiz' });
@@ -1389,6 +1399,31 @@ app.get('/api/words', async (req, res) => {
 });
 
 // --- Admin (ADMIN_SECRET + header X-Admin-Key) ---
+app.post('/api/admin/login', (req, res) => {
+  try {
+    const secret = process.env.ADMIN_SECRET;
+    if (!secret || String(secret).length < 12) {
+      return res.status(503).json({ error: 'Admin kapali: ADMIN_SECRET eksik' });
+    }
+
+    const username = String(req.body?.username || '').trim();
+    const password = String(req.body?.password || '').trim();
+    const expectedUser = String(process.env.ADMIN_USERNAME || 'admin');
+    const expectedPass = String(process.env.ADMIN_PASSWORD || 'admin123');
+
+    if (username !== expectedUser || password !== expectedPass) {
+      return res.status(401).json({ error: 'Kullanici adi veya sifre hatali' });
+    }
+
+    const token = crypto.randomBytes(24).toString('hex');
+    const ttlMs = 1000 * 60 * 60 * 8; // 8 saat
+    adminSessions.set(token, Date.now() + ttlMs);
+    res.json({ ok: true, token, expiresInMs: ttlMs });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/admin/summary', requireAdmin, async (req, res) => {
   try {
     const [userCount, wordCount, statCount] = await Promise.all([

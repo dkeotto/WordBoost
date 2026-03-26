@@ -41,6 +41,34 @@
   margin: 1rem 0;
 }
 
+.admin-login-card {
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  margin: 1rem 0;
+}
+
+.admin-session-ok {
+  background: rgba(46, 204, 113, 0.15);
+  border: 1px solid rgba(46, 204, 113, 0.35);
+  color: #7bf0aa;
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+}
+
+.admin-logout-btn {
+  background: rgba(231, 76, 60, 0.16);
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  color: #ffb7ae;
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+}
+
 .admin-input-wide {
   flex: 1;
   min-width: 200px;

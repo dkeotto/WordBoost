@@ -97,14 +97,6 @@ const Navbar = ({
             </button>
           </li>
           <li className="nav-item">
-            <button
-              className={`nav-link ${currentView === 'word-list' ? 'active' : ''}`}
-              onClick={() => handleNavClick('word-list')}
-            >
-              📖 Tüm Kelimeler
-            </button>
-          </li>
-          <li className="nav-item">
             <button 
               className={`nav-link ${currentView === 'room-menu' || isInRoom ? 'active' : ''}`}
               onClick={() => handleNavClick(isInRoom ? 'room' : 'room-menu')}
@@ -153,12 +145,6 @@ const Navbar = ({
                   onClick={() => handleNavClick('favorites')}
                 >
                   Favoriler ({favoritesCount})
-                </button>
-                <button
-                  className={`nav-link ${currentView === 'admin' ? 'active' : ''}`}
-                  onClick={() => handleNavClick('admin')}
-                >
-                  Yönetim
                 </button>
              </div>
           </li>
