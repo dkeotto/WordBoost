@@ -31,7 +31,7 @@ const Navbar = ({
       <div className="navbar-container">
         <div className="navbar-logo" onClick={() => handleNavClick('practice')}>
           <img
-            src="/logo.png"
+            src="/wordboost-logo.png"
             alt="WordBoost"
             className="navbar-logo-img"
             onError={() => setLogoFailed(true)}
@@ -113,8 +113,13 @@ const Navbar = ({
           
           <li className={`nav-item dropdown ${isListsOpen ? 'open' : ''}`}>
              <button
+               type="button"
                className="dropdown-title"
-               onClick={() => setIsListsOpen((v) => !v)}
+               onClick={(e) => {
+                 e.preventDefault();
+                 e.stopPropagation();
+                 setIsListsOpen((v) => !v);
+               }}
              >
                <div className="title-content">
                  <span style={{marginRight: '5px'}}>📚</span>

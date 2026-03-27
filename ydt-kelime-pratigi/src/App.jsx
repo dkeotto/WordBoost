@@ -255,8 +255,25 @@ const WordListView = ({
 };
 
 const SynonymListView = ({ words, level, setLevel, searchTerm, setSearchTerm, favorites, toggleFavorite, speakWord }) => {
-  const items = useMemo(() => buildSynonymQuestionPool(words), [words]);
+  const [items, setItems] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    setItems(null);
+    const t = setTimeout(() => {
+      try {
+        const pool = buildSynonymQuestionPool(words);
+        if (!cancelled) setItems(pool);
+      } catch {
+        if (!cancelled) setItems([]);
+      }
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [words]);
   const filtered = useMemo(() => {
+    if (!items || items.length === 0) return [];
     return items.filter((q) => {
       const byLevel = level === "ALL" || q.level === level;
       const qText = `${q.question} ${q.correct} ${q.meaning || ""}`.toLowerCase();
@@ -266,7 +283,7 @@ const SynonymListView = ({ words, level, setLevel, searchTerm, setSearchTerm, fa
   }, [items, level, searchTerm]);
   return (
     <div className="word-list">
-      <h2>Synonyms Listesi ({filtered.length})</h2>
+      <h2>Synonyms Listesi ({items === null ? "…" : filtered.length})</h2>
       <div className="search-box">
         <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Synonym ara..." />
         <select value={level} onChange={(e) => setLevel(e.target.value)}>
@@ -274,6 +291,9 @@ const SynonymListView = ({ words, level, setLevel, searchTerm, setSearchTerm, fa
           <option value="B1">B1</option><option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
         </select>
       </div>
+      {items === null && (
+        <div className="empty-state" role="status">Liste yükleniyor…</div>
+      )}
       <div className="word-grid">
         {filtered.map((q) => {
           const key = `${q.question}__${q.correct}__${q.level}`;
@@ -306,8 +326,25 @@ const SynonymListView = ({ words, level, setLevel, searchTerm, setSearchTerm, fa
 };
 
 const PhrasalListView = ({ words, level, setLevel, searchTerm, setSearchTerm, favorites, toggleFavorite, speakWord }) => {
-  const items = useMemo(() => buildPhrasalQuestionPool(words), [words]);
+  const [items, setItems] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    setItems(null);
+    const t = setTimeout(() => {
+      try {
+        const pool = buildPhrasalQuestionPool(words);
+        if (!cancelled) setItems(pool);
+      } catch {
+        if (!cancelled) setItems([]);
+      }
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [words]);
   const filtered = useMemo(() => {
+    if (!items || items.length === 0) return [];
     return items.filter((q) => {
       const byLevel = level === "ALL" || q.level === level;
       const qText = `${q.base} ${q.correct} ${q.meaning || ""}`.toLowerCase();
@@ -317,7 +354,7 @@ const PhrasalListView = ({ words, level, setLevel, searchTerm, setSearchTerm, fa
   }, [items, level, searchTerm]);
   return (
     <div className="word-list">
-      <h2>Phrasal Verbs Listesi ({filtered.length})</h2>
+      <h2>Phrasal Verbs Listesi ({items === null ? "…" : filtered.length})</h2>
       <div className="search-box">
         <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Phrasal ara..." />
         <select value={level} onChange={(e) => setLevel(e.target.value)}>
@@ -325,6 +362,9 @@ const PhrasalListView = ({ words, level, setLevel, searchTerm, setSearchTerm, fa
           <option value="B1">B1</option><option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
         </select>
       </div>
+      {items === null && (
+        <div className="empty-state" role="status">Liste yükleniyor…</div>
+      )}
       <div className="word-grid">
         {filtered.map((q) => {
           const key = `${q.base}__${q.correct}__${q.level}`;

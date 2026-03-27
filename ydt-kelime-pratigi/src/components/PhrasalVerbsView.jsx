@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { buildPhrasalQuestionPool } from "../utils/questionGenerators";
 
 const LEVELS = ["ALL", "A1", "A2", "B1", "B2", "C1", "C2"];
@@ -10,12 +10,37 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
   const [isLocked, setIsLocked] = useState(false);
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
   const autoNextTimer = useRef(null);
+  const [allQuestions, setAllQuestions] = useState(null);
 
-  const allQuestions = useMemo(() => buildPhrasalQuestionPool(words), [words]);
-  const filtered = useMemo(
-    () => (level === "ALL" ? allQuestions : allQuestions.filter((item) => item.level === level)),
-    [allQuestions, level]
-  );
+  useEffect(() => {
+    let cancelled = false;
+    setAllQuestions(null);
+    const t = setTimeout(() => {
+      try {
+        const pool = buildPhrasalQuestionPool(words);
+        if (!cancelled) setAllQuestions(pool);
+      } catch {
+        if (!cancelled) setAllQuestions([]);
+      }
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [words]);
+
+  useEffect(() => {
+    if (Array.isArray(allQuestions)) {
+      setIndex(0);
+      setSelected("");
+      setIsLocked(false);
+    }
+  }, [allQuestions]);
+
+  const filtered = useMemo(() => {
+    if (!allQuestions || allQuestions.length === 0) return [];
+    return level === "ALL" ? allQuestions : allQuestions.filter((item) => item.level === level);
+  }, [allQuestions, level]);
 
   const question = filtered[index % Math.max(1, filtered.length)];
   const questionNo = (index % Math.max(1, filtered.length)) + 1;
@@ -72,11 +97,21 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
       <div className="syn-header">
         <h2>Phrasal Verbs Çalışması</h2>
         <p>
-          Seviye seç, doğru phrasal verb seçeneğini bul. Havuzda <strong>{filtered.length}</strong> soru var.
+          Seviye seç, doğru phrasal verb seçeneğini bul. Havuzda{" "}
+          <strong>{allQuestions === null ? "…" : filtered.length}</strong> soru var.
         </p>
       </div>
 
-      <div className="syn-controls">
+      {allQuestions === null && (
+        <div className="empty-state" role="status">
+          Sorular hazırlanıyor… (büyük havuz bir kez oluşturuluyor, lütfen bekle)
+        </div>
+      )}
+
+      <div
+        className="syn-controls"
+        style={allQuestions === null ? { opacity: 0.5, pointerEvents: "none" } : undefined}
+      >
         <label>Seviye:</label>
         <select
           value={level}
@@ -101,9 +136,11 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
         <div className="syn-progress-fill" style={{ width: `${progress}%` }} />
       </div>
 
-      {filtered.length === 0 ? (
+      {allQuestions !== null && filtered.length === 0 && (
         <div className="empty-state">Bu seviyede phrasal verb verisi bulunamadı.</div>
-      ) : (
+      )}
+
+      {allQuestions !== null && filtered.length > 0 && (
         <div className="syn-quiz-card">
           <div className="syn-meta">
             <span className="syn-level-badge">{question.level}</span>

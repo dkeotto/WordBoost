@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { buildSynonymQuestionPool } from "../utils/questionGenerators";
 
 const LEVELS = ["ALL", "A1", "A2", "B1", "B2", "C1", "C2"];
@@ -10,9 +10,36 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
   const [isLocked, setIsLocked] = useState(false);
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
   const autoNextTimer = useRef(null);
+  /** null = havuz üretiliyor (büyük havuz senkron üretilince UI donmasın) */
+  const [allQuestions, setAllQuestions] = useState(null);
 
-  const allQuestions = useMemo(() => buildSynonymQuestionPool(words), [words]);
+  useEffect(() => {
+    let cancelled = false;
+    setAllQuestions(null);
+    const t = setTimeout(() => {
+      try {
+        const pool = buildSynonymQuestionPool(words);
+        if (!cancelled) setAllQuestions(pool);
+      } catch {
+        if (!cancelled) setAllQuestions([]);
+      }
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [words]);
+
+  useEffect(() => {
+    if (Array.isArray(allQuestions)) {
+      setQuestionIndex(0);
+      setSelected("");
+      setIsLocked(false);
+    }
+  }, [allQuestions]);
+
   const questionPool = useMemo(() => {
+    if (!allQuestions || allQuestions.length === 0) return [];
     if (level === "ALL") return allQuestions;
     return allQuestions.filter((item) => item.level === level);
   }, [allQuestions, level]);
@@ -73,12 +100,19 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
       <div className="syn-header">
         <h2>Eş Anlamlı Kelime Çalışması</h2>
         <p>
-          Seviye seç, en uygun eş anlamı bul. Havuzda <strong>{questionPool.length}</strong> soru
+          Seviye seç, en uygun eş anlamı bul. Havuzda{" "}
+          <strong>{allQuestions === null ? "…" : questionPool.length}</strong> soru
           var.
         </p>
       </div>
 
-      <div className="syn-controls">
+      {allQuestions === null && (
+        <div className="empty-state" role="status">
+          Sorular hazırlanıyor… (büyük havuz bir kez oluşturuluyor, lütfen bekle)
+        </div>
+      )}
+
+      <div className="syn-controls" style={allQuestions === null ? { opacity: 0.5, pointerEvents: "none" } : undefined}>
         <label>Seviye:</label>
         <select value={level} onChange={(e) => {
           setLevel(e.target.value);
@@ -98,9 +132,11 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
         <div className="syn-progress-fill" style={{ width: `${progress}%` }} />
       </div>
 
-      {questionPool.length === 0 ? (
+      {allQuestions !== null && questionPool.length === 0 && (
         <div className="empty-state">Bu seviyede eş anlam verisi bulunamadı.</div>
-      ) : (
+      )}
+
+      {allQuestions !== null && questionPool.length > 0 && (
         <div className="syn-quiz-card">
           <div className="syn-meta">
             <span className="syn-level-badge">{question.level}</span>

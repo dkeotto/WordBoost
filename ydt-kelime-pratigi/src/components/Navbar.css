@@ -40,9 +40,9 @@
 }
 
 .navbar-logo-img {
-  height: 54px;
+  height: 56px;
   width: auto;
-  max-width: 210px;
+  max-width: 260px;
   object-fit: contain;
   filter: drop-shadow(0 0 5px rgba(255, 159, 28, 0.5)); /* Hafif turuncu parlama */
   transition: transform 0.3s ease;
@@ -317,11 +317,7 @@
     display: flex;
     animation: none;
   }
-  
-  .dropdown-title {
-    display: none;
-  }
-  
+
   /* Show dropdown items directly in mobile menu */
   .dropdown-content .nav-link {
      width: 80%;
@@ -393,8 +389,10 @@
     box-shadow: 0 10px 20px rgba(0,0,0,0.8);
     height: calc(100vh - 74px);
     overflow-y: auto;
+    overflow-x: hidden;
     justify-content: flex-start;
     gap: 16px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .nav-menu.active {
@@ -411,12 +409,78 @@
     align-items: center;
   }
 
-  .nav-link, .dropdown-title {
+  /* 961–1320px: hamburger açık; Listeler için absolute dropdown overflow ile kesiliyordu */
+  .nav-item.dropdown {
+    overflow: visible;
+    align-items: stretch;
+  }
+
+  .nav-link,
+  .dropdown-title {
     width: 80%;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
     justify-content: center;
     padding: 1rem;
     font-size: 1rem;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
+    box-sizing: border-box;
+  }
+
+  .dropdown-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid rgba(255, 159, 28, 0.25);
+    border-radius: 12px;
+    color: #ffcc80;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(255, 159, 28, 0.15);
+  }
+
+  .dropdown-title::after {
+    content: "▼";
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 2px;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .dropdown.open .dropdown-title::after {
+    transform: rotate(180deg);
+  }
+
+  .dropdown-content {
+    display: none;
+    position: static;
+    left: auto;
+    top: auto;
+    transform: none;
+    width: 100%;
+    max-width: 360px;
+    margin: 10px auto 0;
+    padding: 10px;
+    background: rgba(30, 30, 30, 0.98);
+    border: 1px solid rgba(255, 159, 28, 0.28);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+    z-index: 1;
+  }
+
+  .dropdown-content.show {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: none;
+  }
+
+  .dropdown-content .nav-link {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    background: rgba(255, 159, 28, 0.1);
   }
 }
 
