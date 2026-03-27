@@ -1341,10 +1341,26 @@ button:disabled {
 }
 
 /* Login Modal Specifics */
-.login-modal h2 {
+.login-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.login-modal-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.login-modal-header h2 {
   color: var(--primary-color);
   font-size: 2rem;
-  margin-bottom: 1.5rem;
+  margin: 0;
 }
 
 .login-modal input {

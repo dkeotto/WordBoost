@@ -16,14 +16,66 @@ const Navbar = ({
   const [isListsOpen, setIsListsOpen] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   const listsDropdownRef = useRef(null);
+  const scrollLockYRef = useRef(0);
 
   useEffect(() => {
     if (!isListsOpen || !listsDropdownRef.current) return;
     listsDropdownRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [isListsOpen]);
 
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+
+    const mq = window.matchMedia('(max-width: 1320px)');
+
+    const clearScrollLock = () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      window.scrollTo(0, scrollLockYRef.current);
+    };
+
+    const applyScrollLock = () => {
+      scrollLockYRef.current = window.scrollY;
+      const y = scrollLockYRef.current;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${y}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    };
+
+    const onViewportChange = () => {
+      if (!mq.matches) {
+        setIsMenuOpen(false);
+        setIsListsOpen(false);
+      }
+    };
+
+    if (!mq.matches) return undefined;
+
+    applyScrollLock();
+    mq.addEventListener('change', onViewportChange);
+
+    return () => {
+      mq.removeEventListener('change', onViewportChange);
+      clearScrollLock();
+    };
+  }, [isMenuOpen]);
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const closeMenuOverlay = () => {
+    setIsMenuOpen(false);
+    setIsListsOpen(false);
   };
 
   const handleNavClick = (view) => {
@@ -54,6 +106,15 @@ const Navbar = ({
           <div className="bar2"></div>
           <div className="bar3"></div>
         </div>
+
+        {isMenuOpen && (
+          <button
+            type="button"
+            className="nav-menu-backdrop"
+            aria-label="Menüyü kapat"
+            onClick={closeMenuOverlay}
+          />
+        )}
 
         <ul className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>
           <li className="nav-item">

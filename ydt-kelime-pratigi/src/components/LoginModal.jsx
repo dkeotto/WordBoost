@@ -223,7 +223,10 @@ export default function LoginModal({ onLogin, onClose }) {
       <div className="login-modal extended">
         <button className="close-btn" onClick={onClose}>✕</button>
         
-        <h2>🦊 WordBoost</h2>
+        <div className="login-modal-header">
+          <img src="/favicon.png" alt="" className="login-modal-logo" aria-hidden="true" />
+          <h2>WordBoost</h2>
+        </div>
         
         {['login', 'register'].includes(activeTab) && (
           <div className="login-tabs">
