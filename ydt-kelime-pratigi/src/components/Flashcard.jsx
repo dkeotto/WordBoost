@@ -15,8 +15,8 @@ const Flashcard = memo(({
   speakWord 
 }) => (
     <div className="flashcard-container">
-      <div className={`flashcard ${isFlipped ? 'flipped' : ''}`} onClick={flipCard}>
-        <div className="card-inner">
+      <div className="flashcard" onClick={flipCard}>
+        <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
           <div className="card-front">
             <div className="flashcard-level">{word.level || "?"}</div>
             

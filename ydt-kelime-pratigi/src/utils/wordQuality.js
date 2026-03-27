@@ -1,3 +1,5 @@
+import { WORD_MEANING_CORRECTIONS } from "../data/wordMeaningCorrections.js";
+
 const LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
 
 const TERM_FIXES = {
@@ -50,6 +52,13 @@ export const sanitizeWordList = (rawWords) => {
     };
 
     if (!word.meaning) continue;
+
+    const corrKey = fixedTerm.toLowerCase();
+    const corr =
+      WORD_MEANING_CORRECTIONS[corrKey] ?? WORD_MEANING_CORRECTIONS[termKeyRaw];
+    if (typeof corr === "string" && corr.trim()) {
+      word.meaning = normalizeText(corr);
+    }
 
     const prev = map.get(word.term);
     if (!prev || scoreWord(word) > scoreWord(prev)) {

@@ -44,24 +44,36 @@
   width: auto;
   max-width: 120px;
   object-fit: contain;
-  filter: drop-shadow(0 0 5px rgba(255, 159, 28, 0.5)); /* Hafif turuncu parlama */
   transition: transform 0.3s ease;
 }
 
 .navbar-logo:hover .navbar-logo-img {
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
-.navbar-logo h1 {
+/* Şeffaf PNG: filtre/arka plan boyaması yok */
+.navbar-logo-fallback {
   font-size: 1.7rem;
-  background: linear-gradient(45deg, #FF9F1C, #FFD700);
+  background: linear-gradient(45deg, #FF9F1C, #ffd700);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
-  text-shadow: 0 2px 10px rgba(255, 159, 28, 0.2);
+}
+
+.navbar-wordmark {
+  display: none;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: linear-gradient(45deg, #ff9f1c, #ffd700);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
 }
 
 .nav-menu {
@@ -177,6 +189,12 @@
   color: #FF9F1C;
 }
 
+.title-content {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .dropdown-content {
   display: none;
   position: absolute;
@@ -248,125 +266,12 @@
   background-color: #FF9F1C;
 }
 
-/* Responsive Design */
-@media screen and (max-width: 960px) {
-  .nav-menu {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    position: fixed; /* Fixed to cover screen if needed */
-    top: 74px;
-    left: -100%;
-    opacity: 0;
-    transition: all 0.5s ease;
-    background: rgba(18, 18, 18, 0.98);
-    padding: 20px 0;
-    border-bottom: 1px solid rgba(255, 159, 28, 0.2);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.8);
-    height: calc(100vh - 74px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    justify-content: flex-start;
-    gap: 20px;
-  }
-
-  .nav-menu.active {
-    left: 0;
-    opacity: 1;
-    z-index: 1000;
-  }
-
-  .nav-item {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .nav-link {
-    width: 80%;
-    justify-content: center;
-    padding: 1.2rem;
-    font-size: 1.1rem;
-    background: rgba(255,255,255,0.05);
-  }
-
-  .menu-icon {
-    display: flex;
-    position: absolute;
-    right: 20px;
-    top: 20px;
-  }
-
-  /* Mobile Dropdown Fix */
-  .dropdown-content {
-    display: none;
-    position: static;
-    transform: none;
-    background: transparent;
-    box-shadow: none;
-    border: none;
-    padding: 0;
-    width: 100%;
-    align-items: center;
-    margin-top: 10px;
-  }
-
-  .dropdown-content.show {
-    display: flex;
-    animation: none;
-  }
-
-  /* Show dropdown items directly in mobile menu */
-  .dropdown-content .nav-link {
-     width: 80%;
-     background: rgba(255, 159, 28, 0.1);
-     margin-bottom: 10px;
-     justify-content: center;
-  }
-
-  /* Listeler başlığını mobilde göster */
-  .dropdown-title {
-    display: flex;
-    flex-direction: column; /* Alt alta: Üstte yazı, altta ok */
-    align-items: center;
-    color: var(--secondary-color);
-    margin-bottom: 10px;
-    font-size: 1.1rem;
-    width: 100%;
-    justify-content: center;
-    gap: 2px;
-  }
-
-  .title-content {
-    display: flex;
-    align-items: center; /* Yazı ve ikon yan yana */
-    gap: 5px;
-  }
-  
-  .dropdown-title::after {
-    content: "▼";
-    display: block;
-    font-size: 0.8rem;
-    transition: transform 0.3s;
-    color: white;
-    margin-top: 2px; /* Ok ile yazı arasına ufak boşluk */
-  }
-  
-  /* Dropdown içeriğiyle başlık arasına boşluk */
-  .dropdown-content {
-    margin-top: 5px;
-    width: 100%; /* İçeriği tam genişlik yap */
-    align-items: center; /* İçindeki butonları ortala */
-  }
-
-  .navbar-logo h1 {
-    font-size: 1.5rem;
-  }
-}
-
+/* Responsive Design — tek blok (≤1320px hamburger); App.css ile çakışmayı önlemek için burada tutuluyor */
 @media screen and (max-width: 1320px) {
+  .navbar-wordmark {
+    display: inline;
+  }
+
   .menu-icon {
     display: flex;
     position: absolute;
@@ -466,7 +371,7 @@
     border: 1px solid rgba(255, 159, 28, 0.28);
     border-radius: 12px;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
-    z-index: 1;
+    z-index: 20;
   }
 
   .dropdown-content.show {
@@ -491,7 +396,7 @@
     padding: 0.32rem 0.45rem;
   }
 
-  .navbar-logo h1 {
+  .navbar-logo-fallback {
     font-size: 1.35rem;
   }
 }
@@ -503,7 +408,7 @@
     padding: 0.4rem 0.55rem;
   }
 
-  .navbar-logo h1 {
+  .navbar-logo-fallback {
     font-size: 1.45rem;
   }
 }

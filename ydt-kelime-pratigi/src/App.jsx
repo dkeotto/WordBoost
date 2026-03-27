@@ -1623,7 +1623,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const cacheKey = "ydt_words_cache_v1";
+    const cacheKey = "ydt_words_cache_v2";
     const cacheMaxAgeMs = 12 * 60 * 60 * 1000; // 12 saat
 
     // 1) Önce cache dene

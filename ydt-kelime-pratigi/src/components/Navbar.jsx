@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './Navbar.css';
 
 const Navbar = ({ 
@@ -15,6 +15,12 @@ const Navbar = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isListsOpen, setIsListsOpen] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
+  const listsDropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!isListsOpen || !listsDropdownRef.current) return;
+    listsDropdownRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [isListsOpen]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -30,13 +36,17 @@ const Navbar = ({
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-logo" onClick={() => handleNavClick('practice')}>
-          <img
-            src="/favicon.png"
-            alt="WordBoost"
-            className="navbar-logo-img"
-            onError={() => setLogoFailed(true)}
-          />
-          {logoFailed && <h1>WordBoost</h1>}
+          {logoFailed ? (
+            <h1 className="navbar-logo-fallback">WordBoost</h1>
+          ) : (
+            <img
+              src="/wb-logo.png"
+              alt="WordBoost"
+              className="navbar-logo-img"
+              onError={() => setLogoFailed(true)}
+            />
+          )}
+          {!logoFailed && <span className="navbar-wordmark">WordBoost</span>}
         </div>
 
         <div className={`menu-icon ${isMenuOpen ? 'open' : ''}`} onClick={toggleMenu}>
@@ -111,10 +121,11 @@ const Navbar = ({
             </button>
           </li>
           
-          <li className={`nav-item dropdown ${isListsOpen ? 'open' : ''}`}>
+          <li ref={listsDropdownRef} className={`nav-item dropdown ${isListsOpen ? 'open' : ''}`}>
              <button
                type="button"
                className="dropdown-title"
+               aria-expanded={isListsOpen}
                onClick={(e) => {
                  e.preventDefault();
                  e.stopPropagation();
