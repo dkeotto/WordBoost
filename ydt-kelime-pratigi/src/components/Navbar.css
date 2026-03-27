@@ -40,9 +40,9 @@
 }
 
 .navbar-logo-img {
-  height: 56px;
+  height: 48px;
   width: auto;
-  max-width: 260px;
+  max-width: 120px;
   object-fit: contain;
   filter: drop-shadow(0 0 5px rgba(255, 159, 28, 0.5)); /* Hafif turuncu parlama */
   transition: transform 0.3s ease;

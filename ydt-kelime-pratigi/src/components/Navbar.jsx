@@ -31,7 +31,7 @@ const Navbar = ({
       <div className="navbar-container">
         <div className="navbar-logo" onClick={() => handleNavClick('practice')}>
           <img
-            src="/wordboost-logo.png"
+            src="/favicon.png"
             alt="WordBoost"
             className="navbar-logo-img"
             onError={() => setLogoFailed(true)}
