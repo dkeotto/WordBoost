@@ -1,5 +1,5 @@
 .admin-panel {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem;
   color: #e8e8e8;
@@ -210,4 +210,146 @@
   .admin-two-col {
     grid-template-columns: 1fr;
   }
+}
+
+.admin-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.admin-metric-card {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 159, 28, 0.2);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-metric-card-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-metric-label {
+  font-size: 0.78rem;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-metric-card strong {
+  font-size: 1.15rem;
+  color: #ffcc80;
+}
+
+.admin-metric-sub {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.admin-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.admin-chip {
+  background: rgba(255, 159, 28, 0.1);
+  border: 1px solid rgba(255, 159, 28, 0.25);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.88rem;
+}
+
+.admin-users-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.admin-users-toolbar .admin-input-wide {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.admin-select {
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 0.88rem;
+}
+
+.admin-users-table-wrap {
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.admin-users-table {
+  font-size: 0.82rem;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+  vertical-align: middle;
+}
+
+.admin-user-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin-user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.admin-td-mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  max-width: 200px;
+  word-break: break-all;
+}
+
+.admin-td-nowrap {
+  white-space: nowrap;
+  font-size: 0.78rem;
+}
+
+.admin-badges-cell {
+  font-size: 0.78rem;
+  color: #bbb;
+}
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-pagination button {
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 159, 28, 0.35);
+  background: rgba(255, 159, 28, 0.12);
+  color: #ffcc80;
+  cursor: pointer;
+}
+
+.admin-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

@@ -17,8 +17,57 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const os = require('os');
 
 const app = express();
+
+/** Admin özetinde CPU % (process); iki istek arası duvara göre yaklaşık */
+let lastCpuSample = { usage: process.cpuUsage(), wallMs: Date.now() };
+
+function escapeRegex(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildServerMetrics() {
+  const now = Date.now();
+  const usage = process.cpuUsage();
+  const prev = lastCpuSample;
+  const wallSec = prev.wallMs ? (now - prev.wallMs) / 1000 : 0;
+  const cpuUserDiff = usage.user - prev.usage.user;
+  const cpuSysDiff = usage.system - prev.usage.system;
+  lastCpuSample = { usage, wallMs: now };
+
+  let processCpuPercent = null;
+  if (wallSec > 0.05) {
+    const cpuSec = (cpuUserDiff + cpuSysDiff) / 1e6;
+    processCpuPercent = Math.min(100, Math.round((cpuSec / wallSec) * 1000) / 10);
+  }
+
+  const mem = process.memoryUsage();
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+
+  return {
+    rssMb: Math.round(mem.rss / 1024 / 1024),
+    heapTotalMb: Math.round(mem.heapTotal / 1024 / 1024),
+    heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+    externalMb: Math.round(mem.external / 1024 / 1024),
+    arrayBuffersMb: mem.arrayBuffers ? Math.round(mem.arrayBuffers / 1024 / 1024) : 0,
+    systemTotalMemMb: Math.round(totalMem / 1024 / 1024),
+    systemFreeMemMb: Math.round(freeMem / 1024 / 1024),
+    systemUsedMemPercent: totalMem > 0 ? Math.round((1 - freeMem / totalMem) * 1000) / 10 : 0,
+    processCpuPercent,
+    loadAvg: os.loadavg(),
+    cpuCores: os.cpus().length,
+    hostname: os.hostname(),
+    platform: os.platform(),
+    arch: os.arch(),
+    release: os.release(),
+    nodeVersion: process.version,
+    pid: process.pid,
+    socketConnections: 0
+  };
+}
 app.set('trust proxy', 1); // Proxy arkas?nda (Render/Railway) ?al??t??? i?in gerekli
 const server = http.createServer(app);
 
@@ -1432,18 +1481,132 @@ app.get('/api/admin/summary', requireAdmin, async (req, res) => {
       Word.countDocuments(),
       WordStat.countDocuments()
     ]);
-    const mem = process.memoryUsage();
+    const serverMetrics = buildServerMetrics();
+    try {
+      serverMetrics.socketConnections = io.engine.clientsCount ?? 0;
+    } catch (_) {
+      serverMetrics.socketConnections = 0;
+    }
     res.json({
       ok: true,
       userCount,
       wordCount,
       wordStatDocuments: statCount,
       uptimeSec: Math.floor(process.uptime()),
-      rssMb: Math.round(mem.rss / 1024 / 1024),
+      rssMb: serverMetrics.rssMb,
+      serverMetrics,
       recentErrors: adminErrorLog.slice(0, 40)
     });
   } catch (e) {
     pushAdminError(e.message, { path: 'admin/summary' });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/users/meta', requireAdmin, async (req, res) => {
+  try {
+    const [
+      total,
+      withEmail,
+      verified,
+      googleLinked,
+      withPassword
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ email: { $exists: true, $nin: [null, ''] } }),
+      User.countDocuments({ isVerified: true }),
+      User.countDocuments({ googleId: { $exists: true, $nin: [null, ''] } }),
+      User.countDocuments({ password: { $exists: true, $nin: [null, ''] } })
+    ]);
+    res.json({
+      ok: true,
+      total,
+      withEmail,
+      verified,
+      googleLinked,
+      withPassword
+    });
+  } catch (e) {
+    pushAdminError(e.message, { path: 'admin/users/meta' });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/users', requireAdmin, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(5, parseInt(req.query.limit, 10) || 25));
+    const q = String(req.query.q || '').trim();
+    const sortField = ['createdAt', 'username', 'lastStudyDate', 'streak'].includes(req.query.sort)
+      ? req.query.sort
+      : 'createdAt';
+    const order = req.query.order === 'asc' ? 1 : -1;
+
+    const conditions = [];
+    if (q) {
+      const rx = escapeRegex(q);
+      conditions.push({
+        $or: [
+          { username: { $regex: rx, $options: 'i' } },
+          { nickname: { $regex: rx, $options: 'i' } },
+          { email: { $regex: rx, $options: 'i' } }
+        ]
+      });
+    }
+    if (req.query.verified === 'true') conditions.push({ isVerified: true });
+    if (req.query.verified === 'false') conditions.push({ isVerified: false });
+    if (req.query.oauth === 'google') {
+      conditions.push({ googleId: { $exists: true, $nin: [null, ''] } });
+    }
+    if (req.query.oauth === 'local') {
+      conditions.push({
+        $or: [{ googleId: { $exists: false } }, { googleId: null }, { googleId: '' }]
+      });
+    }
+
+    const filter = conditions.length === 0 ? {} : { $and: conditions };
+
+    const skip = (page - 1) * limit;
+    const [total, raw] = await Promise.all([
+      User.countDocuments(filter),
+      User.find(filter)
+        .sort({ [sortField]: order })
+        .skip(skip)
+        .limit(limit)
+        .select('-verificationCode -verificationCodeExpires')
+        .lean()
+    ]);
+
+    const items = raw.map((u) => {
+      const hasPassword = Boolean(u.password && String(u.password).length > 0);
+      return {
+      _id: u._id,
+      username: u.username,
+      nickname: u.nickname || '',
+      email: u.email || null,
+      isVerified: Boolean(u.isVerified),
+      hasGoogle: Boolean(u.googleId),
+      hasPassword,
+      bio: u.bio || '',
+      avatar: u.avatar || '',
+      stats: u.stats || { studied: 0, known: 0, unknown: 0 },
+      streak: u.streak ?? 0,
+      lastStudyDate: u.lastStudyDate || null,
+      badges: (u.badges || []).slice(0, 30),
+      createdAt: u.createdAt || null
+    };
+    });
+
+    res.json({
+      ok: true,
+      items,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit) || 1
+    });
+  } catch (e) {
+    pushAdminError(e.message, { path: 'admin/users' });
     res.status(500).json({ error: e.message });
   }
 });

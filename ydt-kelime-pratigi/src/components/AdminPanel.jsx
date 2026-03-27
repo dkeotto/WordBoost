@@ -26,10 +26,62 @@ export default function AdminPanel({ setCurrentView }) {
   });
   const [csvText, setCsvText] = useState("");
 
+  const [usersMeta, setUsersMeta] = useState(null);
+  const [usersList, setUsersList] = useState([]);
+  const [usersTotal, setUsersTotal] = useState(0);
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPages, setUsersPages] = useState(1);
+  const [userLimit, setUserLimit] = useState(25);
+  const [userQInput, setUserQInput] = useState("");
+  const [userQ, setUserQ] = useState("");
+  const [userSort, setUserSort] = useState("createdAt");
+  const [userOrder, setUserOrder] = useState("desc");
+  const [userFilterVerified, setUserFilterVerified] = useState(""); // '' | 'true' | 'false'
+  const [userFilterOauth, setUserFilterOauth] = useState(""); // '' | 'google' | 'local'
+  const [usersLoading, setUsersLoading] = useState(false);
+
   const headers = () => ({
     "Content-Type": "application/json",
     "X-Admin-Token": token
   });
+
+  const buildUsersQuery = useCallback(() => {
+    const p = new URLSearchParams();
+    p.set("page", String(usersPage));
+    p.set("limit", String(userLimit));
+    p.set("sort", userSort);
+    p.set("order", userOrder);
+    const qv = userQ.trim();
+    if (qv) p.set("q", qv);
+    if (userFilterVerified) p.set("verified", userFilterVerified);
+    if (userFilterOauth) p.set("oauth", userFilterOauth);
+    return p.toString();
+  }, [usersPage, userLimit, userQ, userSort, userOrder, userFilterVerified, userFilterOauth]);
+
+  const loadUsers = useCallback(async () => {
+    if (!token) return;
+    setUsersLoading(true);
+    try {
+      const h = headers();
+      const [meta, list] = await Promise.all([
+        fetch("/api/admin/users/meta", { headers: h }).then((r) => r.json()),
+        fetch(`/api/admin/users?${buildUsersQuery()}`, { headers: h }).then((r) => r.json())
+      ]);
+      if (!meta.error) setUsersMeta(meta);
+      if (list.error) {
+        setErr(list.error);
+        setUsersList([]);
+      } else {
+        setUsersList(list.items || []);
+        setUsersTotal(list.total ?? 0);
+        setUsersPages(list.pages ?? 1);
+      }
+    } catch (e) {
+      setErr(e.message || "Kullanıcı listesi yüklenemedi");
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [token, buildUsersQuery]);
 
   const loadAll = useCallback(async () => {
     if (!token) {
@@ -41,7 +93,7 @@ export default function AdminPanel({ setCurrentView }) {
     try {
       sessionStorage.setItem(STORAGE_TOKEN_KEY, token);
       const h = headers();
-      const [s, d, lv, act, q] = await Promise.all([
+      const [s, d, lv, act, wq] = await Promise.all([
         fetch("/api/admin/summary", { headers: h }).then((r) => r.json()),
         fetch("/api/admin/word-difficulty?limit=50&sort=unknown", { headers: h }).then((r) => r.json()),
         fetch("/api/admin/levels", { headers: h }).then((r) => r.json()),
@@ -64,8 +116,8 @@ export default function AdminPanel({ setCurrentView }) {
       else setLevels(lv);
       if (act.error) setActivity(null);
       else setActivity(act);
-      if (q.error) setWordQuality(null);
-      else setWordQuality(q);
+      if (wq.error) setWordQuality(null);
+      else setWordQuality(wq);
     } catch (e) {
       setErr(e.message || "İstek başarısız");
     } finally {
@@ -87,7 +139,7 @@ export default function AdminPanel({ setCurrentView }) {
       fetch("/api/admin/activity?days=7&limit=50", { headers: h }).then((r) => r.json()),
       fetch("/api/admin/word-quality?limit=20", { headers: h }).then((r) => r.json())
     ])
-      .then(([s, d, lv, act, q]) => {
+      .then(([s, d, lv, act, wq]) => {
         if (s.error) {
           setErr(s.error);
           setIsAuthed(false);
@@ -98,11 +150,25 @@ export default function AdminPanel({ setCurrentView }) {
         else setDifficulty(d);
         if (!lv.error) setLevels(lv);
         if (!act.error) setActivity(act);
-        if (!q.error) setWordQuality(q);
+        if (!wq.error) setWordQuality(wq);
       })
       .catch((e) => setErr(e.message || "İstek başarısız"))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => setUserQ(userQInput.trim()), 400);
+    return () => clearTimeout(t);
+  }, [userQInput]);
+
+  useEffect(() => {
+    setUsersPage(1);
+  }, [userQ, userFilterVerified, userFilterOauth, userLimit, userSort, userOrder]);
+
+  useEffect(() => {
+    if (!isAuthed || !token) return;
+    loadUsers();
+  }, [isAuthed, token, loadUsers]);
 
   const login = async (e) => {
     e.preventDefault();
@@ -141,6 +207,9 @@ export default function AdminPanel({ setCurrentView }) {
     setLevels(null);
     setActivity(null);
     setWordQuality(null);
+    setUsersMeta(null);
+    setUsersList([]);
+    setUsersTotal(0);
     setMsg("Çıkış yapıldı.");
   };
 
@@ -256,6 +325,227 @@ export default function AdminPanel({ setCurrentView }) {
               </pre>
             </div>
           )}
+        </section>
+      )}
+
+      {isAuthed && summary?.serverMetrics && (
+        <section className="admin-section">
+          <h3>Sunucu &amp; kaynak</h3>
+          <p className="admin-small">
+            Node süreci ve işletim sistemi (Railway konteynerinde paylaşımlı kaynaklar).
+          </p>
+          <div className="admin-metrics-grid">
+            <div className="admin-metric-card">
+              <span className="admin-metric-label">Node heap (kullanılan)</span>
+              <strong>{summary.serverMetrics.heapUsedMb} MB</strong>
+              <span className="admin-metric-sub">toplam heap {summary.serverMetrics.heapTotalMb} MB</span>
+            </div>
+            <div className="admin-metric-card">
+              <span className="admin-metric-label">RSS (process)</span>
+              <strong>{summary.serverMetrics.rssMb} MB</strong>
+              <span className="admin-metric-sub">external {summary.serverMetrics.externalMb} MB</span>
+            </div>
+            <div className="admin-metric-card">
+              <span className="admin-metric-label">Sistem RAM</span>
+              <strong>
+                {summary.serverMetrics.systemUsedMemPercent}% kullanımda
+              </strong>
+              <span className="admin-metric-sub">
+                boş {summary.serverMetrics.systemFreeMemMb} / {summary.serverMetrics.systemTotalMemMb} MB
+              </span>
+            </div>
+            <div className="admin-metric-card">
+              <span className="admin-metric-label">Process CPU (yaklaşık)</span>
+              <strong>
+                {summary.serverMetrics.processCpuPercent != null
+                  ? `${summary.serverMetrics.processCpuPercent}%`
+                  : "—"}
+              </strong>
+              <span className="admin-metric-sub">çekirdek: {summary.serverMetrics.cpuCores}</span>
+            </div>
+            <div className="admin-metric-card">
+              <span className="admin-metric-label">Load average (1/5/15 dk)</span>
+              <strong>
+                {(summary.serverMetrics.loadAvg || []).map((x) => Number(x).toFixed(2)).join(" / ")}
+              </strong>
+              <span className="admin-metric-sub">{summary.serverMetrics.platform} · {summary.serverMetrics.arch}</span>
+            </div>
+            <div className="admin-metric-card">
+              <span className="admin-metric-label">Socket.IO bağlantı</span>
+              <strong>{summary.serverMetrics.socketConnections}</strong>
+              <span className="admin-metric-sub">PID {summary.serverMetrics.pid} · {summary.serverMetrics.nodeVersion}</span>
+            </div>
+            <div className="admin-metric-card admin-metric-card-wide">
+              <span className="admin-metric-label">Host</span>
+              <strong>{summary.serverMetrics.hostname}</strong>
+              <span className="admin-metric-sub">{summary.serverMetrics.release}</span>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {isAuthed && usersMeta && (
+        <section className="admin-section">
+          <h3>Kullanıcı özeti (veritabanı)</h3>
+          <div className="admin-chip-row">
+            <span className="admin-chip">Toplam: <strong>{usersMeta.total}</strong></span>
+            <span className="admin-chip">E-posta kayıtlı: <strong>{usersMeta.withEmail}</strong></span>
+            <span className="admin-chip">E-posta doğrulanmış: <strong>{usersMeta.verified}</strong></span>
+            <span className="admin-chip">Google bağlı: <strong>{usersMeta.googleLinked}</strong></span>
+            <span className="admin-chip">Şifre (yerel): <strong>{usersMeta.withPassword}</strong></span>
+          </div>
+        </section>
+      )}
+
+      {isAuthed && (
+        <section className="admin-section">
+          <h3>Kullanıcı listesi &amp; arama</h3>
+          <div className="admin-users-toolbar">
+            <input
+              className="admin-input-wide"
+              placeholder="Kullanıcı adı, rumuz veya e-posta ara…"
+              value={userQInput}
+              onChange={(e) => setUserQInput(e.target.value)}
+            />
+            <select
+              className="admin-select"
+              value={userFilterVerified}
+              onChange={(e) => setUserFilterVerified(e.target.value)}
+              aria-label="E-posta doğrulama"
+            >
+              <option value="">Tüm doğrulama durumları</option>
+              <option value="true">Doğrulanmış</option>
+              <option value="false">Doğrulanmamış</option>
+            </select>
+            <select
+              className="admin-select"
+              value={userFilterOauth}
+              onChange={(e) => setUserFilterOauth(e.target.value)}
+              aria-label="Giriş türü"
+            >
+              <option value="">Tüm giriş türleri</option>
+              <option value="google">Google</option>
+              <option value="local">E-posta / şifre</option>
+            </select>
+            <select
+              className="admin-select"
+              value={userSort}
+              onChange={(e) => setUserSort(e.target.value)}
+              aria-label="Sırala"
+            >
+              <option value="createdAt">Kayıt tarihi</option>
+              <option value="lastStudyDate">Son çalışma</option>
+              <option value="streak">Streak</option>
+              <option value="username">Kullanıcı adı</option>
+            </select>
+            <select
+              className="admin-select"
+              value={userOrder}
+              onChange={(e) => setUserOrder(e.target.value)}
+              aria-label="Sıra"
+            >
+              <option value="desc">Azalan</option>
+              <option value="asc">Artan</option>
+            </select>
+            <select
+              className="admin-select"
+              value={userLimit}
+              onChange={(e) => setUserLimit(Number(e.target.value))}
+              aria-label="Sayfa başına"
+            >
+              {[10, 25, 50, 100].map((n) => (
+                <option key={n} value={n}>
+                  {n} / sayfa
+                </option>
+              ))}
+            </select>
+            <button type="button" onClick={() => loadUsers()} disabled={usersLoading}>
+              {usersLoading ? "…" : "Listeyi yenile"}
+            </button>
+          </div>
+          <p className="admin-small">
+            Toplam {usersTotal} kayıt · sayfa {usersPage} / {usersPages}
+            {usersLoading ? " · yükleniyor…" : ""}
+          </p>
+          <div className="admin-table-wrap admin-users-table-wrap">
+            <table className="admin-table admin-users-table">
+              <thead>
+                <tr>
+                  <th>Kullanıcı</th>
+                  <th>Rumuz</th>
+                  <th>E-posta</th>
+                  <th>Doğr.</th>
+                  <th>Google</th>
+                  <th>Şifre</th>
+                  <th>Çalışılan</th>
+                  <th>Bildi</th>
+                  <th>Bilmedi</th>
+                  <th>Streak</th>
+                  <th>Son çalışma</th>
+                  <th>Kayıt</th>
+                  <th>Rozet</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usersList.map((u) => (
+                  <tr key={String(u._id)}>
+                    <td>
+                      <span className="admin-user-cell">
+                        {u.avatar && (u.avatar.startsWith("http") || u.avatar.startsWith("data:")) ? (
+                          <img src={u.avatar} alt="" className="admin-user-avatar" />
+                        ) : null}
+                        <span>{u.username}</span>
+                      </span>
+                    </td>
+                    <td>{u.nickname || "—"}</td>
+                    <td className="admin-td-mono">{u.email || "—"}</td>
+                    <td>{u.isVerified ? "✓" : "—"}</td>
+                    <td>{u.hasGoogle ? "✓" : "—"}</td>
+                    <td>{u.hasPassword ? "✓" : "—"}</td>
+                    <td>{u.stats?.studied ?? 0}</td>
+                    <td>{u.stats?.known ?? 0}</td>
+                    <td>{u.stats?.unknown ?? 0}</td>
+                    <td>{u.streak ?? 0}</td>
+                    <td className="admin-td-nowrap">
+                      {u.lastStudyDate
+                        ? new Date(u.lastStudyDate).toLocaleString("tr-TR")
+                        : "—"}
+                    </td>
+                    <td className="admin-td-nowrap">
+                      {u.createdAt ? new Date(u.createdAt).toLocaleString("tr-TR") : "—"}
+                    </td>
+                    <td className="admin-badges-cell" title={(u.badges || []).join(", ")}>
+                      {(u.badges || []).length ? `${(u.badges || []).length} adet` : "—"}
+                    </td>
+                  </tr>
+                ))}
+                {usersList.length === 0 && !usersLoading && (
+                  <tr>
+                    <td colSpan={13}>Kayıt yok veya filtrelere uymuyor.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="admin-pagination">
+            <button
+              type="button"
+              disabled={usersPage <= 1 || usersLoading}
+              onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
+            >
+              ← Önceki
+            </button>
+            <span>
+              {usersPage} / {usersPages}
+            </span>
+            <button
+              type="button"
+              disabled={usersPage >= usersPages || usersLoading}
+              onClick={() => setUsersPage((p) => p + 1)}
+            >
+              Sonraki →
+            </button>
+          </div>
         </section>
       )}
 
