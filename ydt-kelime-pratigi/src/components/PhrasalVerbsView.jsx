@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { buildPhrasalQuestionPool } from "../utils/questionGenerators";
 
 const LEVELS = ["ALL", "A1", "A2", "B1", "B2", "C1", "C2"];
+const shuffleArray = (arr) => [...arr].sort(() => Math.random() - 0.5);
+const RECENT_LIMIT = 50;
+const keyOf = (q) => `${q?.level || "ALL"}__${q?.base || ""}__${q?.correct || ""}`;
 
 const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
   const [level, setLevel] = useState("ALL");
@@ -9,6 +12,7 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
   const [selected, setSelected] = useState("");
   const [isLocked, setIsLocked] = useState(false);
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
+  const [recentKeys, setRecentKeys] = useState([]);
   const autoNextTimer = useRef(null);
   const [allQuestions, setAllQuestions] = useState(null);
 
@@ -34,6 +38,7 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
       setIndex(0);
       setSelected("");
       setIsLocked(false);
+      setRecentKeys([]);
     }
   }, [allQuestions]);
 
@@ -42,10 +47,13 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
     return level === "ALL" ? allQuestions : allQuestions.filter((item) => item.level === level);
   }, [allQuestions, level]);
 
-  const question = filtered[index % Math.max(1, filtered.length)];
-  const questionNo = (index % Math.max(1, filtered.length)) + 1;
-  const total = Math.max(1, filtered.length);
+  const randomizedPool = useMemo(() => shuffleArray(filtered), [filtered]);
+
+  const question = randomizedPool[index % Math.max(1, randomizedPool.length)];
+  const questionNo = (index % Math.max(1, randomizedPool.length)) + 1;
+  const total = Math.max(1, randomizedPool.length);
   const progress = Math.round((questionNo / total) * 100);
+  const recentSet = useMemo(() => new Set(recentKeys), [recentKeys]);
   const options = useMemo(() => {
     if (!question) return [];
     const list = [...(question.options || [])];
@@ -69,9 +77,7 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
     }
     if (isCorrect) {
       autoNextTimer.current = setTimeout(() => {
-        setSelected("");
-        setIndex((i) => i + 1);
-        setIsLocked(false);
+        next();
       }, 650);
     } else {
       setIsLocked(false);
@@ -80,9 +86,20 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
 
   const next = () => {
     if (autoNextTimer.current) clearTimeout(autoNextTimer.current);
+    if (!randomizedPool || randomizedPool.length === 0) return;
+    const len = randomizedPool.length;
+    const currentKey = keyOf(question);
+    setRecentKeys((prev) => [...prev, currentKey].slice(-RECENT_LIMIT));
     setSelected("");
-    setIndex((i) => i + 1);
     setIsLocked(false);
+    let nextIndex = index;
+    for (let tries = 0; tries < len; tries += 1) {
+      nextIndex = (nextIndex + 1) % len;
+      const candidate = randomizedPool[nextIndex];
+      const k = keyOf(candidate);
+      if (len <= RECENT_LIMIT || !recentSet.has(k) || tries === len - 1) break;
+    }
+    setIndex(nextIndex);
   };
 
   const prev = () => {
@@ -98,7 +115,7 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
         <h2>Phrasal Verbs Çalışması</h2>
         <p>
           Seviye seç, doğru phrasal verb seçeneğini bul. Havuzda{" "}
-          <strong>{allQuestions === null ? "…" : filtered.length}</strong> soru var.
+          <strong>{allQuestions === null ? "…" : randomizedPool.length}</strong> soru var.
         </p>
       </div>
 
@@ -119,6 +136,7 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
             setLevel(e.target.value);
             setIndex(0);
             setSelected("");
+            setRecentKeys([]);
           }}
         >
           {LEVELS.map((lv) => (
@@ -136,11 +154,11 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
         <div className="syn-progress-fill" style={{ width: `${progress}%` }} />
       </div>
 
-      {allQuestions !== null && filtered.length === 0 && (
+      {allQuestions !== null && randomizedPool.length === 0 && (
         <div className="empty-state">Bu seviyede phrasal verb verisi bulunamadı.</div>
       )}
 
-      {allQuestions !== null && filtered.length > 0 && (
+      {allQuestions !== null && randomizedPool.length > 0 && (
         <div className="syn-quiz-card">
           <div className="syn-meta">
             <span className="syn-level-badge">{question.level}</span>

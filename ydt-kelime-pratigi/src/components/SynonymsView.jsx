@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { buildSynonymQuestionPool } from "../utils/questionGenerators";
 
 const LEVELS = ["ALL", "A1", "A2", "B1", "B2", "C1", "C2"];
+const shuffleArray = (arr) => [...arr].sort(() => Math.random() - 0.5);
+const RECENT_LIMIT = 50;
+const keyOf = (q) => `${q?.level || "ALL"}__${q?.question || ""}__${q?.correct || ""}`;
 
 const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
   const [level, setLevel] = useState("ALL");
@@ -9,6 +12,7 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
   const [selected, setSelected] = useState("");
   const [isLocked, setIsLocked] = useState(false);
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
+  const [recentKeys, setRecentKeys] = useState([]);
   const autoNextTimer = useRef(null);
   /** null = havuz üretiliyor (büyük havuz senkron üretilince UI donmasın) */
   const [allQuestions, setAllQuestions] = useState(null);
@@ -35,6 +39,7 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
       setQuestionIndex(0);
       setSelected("");
       setIsLocked(false);
+      setRecentKeys([]);
     }
   }, [allQuestions]);
 
@@ -44,11 +49,43 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
     return allQuestions.filter((item) => item.level === level);
   }, [allQuestions, level]);
 
-  const question = questionPool[questionIndex % Math.max(1, questionPool.length)];
+  const randomizedPool = useMemo(() => shuffleArray(questionPool), [questionPool]);
+
+  const question = randomizedPool[questionIndex % Math.max(1, randomizedPool.length)];
   const correct = question?.correct || "";
-  const questionNo = (questionIndex % Math.max(1, questionPool.length)) + 1;
-  const total = Math.max(1, questionPool.length);
+  const questionNo = (questionIndex % Math.max(1, randomizedPool.length)) + 1;
+  const total = Math.max(1, randomizedPool.length);
   const progress = Math.round((questionNo / total) * 100);
+
+  const recentSet = useMemo(() => new Set(recentKeys), [recentKeys]);
+
+  const advance = (delta) => {
+    if (autoNextTimer.current) clearTimeout(autoNextTimer.current);
+    if (!randomizedPool || randomizedPool.length === 0) return;
+    const len = randomizedPool.length;
+    const currentKey = keyOf(question);
+    setRecentKeys((prev) => {
+      const next = [...prev, currentKey].slice(-RECENT_LIMIT);
+      return next;
+    });
+    setSelected("");
+    setIsLocked(false);
+
+    if (delta < 0) {
+      setQuestionIndex((i) => Math.max(0, i - 1));
+      return;
+    }
+
+    // Son N soruyu mümkün oldukça tekrar etmeden ilerle
+    let nextIndex = questionIndex;
+    for (let tries = 0; tries < len; tries += 1) {
+      nextIndex = (nextIndex + 1) % len;
+      const candidate = randomizedPool[nextIndex];
+      const k = keyOf(candidate);
+      if (len <= RECENT_LIMIT || !recentSet.has(k) || tries === len - 1) break;
+    }
+    setQuestionIndex(nextIndex);
+  };
 
   const options = useMemo(() => {
     if (!question) return [];
@@ -72,9 +109,7 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
     }
     if (isCorrect) {
       autoNextTimer.current = setTimeout(() => {
-        setSelected("");
-        setQuestionIndex((i) => i + 1);
-        setIsLocked(false);
+        advance(1);
       }, 650);
     } else {
       setIsLocked(false);
@@ -82,17 +117,11 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
   };
 
   const next = () => {
-    if (autoNextTimer.current) clearTimeout(autoNextTimer.current);
-    setSelected("");
-    setQuestionIndex((i) => i + 1);
-    setIsLocked(false);
+    advance(1);
   };
 
   const prev = () => {
-    if (autoNextTimer.current) clearTimeout(autoNextTimer.current);
-    setSelected("");
-    setQuestionIndex((i) => Math.max(0, i - 1));
-    setIsLocked(false);
+    advance(-1);
   };
 
   return (
@@ -101,7 +130,7 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
         <h2>Eş Anlamlı Kelime Çalışması</h2>
         <p>
           Seviye seç, en uygun eş anlamı bul. Havuzda{" "}
-          <strong>{allQuestions === null ? "…" : questionPool.length}</strong> soru
+          <strong>{allQuestions === null ? "…" : randomizedPool.length}</strong> soru
           var.
         </p>
       </div>
@@ -118,6 +147,7 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
           setLevel(e.target.value);
           setQuestionIndex(0);
           setSelected("");
+          setRecentKeys([]);
         }}>
           {LEVELS.map((lv) => (
             <option key={lv} value={lv}>{lv}</option>
@@ -132,11 +162,11 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
         <div className="syn-progress-fill" style={{ width: `${progress}%` }} />
       </div>
 
-      {allQuestions !== null && questionPool.length === 0 && (
+      {allQuestions !== null && randomizedPool.length === 0 && (
         <div className="empty-state">Bu seviyede eş anlam verisi bulunamadı.</div>
       )}
 
-      {allQuestions !== null && questionPool.length > 0 && (
+      {allQuestions !== null && randomizedPool.length > 0 && (
         <div className="syn-quiz-card">
           <div className="syn-meta">
             <span className="syn-level-badge">{question.level}</span>
