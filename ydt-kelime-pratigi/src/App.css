@@ -232,6 +232,51 @@ main {
   border-color: var(--primary-color);
 }
 
+/*
+ * iOS / WebKit: preserve-3d + rotateY bazen metin ve rozetleri aynalı/ters çizer.
+ * Bu ortamda 3D çevirmeyi kapatıp opaklık ile yüz değiştiriyoruz (Chrome iOS dahil).
+ */
+@supports (-webkit-touch-callout: none) {
+  .flashcard-container {
+    perspective: none;
+  }
+
+  .card-inner {
+    transform-style: flat;
+    -webkit-transform-style: flat;
+    transition: none;
+  }
+
+  .card-inner.flipped {
+    transform: none !important;
+    -webkit-transform: none !important;
+  }
+
+  .card-front,
+  .card-back {
+    backface-visibility: visible;
+    -webkit-backface-visibility: visible;
+    transition: opacity 0.35s ease;
+  }
+
+  .card-back {
+    transform: none !important;
+    -webkit-transform: none !important;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .card-inner.flipped .card-front {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .card-inner.flipped .card-back {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .card-front h2 {
   font-size: 3rem;
   font-weight: 800;
