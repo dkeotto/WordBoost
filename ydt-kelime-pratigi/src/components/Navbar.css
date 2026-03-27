@@ -415,6 +415,115 @@
     margin: 0;
     background: rgba(255, 159, 28, 0.1);
   }
+
+  /* Portal mobil menü: tam ekran çekmece + üstte ✕ (aşağı kaydırınca navbar kaybolsa da kapanır) */
+  .nav-menu-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 1002;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .nav-menu-drawer.open {
+    pointer-events: auto;
+    visibility: visible;
+  }
+
+  .nav-menu-drawer-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    appearance: none;
+    background: rgba(0, 0, 0, 0.55);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .nav-menu-drawer.open .nav-menu-drawer-scrim {
+    opacity: 1;
+  }
+
+  .nav-menu-drawer-panel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    width: min(100%, 100vw);
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    background: rgba(18, 18, 18, 0.98);
+    box-shadow: 8px 0 28px rgba(0, 0, 0, 0.65);
+    transform: translateX(-100%);
+    transition: transform 0.35s ease;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .nav-menu-drawer.open .nav-menu-drawer-panel {
+    transform: translateX(0);
+  }
+
+  .nav-menu-drawer-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px 14px;
+    border-bottom: 1px solid rgba(255, 159, 28, 0.25);
+    background: rgba(12, 12, 12, 0.98);
+  }
+
+  .nav-menu-drawer-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffcc80;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-menu-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .nav-menu-close-btn:active {
+    background: rgba(255, 159, 28, 0.15);
+  }
+
+  .nav-menu-drawer .nav-menu.nav-menu--portal {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    opacity: 1 !important;
+    flex: 1;
+    min-height: 0;
+    height: auto !important;
+    max-height: none !important;
+    width: 100%;
+    transition: none;
+    box-shadow: none;
+    border-bottom: none;
+    padding-bottom: max(24px, calc(16px + env(safe-area-inset-bottom, 0px)));
+  }
 }
 
 @media screen and (min-width: 1321px) and (max-width: 1480px) {

@@ -243,17 +243,25 @@ const Navbar = ({
     isMobileLayout &&
     typeof document !== 'undefined' &&
     createPortal(
-      <>
-        {isMenuOpen && (
-          <button
-            type="button"
-            className="nav-menu-backdrop"
-            aria-label="Menüyü kapat"
-            onClick={closeMenuOverlay}
-          />
-        )}
-        <ul className={`nav-menu nav-menu--portal ${isMenuOpen ? 'active' : ''}`}>{navMenuLinks}</ul>
-      </>,
+      <div className={`nav-menu-drawer ${isMenuOpen ? 'open' : ''}`} role="dialog" aria-modal="true" aria-label="Menü">
+        <button
+          type="button"
+          className="nav-menu-drawer-scrim"
+          aria-hidden={!isMenuOpen}
+          aria-label="Menüyü kapat"
+          tabIndex={isMenuOpen ? 0 : -1}
+          onClick={closeMenuOverlay}
+        />
+        <div className="nav-menu-drawer-panel">
+          <div className="nav-menu-drawer-header">
+            <span className="nav-menu-drawer-title">Menü</span>
+            <button type="button" className="nav-menu-close-btn" onClick={closeMenuOverlay} aria-label="Kapat">
+              ✕
+            </button>
+          </div>
+          <ul className="nav-menu nav-menu--portal">{navMenuLinks}</ul>
+        </div>
+      </div>,
       document.body
     );
 
