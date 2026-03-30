@@ -39,6 +39,16 @@ export default function AdminPanel({ setCurrentView }) {
   const [userFilterVerified, setUserFilterVerified] = useState(""); // '' | 'true' | 'false'
   const [userFilterOauth, setUserFilterOauth] = useState(""); // '' | 'google' | 'local'
   const [usersLoading, setUsersLoading] = useState(false);
+  const [editUser, setEditUser] = useState(null);
+  const [editForm, setEditForm] = useState({
+    studied: "",
+    known: "",
+    unknown: "",
+    streak: "",
+    lastStudyDate: "",
+    badgesText: ""
+  });
+  const [editSaving, setEditSaving] = useState(false);
 
   const headers = () => ({
     "Content-Type": "application/json",
@@ -252,6 +262,61 @@ export default function AdminPanel({ setCurrentView }) {
       loadAll();
     } catch (e) {
       setErr(e.message);
+    }
+  };
+
+  const openEdit = (u) => {
+    setErr("");
+    setMsg("");
+    setEditUser(u);
+    setEditForm({
+      studied: String(u?.stats?.studied ?? 0),
+      known: String(u?.stats?.known ?? 0),
+      unknown: String(u?.stats?.unknown ?? 0),
+      streak: String(u?.streak ?? 0),
+      lastStudyDate: u?.lastStudyDate ? new Date(u.lastStudyDate).toISOString().slice(0, 16) : "",
+      badgesText: (u?.badges || []).join(", ")
+    });
+  };
+
+  const closeEdit = () => {
+    setEditUser(null);
+    setEditSaving(false);
+  };
+
+  const saveEdit = async () => {
+    if (!editUser?._id) return;
+    setEditSaving(true);
+    setErr("");
+    setMsg("");
+    try {
+      const payload = {
+        stats: {
+          studied: Number(editForm.studied),
+          known: Number(editForm.known),
+          unknown: Number(editForm.unknown)
+        },
+        streak: Number(editForm.streak),
+        lastStudyDate: editForm.lastStudyDate ? new Date(editForm.lastStudyDate).toISOString() : null,
+        badges: editForm.badgesText
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean)
+      };
+      const res = await fetch(`/api/admin/users/${editUser._id}/stats`, {
+        method: "PUT",
+        headers: headers(),
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Kaydetme başarısız");
+      setMsg(`Güncellendi: ${editUser.username}`);
+      closeEdit();
+      loadUsers();
+    } catch (e) {
+      setErr(e.message || "Kaydetme başarısız");
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -484,6 +549,7 @@ export default function AdminPanel({ setCurrentView }) {
                   <th>Son çalışma</th>
                   <th>Kayıt</th>
                   <th>Rozet</th>
+                  <th>İşlem</th>
                 </tr>
               </thead>
               <tbody>
@@ -517,11 +583,16 @@ export default function AdminPanel({ setCurrentView }) {
                     <td className="admin-badges-cell" title={(u.badges || []).join(", ")}>
                       {(u.badges || []).length ? `${(u.badges || []).length} adet` : "—"}
                     </td>
+                    <td>
+                      <button type="button" onClick={() => openEdit(u)}>
+                        Düzenle
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {usersList.length === 0 && !usersLoading && (
                   <tr>
-                    <td colSpan={13}>Kayıt yok veya filtrelere uymuyor.</td>
+                    <td colSpan={14}>Kayıt yok veya filtrelere uymuyor.</td>
                   </tr>
                 )}
               </tbody>
@@ -547,6 +618,80 @@ export default function AdminPanel({ setCurrentView }) {
             </button>
           </div>
         </section>
+      )}
+
+      {isAuthed && editUser && (
+        <div className="admin-modal-overlay" role="dialog" aria-modal="true">
+          <div className="admin-modal">
+            <div className="admin-modal-header">
+              <h3>Kullanıcı düzenle</h3>
+              <button type="button" className="admin-modal-close" onClick={closeEdit} aria-label="Kapat">
+                ✕
+              </button>
+            </div>
+            <p className="admin-small">
+              <strong>{editUser.username}</strong> ({editUser.email || "e-posta yok"})
+            </p>
+            <div className="admin-modal-grid">
+              <label>
+                Çalışılan (studied)
+                <input
+                  value={editForm.studied}
+                  onChange={(e) => setEditForm((f) => ({ ...f, studied: e.target.value }))}
+                  inputMode="numeric"
+                />
+              </label>
+              <label>
+                Bildi (known)
+                <input
+                  value={editForm.known}
+                  onChange={(e) => setEditForm((f) => ({ ...f, known: e.target.value }))}
+                  inputMode="numeric"
+                />
+              </label>
+              <label>
+                Bilmedi (unknown)
+                <input
+                  value={editForm.unknown}
+                  onChange={(e) => setEditForm((f) => ({ ...f, unknown: e.target.value }))}
+                  inputMode="numeric"
+                />
+              </label>
+              <label>
+                Seri (streak)
+                <input
+                  value={editForm.streak}
+                  onChange={(e) => setEditForm((f) => ({ ...f, streak: e.target.value }))}
+                  inputMode="numeric"
+                />
+              </label>
+              <label>
+                Son çalışma (opsiyonel)
+                <input
+                  type="datetime-local"
+                  value={editForm.lastStudyDate}
+                  onChange={(e) => setEditForm((f) => ({ ...f, lastStudyDate: e.target.value }))}
+                />
+              </label>
+              <label className="admin-modal-wide">
+                Rozetler (virgülle ayır)
+                <input
+                  value={editForm.badgesText}
+                  onChange={(e) => setEditForm((f) => ({ ...f, badgesText: e.target.value }))}
+                  placeholder="newbie, streak_7, known_100"
+                />
+              </label>
+            </div>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-modal-secondary" onClick={closeEdit} disabled={editSaving}>
+                Vazgeç
+              </button>
+              <button type="button" onClick={saveEdit} disabled={editSaving}>
+                {editSaving ? "Kaydediliyor…" : "Kaydet"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {isAuthed && difficulty && difficulty.items && (

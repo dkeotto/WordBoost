@@ -1611,6 +1611,75 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
   }
 });
 
+app.put('/api/admin/users/:id/stats', requireAdmin, async (req, res) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    if (!id) return res.status(400).json({ error: 'id gerekli' });
+
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    const body = req.body || {};
+    const nextStats = body.stats || {};
+
+    const clampInt = (v, name) => {
+      if (v === undefined || v === null || v === '') return undefined;
+      const n = Number(v);
+      if (!Number.isFinite(n)) throw new Error(`${name} sayı olmalı`);
+      const i = Math.trunc(n);
+      if (i < 0) throw new Error(`${name} negatif olamaz`);
+      if (i > 10_000_000) throw new Error(`${name} çok büyük`);
+      return i;
+    };
+
+    const studied = clampInt(nextStats.studied, 'stats.studied');
+    const known = clampInt(nextStats.known, 'stats.known');
+    const unknown = clampInt(nextStats.unknown, 'stats.unknown');
+    const streak = clampInt(body.streak, 'streak');
+
+    if (studied !== undefined) user.stats.studied = studied;
+    if (known !== undefined) user.stats.known = known;
+    if (unknown !== undefined) user.stats.unknown = unknown;
+    if (streak !== undefined) user.streak = streak;
+
+    if (Object.prototype.hasOwnProperty.call(body, 'lastStudyDate')) {
+      const v = body.lastStudyDate;
+      if (v === null || v === '' || v === false) {
+        user.lastStudyDate = null;
+      } else {
+        const d = new Date(v);
+        if (Number.isNaN(d.getTime())) throw new Error('lastStudyDate geçersiz tarih');
+        user.lastStudyDate = d;
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, 'badges')) {
+      const badges = Array.isArray(body.badges) ? body.badges : [];
+      const cleaned = badges
+        .map((x) => String(x || '').trim())
+        .filter((x) => x && x.length <= 64)
+        .slice(0, 120);
+      user.badges = cleaned;
+    }
+
+    await user.save();
+    res.json({
+      ok: true,
+      user: {
+        _id: user._id,
+        username: user.username,
+        stats: user.stats,
+        streak: user.streak,
+        lastStudyDate: user.lastStudyDate || null,
+        badges: user.badges || []
+      }
+    });
+  } catch (e) {
+    pushAdminError(e.message, { path: 'admin/users/:id/stats' });
+    res.status(400).json({ error: e.message });
+  }
+});
+
 app.get('/api/admin/word-difficulty', requireAdmin, async (req, res) => {
   try {
     const limit = Math.min(100, Math.max(5, parseInt(req.query.limit, 10) || 50));
