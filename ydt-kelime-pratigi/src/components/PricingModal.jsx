@@ -1,4 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+
+function humanizeCheckoutError(msg) {
+  const s = String(msg || "");
+  if (/checkout has not yet been enabled/i.test(s) || /onboarding process has completed/i.test(s)) {
+    return "Paddle hesabında canlı ödeme henüz açılmamış. Paddle panelinde onboarding’i tamamla veya sandbox ile test et (PADDLE_ENV=sandbox).";
+  }
+  return s;
+}
 
 export default function PricingModal({ user, onClose }) {
   const token = user?.token || "";
@@ -21,7 +30,7 @@ export default function PricingModal({ user, onClose }) {
         const firstTier = d.items?.[0]?.tier || "";
         setTier(firstTier);
       })
-      .catch((e) => setErr(e.message || "Hata"))
+      .catch((e) => setErr(humanizeCheckoutError(e.message) || "Hata"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -29,6 +38,14 @@ export default function PricingModal({ user, onClose }) {
     if (!selected) return;
     setQuantity(Math.max(1, Number(selected.defaultQuantity || 1)));
   }, [selected]);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
 
   const goCheckout = async () => {
     if (!token) {
@@ -54,24 +71,33 @@ export default function PricingModal({ user, onClose }) {
       if (!d?.url) throw new Error("Checkout URL alınamadı");
       window.location.href = d.url;
     } catch (e) {
-      setErr(e.message || "Hata");
+      setErr(humanizeCheckoutError(e.message) || "Hata");
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="pricing-overlay" onClick={onClose}>
-      <div className="pricing-modal" onClick={(e) => e.stopPropagation()}>
+  const modal = (
+    <div className="pricing-overlay" role="presentation" onClick={onClose}>
+      <div
+        className="pricing-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pricing-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="pricing-header">
-          <h3>Plan seç</h3>
-          <button type="button" className="pricing-close" onClick={onClose}>
+          <div>
+            <h3 id="pricing-modal-title">Plan seç</h3>
+            <p className="pricing-subtitle">WordBoost paketleri — güvenli ödeme Paddle üzerinden</p>
+          </div>
+          <button type="button" className="pricing-close" onClick={onClose} aria-label="Kapat">
             ✕
           </button>
         </div>
 
-        {loading && plans.length === 0 && <div className="empty-state">Yükleniyor…</div>}
-        {err && <div className="ai-error">{err}</div>}
+        {loading && plans.length === 0 && <div className="pricing-loading">Planlar yükleniyor…</div>}
+        {err && <div className="pricing-error-banner">{err}</div>}
 
         {plans.length > 0 && (
           <>
@@ -80,20 +106,25 @@ export default function PricingModal({ user, onClose }) {
                 <button
                   key={p.tier}
                   type="button"
-                  className={`pricing-card ${tier === p.tier ? "active" : ""}`}
+                  className={`pricing-card ${tier === p.tier ? "active" : ""} ${
+                    p.tier === "premium" ? "pricing-card--featured" : ""
+                  } ${p.tier === "aiPlus" ? "pricing-card--ai" : ""} ${p.tier === "classroom" ? "pricing-card--school" : ""}`}
                   onClick={() => setTier(p.tier)}
                   disabled={loading}
                 >
+                  {p.tier === "aiPlus" ? <span className="pricing-tag pricing-tag--once">Tek sefer</span> : null}
+                  {p.tier === "classroom" ? <span className="pricing-tag pricing-tag--team">Okul / sınıf</span> : null}
+                  {p.tier === "premium" ? <span className="pricing-ribbon-badge">En popüler</span> : null}
                   <div className="pricing-title">{p.label || p.tier}</div>
                   {p.description ? <div className="pricing-desc">{p.description}</div> : null}
                   {Array.isArray(p.features) && p.features.length > 0 ? (
                     <ul className="pricing-features">
-                      {p.features.slice(0, 6).map((f, i) => (
+                      {p.features.slice(0, 8).map((f, i) => (
                         <li key={`${p.tier}-${i}`}>{String(f)}</li>
                       ))}
                     </ul>
                   ) : (
-                    <div className="pricing-desc">—</div>
+                    <div className="pricing-desc pricing-desc--muted">—</div>
                   )}
                 </button>
               ))}
@@ -101,8 +132,8 @@ export default function PricingModal({ user, onClose }) {
 
             {selected?.allowQuantity ? (
               <div className="pricing-row">
-                <label>
-                  Adet
+                <label className="pricing-qty-label">
+                  Öğrenci / lisans adedi
                   <input
                     type="number"
                     min={1}
@@ -115,10 +146,10 @@ export default function PricingModal({ user, onClose }) {
             ) : null}
 
             <div className="pricing-actions">
-              <button type="button" className="ai-secondary" onClick={onClose} disabled={loading}>
+              <button type="button" className="pricing-btn pricing-btn--ghost" onClick={onClose} disabled={loading}>
                 Vazgeç
               </button>
-              <button type="button" onClick={goCheckout} disabled={loading || !tier}>
+              <button type="button" className="pricing-btn pricing-btn--primary" onClick={goCheckout} disabled={loading || !tier}>
                 {loading ? "Yönlendiriliyor…" : "Paddle ile satın al"}
               </button>
             </div>
@@ -127,5 +158,8 @@ export default function PricingModal({ user, onClose }) {
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(modal, document.body);
 }
 
