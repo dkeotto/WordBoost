@@ -23,6 +23,9 @@ const LENGTHS = [
 const ANTHROPIC_AUTH_HINT =
   "Anthropic API anahtarı geçersiz. console.anthropic.com üzerinden yeni anahtar oluştur, sunucunun .env / Railway Variables içinde ANTHROPIC_API_KEY olarak kaydet ve backend’i yeniden başlat.";
 
+const ANTHROPIC_BILLING_HINT =
+  "Anthropic hesabında kredi/bakiye yetersiz. console.anthropic.com → Plans & Billing üzerinden kredi al veya planı yükselt.";
+
 function humanizeAiErrorMessage(raw) {
   const s = String(raw || "");
   if (
@@ -31,6 +34,13 @@ function humanizeAiErrorMessage(raw) {
     /^401\s+\{/.test(s.trim())
   ) {
     return ANTHROPIC_AUTH_HINT;
+  }
+  if (
+    s.includes("credit balance is too low") ||
+    s.includes("purchase credits") ||
+    (s.includes("Plans & Billing") && s.includes("Anthropic API"))
+  ) {
+    return ANTHROPIC_BILLING_HINT;
   }
   return s;
 }

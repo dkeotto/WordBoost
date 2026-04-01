@@ -137,10 +137,20 @@ function normalizeAnthropicApiKey(raw) {
 const ANTHROPIC_AUTH_HELP =
   "Anthropic API anahtarı geçersiz veya iptal edilmiş. console.anthropic.com üzerinden yeni anahtar oluştur; yerelde ydt-kelime/.env içinde ANTHROPIC_API_KEY güncelle, Railway/Render’da Variables’a yaz ve sunucuyu yeniden başlat.";
 
-/** Anthropic SDK hatalarını kullanıcıya anlaşılır mesaja çevir (401 = geçersiz anahtar). */
+const ANTHROPIC_BILLING_HELP =
+  "Anthropic hesabında kullanılabilir kredi yok veya bakiye yetersiz. console.anthropic.com → Plans & Billing bölümünden kredi satın al veya planı yükselt.";
+
+/** Anthropic SDK hatalarını kullanıcıya anlaşılır mesaja çevir (401 = anahtar, 400 = bakiye vb.). */
 function formatAnthropicError(err) {
   const status = err?.status ?? err?.statusCode;
   const msg = String(err?.message || "");
+  const nestedErr = err?.error?.error;
+  const nestedMsg =
+    typeof nestedErr === "object" && nestedErr && typeof nestedErr.message === "string"
+      ? nestedErr.message
+      : "";
+  const haystack = `${msg} ${nestedMsg}`;
+
   const looksLikeAnthropic401 =
     status === 401 ||
     msg.includes('"authentication_error"') ||
@@ -153,6 +163,20 @@ function formatAnthropicError(err) {
       message: ANTHROPIC_AUTH_HELP
     };
   }
+
+  const looksLikeInsufficientCredits =
+    haystack.includes("credit balance is too low") ||
+    haystack.includes("purchase credits") ||
+    (haystack.includes("Plans & Billing") && haystack.includes("Anthropic API"));
+
+  if (looksLikeInsufficientCredits) {
+    return {
+      http: 503,
+      code: "anthropic_insufficient_credits",
+      message: ANTHROPIC_BILLING_HELP
+    };
+  }
+
   return { http: 500, code: "ai_error", message: msg || "AI hatası" };
 }
 
@@ -195,19 +219,17 @@ function buildWritingPrompt({ type, tone, length, language, audience, context, i
       ? "Ürün açıklaması gibi; fayda odaklı, ikna edici ama abartısız."
       : "Blog yazısı gibi; başlıklar ve okunabilir akış.";
 
-  return [
-    {
-      role: "system",
-      content:
-        "Sen üst düzey bir yazı asistanısın. Çıktı çok insani, doğal ve bağlama uygun olmalı.\n" +
-        "- Klişe/robotik kalıplardan kaçın.\n" +
-        "- Aynı cümle yapısını tekrarlama; ritmi değiştir.\n" +
-        "- Gerektiğinde küçük doğal kusurlar/insani dokunuşlar ekle (abartmadan).\n" +
-        "- Kullanıcının bağlamına göre özgün detaylar üret, şablon gibi yazma.\n" +
-        "- Gereksiz tekrar ve doldurma cümleleri yazma.\n" +
-        "- Dil: " +
-        lang
-    },
+  const system =
+    "Sen üst düzey bir yazı asistanısın. Çıktı çok insani, doğal ve bağlama uygun olmalı.\n" +
+    "- Klişe/robotik kalıplardan kaçın.\n" +
+    "- Aynı cümle yapısını tekrarlama; ritmi değiştir.\n" +
+    "- Gerektiğinde küçük doğal kusurlar/insani dokunuşlar ekle (abartmadan).\n" +
+    "- Kullanıcının bağlamına göre özgün detaylar üret, şablon gibi yazma.\n" +
+    "- Gereksiz tekrar ve doldurma cümleleri yazma.\n" +
+    "- Dil: " +
+    lang;
+
+  const messages = [
     {
       role: "user",
       content:
@@ -218,6 +240,8 @@ function buildWritingPrompt({ type, tone, length, language, audience, context, i
         `Kullanıcı metni/isteği:\n${input}`
     }
   ];
+
+  return { system, messages };
 }
 
 const aiLimiter = rateLimit({
@@ -2320,7 +2344,7 @@ app.post('/api/ai/write', aiLimiter, async (req, res) => {
     const input = String(inputText || "").trim();
     if (!input || input.length < 3) return res.status(400).json({ error: "inputText gerekli" });
 
-    const messages = buildWritingPrompt({ type, tone, length, language, audience, context, inputText: input });
+    const { system, messages } = buildWritingPrompt({ type, tone, length, language, audience, context, inputText: input });
     const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest");
 
     const startedAt = Date.now();
@@ -2328,6 +2352,7 @@ app.post('/api/ai/write', aiLimiter, async (req, res) => {
       model,
       max_tokens: 900,
       temperature: 0.85,
+      system,
       messages
     });
 
@@ -2348,7 +2373,7 @@ app.post('/api/ai/write', aiLimiter, async (req, res) => {
         provider: "anthropic",
         model,
         requestMeta: { type, tone, length, language, audience, context, premium },
-        promptMasked: guardAiPromptLogging(JSON.stringify(messages)),
+        promptMasked: guardAiPromptLogging(JSON.stringify({ system, messages })),
         outputMasked: guardAiPromptLogging(text),
         usage: resp?.usage || null,
         elapsedMs
@@ -2406,22 +2431,18 @@ app.post('/api/ai/rewrite', aiLimiter, async (req, res) => {
 
     const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest");
     const startedAt = Date.now();
+    const rewriteSystem =
+      "Sen bir yeniden yazım/editing asistanısın. Çıktı doğal, insan gibi, akıcı olmalı.\n" +
+      "- Klişe kalıplardan kaçın, cümle yapısını çeşitlendir.\n" +
+      "- Gereksiz tekrar yapma.\n" +
+      "- Dil: " +
+      lang;
     const resp = await aiProvider.createMessage({
       model,
       max_tokens: 900,
       temperature: 0.9,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Sen bir yeniden yazım/editing asistanısın. Çıktı doğal, insan gibi, akıcı olmalı.\n" +
-            "- Klişe kalıplardan kaçın, cümle yapısını çeşitlendir.\n" +
-            "- Gereksiz tekrar yapma.\n" +
-            "- Dil: " +
-            lang
-        },
-        { role: "user", content: `${directive}\n\nMetin:\n${input}` }
-      ]
+      system: rewriteSystem,
+      messages: [{ role: "user", content: `${directive}\n\nMetin:\n${input}` }]
     });
 
     const text = (resp?.content || [])
@@ -2502,7 +2523,7 @@ app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
     const input = String(inputText || "").trim();
     if (!input || input.length < 3) return res.status(400).json({ error: "inputText gerekli" });
 
-    const messages = buildWritingPrompt({ type, tone, length, language, audience, context, inputText: input });
+    const { system, messages } = buildWritingPrompt({ type, tone, length, language, audience, context, inputText: input });
     const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest");
 
     setSseHeaders(res);
@@ -2513,6 +2534,7 @@ app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
       model,
       max_tokens: 900,
       temperature: 0.85,
+      system,
       messages
     });
 
@@ -2547,7 +2569,7 @@ app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
           provider: "anthropic",
           model,
           requestMeta: { type, tone, length, language, audience, context, premium },
-          promptMasked: guardAiPromptLogging(JSON.stringify(messages)),
+          promptMasked: guardAiPromptLogging(JSON.stringify({ system, messages })),
           outputMasked: guardAiPromptLogging(out),
           usage,
           elapsedMs
@@ -2618,23 +2640,20 @@ app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
     setSseHeaders(res);
     sseWrite(res, "meta", { ok: true, mode: "rewrite", isPremium: premium });
 
+    const rewriteSystem =
+      "Sen bir yeniden yazım/editing asistanısın. Çıktı doğal, insan gibi, akıcı olmalı.\n" +
+      "- Klişe kalıplardan kaçın, cümle yapısını çeşitlendir.\n" +
+      "- Gereksiz tekrar yapma.\n" +
+      "- Dil: " +
+      lang;
+
     const startedAt = Date.now();
     const stream = await aiProvider.createMessageStream({
       model,
       max_tokens: 900,
       temperature: 0.9,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Sen bir yeniden yazım/editing asistanısın. Çıktı doğal, insan gibi, akıcı olmalı.\n" +
-            "- Klişe kalıplardan kaçın, cümle yapısını çeşitlendir.\n" +
-            "- Gereksiz tekrar yapma.\n" +
-            "- Dil: " +
-            lang
-        },
-        { role: "user", content: `${directive}\n\nMetin:\n${input}` }
-      ]
+      system: rewriteSystem,
+      messages: [{ role: "user", content: `${directive}\n\nMetin:\n${input}` }]
     });
 
     let out = "";

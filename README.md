@@ -47,9 +47,11 @@ Yerel geliştirmede Vite bu üç path için `index.html` döndürür.
 
 Required env:
 - `PADDLE_ENV` (`sandbox` | `live`)
-- `PADDLE_API_KEY`
+- `PADDLE_API_KEY` (server-side; never commit)
 - `PADDLE_WEBHOOK_SECRET`
 - `PADDLE_PRICE_IDS` (tier → `priceId` mapping JSON)
+
+Frontend (`ydt-kelime-pratigi/.env`, optional for embedded Paddle.js): `VITE_PADDLE_CLIENT_TOKEN` (must match the same environment as the API key, e.g. `live_…` with `PADDLE_ENV=live`).
 
 ### AI Mode (Anthropic, streaming SSE + usage tracking)
 
@@ -61,6 +63,7 @@ Required env:
 Required env (same rule as `BREVO_API_KEY`: set in **Railway / Render Variables** or local `.env` only; **never commit** real keys):
 - `ANTHROPIC_API_KEY` ([Anthropic Console](https://console.anthropic.com); if leaked or rotated, create a new key and update the variable)
 - `ANTHROPIC_MODEL` (optional)
+- The Anthropic project must have **billing / credits** enabled; otherwise API returns a credit-balance error (fix under Console → **Plans & Billing**).
 
 ### Ads + GDPR
 
