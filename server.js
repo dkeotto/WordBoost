@@ -20,7 +20,7 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const os = require('os');
 const rateLimit = require('express-rate-limit');
-const { createAnthropicProvider } = require("./src/modules/ai/providers/anthropicProvider");
+const { createAiRuntime, getAiModel, formatAiError, normalizeAnthropicApiKey } = require("./src/modules/ai/createAiProvider");
 
 const { getAuthTokenFromHeader } = require("./src/lib/authToken");
 const { isPremiumUser, hasUnlimitedAiMode } = require("./src/lib/premium");
@@ -132,67 +132,20 @@ function getAdminJwtSecret() {
   return JWT_SECRET;
 }
 
-function normalizeAnthropicApiKey(raw) {
-  let s = String(raw || "").trim();
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-    s = s.slice(1, -1).trim();
-  }
-  if (s.charCodeAt(0) === 0xfeff) s = s.slice(1);
-  return s;
-}
-
-const ANTHROPIC_AUTH_HELP =
-  "Anthropic API anahtarı geçersiz veya iptal edilmiş. console.anthropic.com üzerinden yeni anahtar oluştur; yerelde ydt-kelime/.env içinde ANTHROPIC_API_KEY güncelle, Railway/Render’da Variables’a yaz ve sunucuyu yeniden başlat.";
-
-const ANTHROPIC_BILLING_HELP =
-  "Anthropic hesabında kullanılabilir kredi yok veya bakiye yetersiz. console.anthropic.com → Plans & Billing bölümünden kredi satın al veya planı yükselt.";
-
-/** Anthropic SDK hatalarını kullanıcıya anlaşılır mesaja çevir (401 = anahtar, 400 = bakiye vb.). */
-function formatAnthropicError(err) {
-  const status = err?.status ?? err?.statusCode;
-  const msg = String(err?.message || "");
-  const nestedErr = err?.error?.error;
-  const nestedMsg =
-    typeof nestedErr === "object" && nestedErr && typeof nestedErr.message === "string"
-      ? nestedErr.message
-      : "";
-  const haystack = `${msg} ${nestedMsg}`;
-
-  const looksLikeAnthropic401 =
-    status === 401 ||
-    msg.includes('"authentication_error"') ||
-    msg.includes("Invalid authentication credentials") ||
-    /^401\s+\{/.test(msg.trim());
-  if (looksLikeAnthropic401) {
-    return {
-      http: 502,
-      code: "anthropic_auth_invalid",
-      message: ANTHROPIC_AUTH_HELP
-    };
-  }
-
-  const looksLikeInsufficientCredits =
-    haystack.includes("credit balance is too low") ||
-    haystack.includes("purchase credits") ||
-    (haystack.includes("Plans & Billing") && haystack.includes("Anthropic API"));
-
-  if (looksLikeInsufficientCredits) {
-    return {
-      http: 503,
-      code: "anthropic_insufficient_credits",
-      message: ANTHROPIC_BILLING_HELP
-    };
-  }
-
-  return { http: 500, code: "ai_error", message: msg || "AI hatası" };
-}
-
-const ANTHROPIC_API_KEY = normalizeAnthropicApiKey(process.env.ANTHROPIC_API_KEY);
-const aiProvider = createAnthropicProvider({ apiKey: ANTHROPIC_API_KEY });
+const { provider: aiProvider, name: aiProviderName } = createAiRuntime();
 
 if (!process.env.RAILWAY_PUBLIC_DOMAIN && !process.env.RENDER_EXTERNAL_URL) {
+  const ak = normalizeAnthropicApiKey(process.env.ANTHROPIC_API_KEY);
+  const gk = String(process.env.GROQ_API_KEY || "").trim();
   console.log(
-    `[Anthropic] ${ANTHROPIC_API_KEY ? `API key yüklendi (${ANTHROPIC_API_KEY.length} karakter)` : "UYARI: ANTHROPIC_API_KEY boş — .env veya ortam değişkenini kontrol et"}`
+    `[AI] provider=${aiProviderName} model=${getAiModel(aiProviderName)}` +
+      (aiProviderName === "groq"
+        ? gk
+          ? ` (GROQ_API_KEY ${gk.length} karakter)`
+          : " UYARI: GROQ_API_KEY boş"
+        : ak
+          ? ` (ANTHROPIC_API_KEY ${ak.length} karakter)`
+          : " UYARI: ANTHROPIC_API_KEY boş")
   );
 }
 
@@ -2406,7 +2359,7 @@ app.get('/api/classes/:id/analytics', async (req, res) => {
   }
 });
 
-// --- AI Mode (Anthropic) ---
+// --- AI Mode (Groq veya Anthropic; AI_PROVIDER / GROQ_API_KEY → createAiProvider) ---
 app.post('/api/ai/write', aiLimiter, async (req, res) => {
   try {
     const token = req.headers.authorization;
@@ -2426,7 +2379,7 @@ app.post('/api/ai/write', aiLimiter, async (req, res) => {
     if (!input || input.length < 3) return res.status(400).json({ error: "inputText gerekli" });
 
     const { system, messages } = buildWritingPrompt({ type, tone, length, language, audience, context, inputText: input });
-    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022");
+    const model = getAiModel(aiProviderName);
 
     const startedAt = Date.now();
     const resp = await aiProvider.createMessage({
@@ -2451,7 +2404,7 @@ app.post('/api/ai/write', aiLimiter, async (req, res) => {
       await AiLog.create({
         userId: user._id,
         mode: "write",
-        provider: "anthropic",
+        provider: aiProviderName,
         model,
         requestMeta: { type, tone, length, language, audience, context, premium },
         promptMasked: guardAiPromptLogging(JSON.stringify({ system, messages })),
@@ -2473,7 +2426,7 @@ app.post('/api/ai/write', aiLimiter, async (req, res) => {
       limitPerDay: premium ? null : FREE_LIMIT
     });
   } catch (e) {
-    const f = formatAnthropicError(e);
+    const f = formatAiError(e, aiProviderName);
     res.status(f.http).json({ error: f.message, code: f.code });
   }
 });
@@ -2510,7 +2463,7 @@ app.post('/api/ai/rewrite', aiLimiter, async (req, res) => {
         ? `Metnin tonunu şu tona çevir: ${tn}.`
         : "Metni daha insani/doğal yaz; robotik ifadeleri azalt, tekrarları kır.";
 
-    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022");
+    const model = getAiModel(aiProviderName);
     const startedAt = Date.now();
     const rewriteSystem =
       "Sen bir yeniden yazım/editing asistanısın. Çıktı doğal, insan gibi, akıcı olmalı.\n" +
@@ -2539,7 +2492,7 @@ app.post('/api/ai/rewrite', aiLimiter, async (req, res) => {
       await AiLog.create({
         userId: user._id,
         mode: "rewrite",
-        provider: "anthropic",
+        provider: aiProviderName,
         model,
         requestMeta: { mode: m, tone: tn, language: lang, premium },
         promptMasked: guardAiPromptLogging(`${directive}\n\n${input}`),
@@ -2559,7 +2512,7 @@ app.post('/api/ai/rewrite', aiLimiter, async (req, res) => {
       limitPerDay: premium ? null : FREE_LIMIT
     });
   } catch (e) {
-    const f = formatAnthropicError(e);
+    const f = formatAiError(e, aiProviderName);
     res.status(f.http).json({ error: f.message, code: f.code });
   }
 });
@@ -2605,7 +2558,7 @@ app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
     if (!input || input.length < 3) return res.status(400).json({ error: "inputText gerekli" });
 
     const { system, messages } = buildWritingPrompt({ type, tone, length, language, audience, context, inputText: input });
-    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022");
+    const model = getAiModel(aiProviderName);
 
     setSseHeaders(res);
     sseWrite(res, "meta", { ok: true, mode: "write", isPremium: premium });
@@ -2647,7 +2600,7 @@ app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
         await AiLog.create({
           userId: user._id,
           mode: "write_stream",
-          provider: "anthropic",
+          provider: aiProviderName,
           model,
           requestMeta: { type, tone, length, language, audience, context, premium },
           promptMasked: guardAiPromptLogging(JSON.stringify({ system, messages })),
@@ -2668,7 +2621,7 @@ app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
       res.end();
     }
   } catch (e) {
-    const f = formatAnthropicError(e);
+    const f = formatAiError(e, aiProviderName);
     try {
       if (!res.headersSent) return res.status(f.http).json({ error: f.message, code: f.code });
       sseWrite(res, "error", { error: f.message, code: f.code });
@@ -2716,7 +2669,7 @@ app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
         ? `Metnin tonunu şu tona çevir: ${tn}.`
         : "Metni daha insani/doğal yaz; robotik ifadeleri azalt, tekrarları kır.";
 
-    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022");
+    const model = getAiModel(aiProviderName);
 
     setSseHeaders(res);
     sseWrite(res, "meta", { ok: true, mode: "rewrite", isPremium: premium });
@@ -2765,7 +2718,7 @@ app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
         await AiLog.create({
           userId: user._id,
           mode: "rewrite_stream",
-          provider: "anthropic",
+          provider: aiProviderName,
           model,
           requestMeta: { mode: m, tone: tn, language: lang, premium },
           promptMasked: guardAiPromptLogging(`${directive}\n\n${input}`),
@@ -2786,7 +2739,7 @@ app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
       res.end();
     }
   } catch (e) {
-    const f = formatAnthropicError(e);
+    const f = formatAiError(e, aiProviderName);
     try {
       if (!res.headersSent) return res.status(f.http).json({ error: f.message, code: f.code });
       sseWrite(res, "error", { error: f.message, code: f.code });
