@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getConsentStatus } from "../utils/consentStorage";
 
 function loadAdSense(client) {
@@ -39,7 +39,7 @@ export default function AdSlot({ slot, format = "auto", style, className, isPrem
 
   const [consentOk, setConsentOk] = useState(() => getConsentStatus().status === "accepted");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     pushedRef.current = false;
   }, [slot]);
 
@@ -65,22 +65,19 @@ export default function AdSlot({ slot, format = "auto", style, className, isPrem
     return () => io.disconnect();
   }, [enabled, isPremium]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!enabled || isPremium || !consentOk || !inView) return;
     if (pushedRef.current) return;
     let cancelled = false;
     loadAdSense(client).then(() => {
-      if (cancelled) return;
-      requestAnimationFrame(() => {
-        if (cancelled || pushedRef.current) return;
-        try {
-          window.adsbygoogle = window.adsbygoogle || [];
-          window.adsbygoogle.push({});
-          pushedRef.current = true;
-        } catch {
-          // ignore
-        }
-      });
+      if (cancelled || pushedRef.current) return;
+      try {
+        window.adsbygoogle = window.adsbygoogle || [];
+        window.adsbygoogle.push({});
+        pushedRef.current = true;
+      } catch {
+        pushedRef.current = true;
+      }
     });
     return () => {
       cancelled = true;
@@ -92,16 +89,14 @@ export default function AdSlot({ slot, format = "auto", style, className, isPrem
 
   return (
     <div ref={ref} className={className || "ad-slot"} style={style}>
-      {inView && (
-        <ins
-          className="adsbygoogle"
-          style={{ display: "block", width: "100%", ...style }}
-          data-ad-client={client}
-          data-ad-slot={slot}
-          data-ad-format={format}
-          data-full-width-responsive="true"
-        />
-      )}
+      <ins
+        className="adsbygoogle"
+        style={{ display: "block", width: "100%", ...style }}
+        data-ad-client={client}
+        data-ad-slot={slot}
+        data-ad-format={format}
+        data-full-width-responsive="true"
+      />
     </div>
   );
 }

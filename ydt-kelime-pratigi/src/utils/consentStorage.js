@@ -1,5 +1,14 @@
 const KEY = "wb_cookie_consent_v1"; // { status: 'accepted'|'rejected', ts }
 
+/** CustomEvent yanında doğrudan callback — bazı tarayıcı/ortamlarda olay güvenilir değil */
+const openSubscribers = new Set();
+
+export function subscribeConsentDialogOpen(fn) {
+  if (typeof fn !== "function") return () => {};
+  openSubscribers.add(fn);
+  return () => openSubscribers.delete(fn);
+}
+
 export function getConsentStatus() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -18,8 +27,15 @@ export function setConsentStatus(status) {
   window.dispatchEvent(new CustomEvent("wb_consent_change", { detail: { status } }));
 }
 
-/** Navbar / dashboard’dan çerez panelini açmak için — window + document (bazı ortamlarda tek hedef yetmez) */
+/** Navbar / dashboard’dan çerez panelini açmak için */
 export function openConsentDialog() {
+  openSubscribers.forEach((fn) => {
+    try {
+      fn();
+    } catch {
+      /* ignore */
+    }
+  });
   try {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("wb_consent_open", { bubbles: true }));

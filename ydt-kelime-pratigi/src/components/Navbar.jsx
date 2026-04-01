@@ -228,7 +228,7 @@ const Navbar = ({
         </div>
       </li>
 
-      <li className={`nav-item dropdown ${isListsOpen ? 'open' : ''}`}>
+      <li className={`nav-item dropdown nav-lists ${isListsOpen ? 'open' : ''}`}>
         <button
           type="button"
           className="dropdown-title"
@@ -313,9 +313,31 @@ const Navbar = ({
             </button>
           </div>
         ) : (
-          <button className="nav-link login-btn" onClick={() => { onLoginClick(); setIsMenuOpen(false); }}>
-            🔐 Giriş Yap
-          </button>
+          <div className="user-controls user-controls--guest">
+            <button
+              type="button"
+              className="nav-cookie-mini"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openConsentDialog();
+                setIsMenuOpen(false);
+              }}
+              title="Çerez ve reklam tercihleri"
+            >
+              🍪
+            </button>
+            <button
+              type="button"
+              className="nav-link login-btn"
+              onClick={() => {
+                onLoginClick();
+                setIsMenuOpen(false);
+              }}
+            >
+              🔐 Giriş Yap
+            </button>
+          </div>
         )}
       </li>
     </>

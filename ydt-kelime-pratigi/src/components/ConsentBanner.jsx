@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { getConsentStatus, setConsentStatus } from "../utils/consentStorage";
+import { getConsentStatus, setConsentStatus, subscribeConsentDialogOpen } from "../utils/consentStorage";
 
 export default function ConsentBanner() {
   const [status, setStatus] = useState(() => getConsentStatus().status);
@@ -24,9 +24,11 @@ export default function ConsentBanner() {
       setInstantReveal(true);
       setIsOpen(true);
     };
+    const unsub = subscribeConsentDialogOpen(onOpen);
     window.addEventListener("wb_consent_open", onOpen);
     document.addEventListener("wb_consent_open", onOpen);
     return () => {
+      unsub();
       window.removeEventListener("wb_consent_open", onOpen);
       document.removeEventListener("wb_consent_open", onOpen);
     };
@@ -36,7 +38,7 @@ export default function ConsentBanner() {
 
   const banner = (
     <div
-      className={`consent-banner ${instantReveal ? "consent-banner--now" : "consent-banner--delayed"}`}
+      className={`consent-banner ${instantReveal ? "consent-banner--now consent-banner--forced" : "consent-banner--delayed"}`}
       role="region"
       aria-label="Çerez bildirimi"
     >

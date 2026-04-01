@@ -415,6 +415,7 @@ main {
   width: 100%;
   margin-bottom: 0; /* Header altı boşluk sıfırlandı */
   pointer-events: none;
+  overflow: visible;
 }
 
 .header .navbar {
@@ -2095,6 +2096,10 @@ button:disabled {
   min-width: 0;
 }
 
+.user-controls--guest {
+  gap: 8px;
+}
+
 .nav-premium-badge {
   font-size: 0.65rem;
   font-weight: 800;
@@ -2148,10 +2153,20 @@ button:disabled {
 .logout-icon-btn {
   background: transparent;
   border: 1px solid rgba(255,255,255,0.2);
-  padding: 5px 10px;
-  border-radius: 8px;
+  padding: 0;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
+  line-height: 1;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .logout-icon-btn:hover {
@@ -3360,6 +3375,15 @@ button:disabled {
 
 .consent-banner--now .consent-inner {
   animation: consent-rise-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Navbar “çerez” ile açılınca: reklam katmanlarının üstünde kalsın, animasyon sonrası görünür olsun */
+.consent-banner--forced {
+  z-index: 2147483647;
+}
+
+.consent-banner--forced .consent-inner {
+  will-change: transform, opacity;
 }
 
 @keyframes consent-rise-in {

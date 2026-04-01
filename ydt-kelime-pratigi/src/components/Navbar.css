@@ -13,7 +13,10 @@
   border-bottom: 1px solid rgba(255, 165, 0, 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   z-index: 1001; /* Ensure it stays above content */
-  overflow-x: clip;
+  /* clip, açılır menüleri keser; yatay taşma nav-menu içinde kontrol edilir */
+  overflow: visible;
+  padding: 8px 0;
+  box-sizing: border-box;
 }
 
 .navbar-container {
@@ -24,8 +27,8 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 0 12px 0 16px;
-  gap: 8px;
+  padding: 0 16px 0 16px;
+  gap: 12px;
   overflow: visible;
   max-width: 1400px;
   margin: 0 auto;
@@ -81,9 +84,9 @@
   display: flex;
   list-style: none;
   text-align: center;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
-  padding: 0;
+  padding: 4px 0;
   align-items: center;
   flex: 1;
   min-width: 0;
@@ -95,6 +98,15 @@
   scrollbar-width: none;
   -ms-overflow-style: none;
   overscroll-behavior-x: contain;
+}
+
+/* Daha fazla ↔ Listeler arasında ekstra nefes */
+.nav-item.nav-more {
+  margin-right: 4px;
+}
+
+.nav-item.nav-lists {
+  margin-left: 2px;
 }
 
 .nav-item.dropdown {
@@ -119,6 +131,9 @@
 .nav-item.user-section {
   flex-shrink: 0;
   align-self: center;
+  margin-left: 10px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .nav-link {
@@ -153,7 +168,8 @@
   background: rgba(255, 159, 28, 0.15);
   border-color: #FF9F1C;
   color: #FF9F1C;
-  box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.35), 0 0 12px rgba(255, 159, 28, 0.18);
+  /* Çift halka yerine tek kontur — komşu öğelere “yapışma” ve alt çizgi çakışması azalır */
+  box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.4);
 }
 
 .login-btn {
@@ -220,9 +236,9 @@
 
 .dropdown-title.active-route {
   color: #FF9F1C;
-  border-color: rgba(255, 159, 28, 0.45);
+  border-color: rgba(255, 159, 28, 0.55);
   background: rgba(255, 159, 28, 0.12);
-  box-shadow: 0 0 12px rgba(255, 159, 28, 0.15);
+  box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.25);
 }
 
 .nav-more .dropdown-content {
@@ -240,18 +256,24 @@
 .dropdown-content {
   display: none;
   position: absolute;
-  top: 100%;
-  left: 0; /* Align to left instead of center */
-  transform: none; /* Remove centering transform */
+  top: calc(100% + 6px);
+  left: 0;
+  transform: none;
   background: #1E1E1E;
   min-width: 220px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.8);
   border-radius: 12px;
   padding: 10px;
-  z-index: 1000;
+  z-index: 1100;
   border: 1px solid rgba(255, 159, 28, 0.2);
   flex-direction: column;
   gap: 5px;
+}
+
+/* Listeler: sağa yakın; paneli tetikleyiciye sağdan hizala (taşma / sıkışma azalır) */
+.nav-lists .dropdown-content {
+  left: auto;
+  right: 0;
 }
 
 .dropdown-content.show {
@@ -382,6 +404,34 @@
     justify-content: center;
     flex-direction: column;
     align-items: center;
+  }
+
+  .nav-item.user-section {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+  }
+
+  .user-controls--guest {
+    width: 80%;
+    max-width: 360px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .user-controls--guest .login-btn {
+    width: 100%;
+    max-width: 360px;
+  }
+
+  /* Mobil: Listeler paneli ortada kalsın (masaüstü right:0 ezilmesin) */
+  .nav-lists .dropdown-content {
+    left: auto;
+    right: auto;
+    width: 100%;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   /* 961–1320px: hamburger açık; Listeler için absolute dropdown overflow ile kesiliyordu */
@@ -568,10 +618,10 @@
   }
 }
 
-/* Masaüstü: menü sıkışmasın, yatay kaydırma sessiz kalsın */
+/* Masaüstü: öğeler arası nefes */
 @media screen and (min-width: 1321px) {
   .nav-menu {
-    gap: 5px;
+    gap: 10px;
   }
 }
 
