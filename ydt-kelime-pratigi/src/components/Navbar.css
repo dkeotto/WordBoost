@@ -424,6 +424,19 @@
     max-width: 360px;
   }
 
+  .user-controls:not(.user-controls--guest) {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .user-controls:not(.user-controls--guest) .user-controls-meta,
+  .user-controls:not(.user-controls--guest) .user-controls-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
   /* Mobil: Listeler paneli ortada kalsın (masaüstü right:0 ezilmesin) */
   .nav-lists .dropdown-content {
     left: auto;
@@ -647,6 +660,10 @@
 
   .navbar-logo-fallback {
     font-size: 1.35rem;
+  }
+
+  .user-controls .nav-profile-name {
+    max-width: 4.75rem;
   }
 }
 

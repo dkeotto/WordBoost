@@ -286,35 +286,40 @@ const Navbar = ({
       <li className="nav-item user-section">
         {user ? (
           <div className="user-controls">
-            <span
-              className={`nav-premium-badge ${isPremium ? 'nav-premium-badge--pro' : 'nav-premium-badge--free'}`}
-              title={isPremium ? 'Premium üyelik aktif' : 'Ücretsiz hesap'}
-            >
-              {isPremium ? 'PRO' : 'Ücretsiz'}
-            </span>
-            <button
-              type="button"
-              className="nav-cookie-mini"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openConsentDialog();
-              }}
-              title="Çerez ve reklam tercihleri"
-            >
-              🍪
-            </button>
-            <button className="nav-link profile-btn" onClick={() => handleNavClick('profile')}>
-              {user.avatar && (user.avatar.startsWith('http') || user.avatar.startsWith('data:')) ? (
-                <img src={user.avatar} className="nav-avatar-img" alt="avatar" />
-              ) : (
-                user.avatar || '👤'
-              )}
-              <span className="nav-profile-name">{user.nickname || user.username}</span>
-            </button>
-            <button className="logout-icon-btn" onClick={() => { onLogoutClick(); setIsMenuOpen(false); }} title="Çıkış Yap">
-              🚪
-            </button>
+            <div className="user-controls-meta" aria-label="Hesap durumu ve çerezler">
+              <span
+                className={`nav-premium-badge ${isPremium ? 'nav-premium-badge--pro' : 'nav-premium-badge--free'}`}
+                title={isPremium ? 'Premium üyelik aktif' : 'Ücretsiz hesap'}
+              >
+                {isPremium ? 'PRO' : 'Ücretsiz'}
+              </span>
+              <button
+                type="button"
+                className="nav-cookie-mini"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openConsentDialog();
+                }}
+                title="Çerez ve reklam tercihleri"
+                aria-label="Çerez ve reklam tercihleri"
+              >
+                🍪
+              </button>
+            </div>
+            <div className="user-controls-actions">
+              <button className="nav-link profile-btn" onClick={() => handleNavClick('profile')}>
+                {user.avatar && (user.avatar.startsWith('http') || user.avatar.startsWith('data:')) ? (
+                  <img src={user.avatar} className="nav-avatar-img" alt="avatar" />
+                ) : (
+                  user.avatar || '👤'
+                )}
+                <span className="nav-profile-name">{user.nickname || user.username}</span>
+              </button>
+              <button className="logout-icon-btn" onClick={() => { onLogoutClick(); setIsMenuOpen(false); }} title="Çıkış Yap">
+                🚪
+              </button>
+            </div>
           </div>
         ) : (
           <div className="user-controls user-controls--guest">
