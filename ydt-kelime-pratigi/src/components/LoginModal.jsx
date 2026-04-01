@@ -60,7 +60,7 @@ export default function LoginModal({ onLogin, onClose }) {
       }
 
       alert("Giriş başarısız. Bilgileri kontrol edin.");
-    } catch (err) {
+    } catch {
       alert("Bağlantı hatası");
     } finally {
       setIsSubmitting(false);
@@ -87,7 +87,7 @@ export default function LoginModal({ onLogin, onClose }) {
       let data = {};
       try {
         data = await res.json();
-      } catch (e) {
+      } catch {
         data = {};
       }
 
@@ -117,7 +117,7 @@ export default function LoginModal({ onLogin, onClose }) {
       }
 
       alert("Kayıt tamamlanamadı. Lütfen tekrar deneyin.");
-    } catch (err) {
+    } catch {
       alert("Bağlantı hatası");
     } finally {
       setIsSubmitting(false);
@@ -151,7 +151,7 @@ export default function LoginModal({ onLogin, onClose }) {
       } else {
         alert(data.error || "Doğrulama başarısız");
       }
-    } catch (err) {
+    } catch {
       alert("Bağlantı hatası");
     } finally {
       setIsSubmitting(false);
@@ -181,7 +181,7 @@ export default function LoginModal({ onLogin, onClose }) {
       } else {
         alert(data.error || "İşlem başarısız");
       }
-    } catch (err) {
+    } catch {
       alert("Bağlantı hatası");
     } finally {
       setIsSubmitting(false);
@@ -211,7 +211,7 @@ export default function LoginModal({ onLogin, onClose }) {
       } else {
         alert(data.error || "Sıfırlama başarısız");
       }
-    } catch (err) {
+    } catch {
       alert("Bağlantı hatası");
     } finally {
       setIsSubmitting(false);

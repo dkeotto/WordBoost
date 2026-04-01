@@ -142,6 +142,15 @@ const Navbar = ({
       </li>
       <li className="nav-item">
         <button
+          type="button"
+          className={`nav-link ${currentView === 'pricing' ? 'active' : ''}`}
+          onClick={() => handleNavClick('pricing')}
+        >
+          💳 Fiyatlar
+        </button>
+      </li>
+      <li className="nav-item">
+        <button
           className={`nav-link ${currentView === 'synonyms' ? 'active' : ''}`}
           onClick={() => handleNavClick('synonyms')}
         >
@@ -154,6 +163,24 @@ const Navbar = ({
           onClick={() => handleNavClick('phrasal-verbs')}
         >
           🧩 Phrasal Verbs
+        </button>
+      </li>
+
+      <li className="nav-item">
+        <button
+          className={`nav-link ${currentView === 'ai-writing' ? 'active' : ''}`}
+          onClick={() => handleNavClick('ai-writing')}
+        >
+          🤖 AI Mode
+        </button>
+      </li>
+
+      <li className="nav-item">
+        <button
+          className={`nav-link ${currentView === 'classroom' ? 'active' : ''}`}
+          onClick={() => handleNavClick('classroom')}
+        >
+          🏫 Classroom
         </button>
       </li>
       <li className="nav-item">

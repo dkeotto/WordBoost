@@ -18,6 +18,15 @@ const session = require('express-session');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const os = require('os');
+const rateLimit = require('express-rate-limit');
+const { createAnthropicProvider } = require("./src/modules/ai/providers/anthropicProvider");
+
+const { getAuthTokenFromHeader } = require("./src/lib/authToken");
+const { isPremiumUser } = require("./src/lib/premium");
+const { todayKey, applyDailyAiUsage, isFreeAiAllowed } = require("./src/lib/aiUsage");
+const { guardAiPromptLogging } = require("./src/lib/aiLogging");
+const { paddleRequest } = require("./src/lib/paddleApi");
+const { parseBillingPlansFromEnv, findPlan } = require("./src/lib/billingPlans");
 
 const app = express();
 
@@ -113,6 +122,125 @@ const WordStatSchema = new mongoose.Schema(
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const JWT_SECRET = String(process.env.JWT_SECRET || "SECRET_KEY");
+const ANTHROPIC_API_KEY = String(process.env.ANTHROPIC_API_KEY || "").trim();
+const aiProvider = createAnthropicProvider({ apiKey: ANTHROPIC_API_KEY });
+
+function buildWritingPrompt({ type, tone, length, language, audience, context, inputText }) {
+  const t = String(type || "blog").toLowerCase();
+  const tn = String(tone || "casual").toLowerCase();
+  const len = String(length || "medium").toLowerCase();
+  const lang = String(language || "tr").toLowerCase();
+  const aud = String(audience || "").trim();
+  const ctx = String(context || "").trim();
+  const input = String(inputText || "").trim();
+
+  const lengthHint =
+    len === "short" ? "Kısa: 80-180 kelime civarı." : len === "long" ? "Uzun: 500-900 kelime civarı." : "Orta: 250-450 kelime civarı.";
+
+  const toneHint =
+    tn === "professional"
+      ? "Daha profesyonel, net ve güven veren bir dil kullan."
+      : tn === "genz"
+      ? "Modern, gündelik, doğal; hafif Gen Z tınısı olabilir ama abartma."
+      : "Rahat, doğal ve akıcı bir dil kullan.";
+
+  const typeHint =
+    t === "essay"
+      ? "Essay formatında, giriş-gelişme-sonuç akışı kur."
+      : t === "email"
+      ? "E-posta formatında; konu net, paragraf düzeni iyi."
+      : t === "caption"
+      ? "Sosyal medya caption'ı gibi; kısa, vurucu, doğal."
+      : t === "product"
+      ? "Ürün açıklaması gibi; fayda odaklı, ikna edici ama abartısız."
+      : "Blog yazısı gibi; başlıklar ve okunabilir akış.";
+
+  return [
+    {
+      role: "system",
+      content:
+        "Sen üst düzey bir yazı asistanısın. Çıktı çok insani, doğal ve bağlama uygun olmalı.\n" +
+        "- Klişe/robotik kalıplardan kaçın.\n" +
+        "- Aynı cümle yapısını tekrarlama; ritmi değiştir.\n" +
+        "- Gerektiğinde küçük doğal kusurlar/insani dokunuşlar ekle (abartmadan).\n" +
+        "- Kullanıcının bağlamına göre özgün detaylar üret, şablon gibi yazma.\n" +
+        "- Gereksiz tekrar ve doldurma cümleleri yazma.\n" +
+        "- Dil: " +
+        lang
+    },
+    {
+      role: "user",
+      content:
+        `Yazı türü: ${t}\nTon: ${tn}\nUzunluk: ${len} (${lengthHint})\n` +
+        (aud ? `Hedef kitle: ${aud}\n` : "") +
+        (ctx ? `Bağlam: ${ctx}\n` : "") +
+        `${typeHint}\n${toneHint}\n\n` +
+        `Kullanıcı metni/isteği:\n${input}`
+    }
+  ];
+}
+
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 12,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// getAuthTokenFromHeader, isPremiumUser, todayKey, applyDailyAiUsage, isFreeAiAllowed, guardAiPromptLogging
+// src/lib/* altına taşındı.
+
+async function requireAuth(req, res) {
+  const token = req.headers.authorization;
+  if (!token) {
+    res.status(401).json({ error: "Token gerekli" });
+    return null;
+  }
+  try {
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      res.status(404).json({ error: "Kullanıcı bulunamadı" });
+      return null;
+    }
+    return user;
+  } catch (e) {
+    res.status(401).json({ error: "Auth error" });
+    return null;
+  }
+}
+
+function ensureRole(user, role) {
+  if (!user) return false;
+  if (user.role === "admin") return true;
+  return user.role === role;
+}
+
+function generateClassCode() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+function parseSimpleCsv(text) {
+  const raw = String(text || "");
+  const lines = raw
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("#"));
+  if (lines.length === 0) return { header: [], rows: [] };
+
+  const sep = lines.some((l) => l.includes(";")) && !lines.some((l) => l.includes(",")) ? ";" : ",";
+  const split = (l) => l.split(sep).map((x) => x.trim().replace(/^"|"$/g, ""));
+
+  const header = split(lines[0]).map((h) => h.toLowerCase());
+  const dataLines = header.includes("email") || header.includes("username") ? lines.slice(1) : lines;
+  const rows = dataLines.map(split);
+  return { header, rows };
+}
+
+function randomTempPassword() {
+  return crypto.randomBytes(9).toString("base64url");
+}
 
 const UserSchema = new mongoose.Schema({
   googleId: String,
@@ -136,6 +264,16 @@ const UserSchema = new mongoose.Schema({
   lastStudyDate: Date,
 
   badges: [String],
+
+  role: { type: String, enum: ["student", "teacher", "admin"], default: "student" },
+  premiumUntil: { type: Date, default: null },
+  paddleCustomerId: { type: String, default: "" },
+  entitlements: { type: Object, default: {} },
+  aiUsage: {
+    dayKey: { type: String, default: "" }, // YYYY-MM-DD
+    count: { type: Number, default: 0 },
+    updatedAt: { type: Date, default: null }
+  },
 
   createdAt: { type: Date, default: Date.now }
 });
@@ -271,7 +409,7 @@ app.get('/auth/google/callback', (req, res, next) => {
       // Ba?ar?l? giri?
       const token = jwt.sign(
         { id: user._id, username: user.username },
-        "SECRET_KEY",
+        JWT_SECRET,
         { expiresIn: "30d" }
       );
 
@@ -287,7 +425,7 @@ app.delete('/api/profile', async (req, res) => {
     const token = req.headers.authorization;
     if (!token) return res.status(401).json({ error: "Token gerekli" });
 
-    const decoded = jwt.verify(token, "SECRET_KEY");
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
     const user = await User.findById(decoded.id);
 
     if (!user) return res.status(404).json({ error: "Kullan?c? bulunamad?" });
@@ -329,9 +467,81 @@ const RoomSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
+const SubscriptionSchema = new mongoose.Schema(
+  {
+    provider: { type: String, enum: ["paddle"], required: true },
+    subscriptionId: { type: String, required: true, unique: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    status: { type: String, default: "active" },
+    planId: { type: String, default: "" },
+    currentPeriodEnd: { type: Date, default: null },
+    raw: { type: Object, default: {} }
+  },
+  { timestamps: true }
+);
+
 const Room = mongoose.model("Room", RoomSchema);
+const Subscription = mongoose.model("Subscription", SubscriptionSchema);
 
 const Word = mongoose.model("Word", WordSchema);
+
+const AiLogSchema = new mongoose.Schema(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    mode: { type: String, default: "" }, // write | rewrite
+    provider: { type: String, default: "anthropic" },
+    model: { type: String, default: "" },
+    requestMeta: { type: Object, default: {} },
+    promptMasked: { type: String, default: "" },
+    outputMasked: { type: String, default: "" },
+    usage: { type: Object, default: null },
+    elapsedMs: { type: Number, default: 0 }
+  },
+  { timestamps: true }
+);
+
+const AiLog = mongoose.model("AiLog", AiLogSchema);
+
+const ProgressEventSchema = new mongoose.Schema(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    activityType: { type: String, default: "" }, // word_answer | synonyms_answer | phrasal_answer | ...
+    module: { type: String, default: "" },
+    level: { type: String, default: "" },
+    deltaKnown: { type: Number, default: 0 },
+    deltaUnknown: { type: Number, default: 0 },
+    meta: { type: Object, default: {} },
+    ts: { type: Date, default: Date.now }
+  },
+  { timestamps: true }
+);
+
+ProgressEventSchema.index({ userId: 1, ts: -1 });
+
+const ProgressEvent = mongoose.model("ProgressEvent", ProgressEventSchema);
+
+const ClassroomSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    teacherId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    code: { type: String, unique: true, required: true },
+  },
+  { timestamps: true }
+);
+
+const ClassMembershipSchema = new mongoose.Schema(
+  {
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: "Classroom", required: true },
+    studentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    joinedAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true }
+);
+
+ClassMembershipSchema.index({ classId: 1, studentId: 1 }, { unique: true });
+
+const Classroom = mongoose.model("Classroom", ClassroomSchema);
+const ClassMembership = mongoose.model("ClassMembership", ClassMembershipSchema);
 const WordStat = mongoose.model("WordStat", WordStatSchema);
 
 async function startServer() {
@@ -428,6 +638,59 @@ function requireAdmin(req, res, next) {
     return res.status(401).json({ error: 'Yetkisiz' });
   }
   next();
+}
+
+function ymdKey(d = new Date()) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x.toISOString().slice(0, 10);
+}
+
+function parsePaddleEvent(req) {
+  // Paddle event payloadları farklı sürümlerde değişebiliyor; minimum toleranslı parse
+  const body = req.body || {};
+  const eventType = String(body.event_type || body.eventType || body.type || "").trim();
+  const data = body.data || body;
+  return { eventType, data, raw: body };
+}
+
+function timingSafeEqualHex(a, b) {
+  const ha = String(a || "").trim().toLowerCase();
+  const hb = String(b || "").trim().toLowerCase();
+  if (!ha || !hb || ha.length !== hb.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(ha, "hex"), Buffer.from(hb, "hex"));
+  } catch {
+    return false;
+  }
+}
+
+function verifyPaddleWebhookSignature(rawBody, signatureHeader) {
+  // Paddle signature şeması genelde: "ts=...;h1=...". HMAC_SHA256(secret, `${ts}:${rawBody}`)
+  const secret = String(process.env.PADDLE_WEBHOOK_SECRET || "").trim();
+  if (!secret || secret.length < 10) return { ok: false, error: "PADDLE_WEBHOOK_SECRET eksik" };
+  const sig = String(signatureHeader || "").trim();
+  if (!sig) return { ok: false, error: "Paddle signature header yok" };
+
+  const parts = Object.fromEntries(
+    sig
+      .split(";")
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((p) => {
+        const i = p.indexOf("=");
+        if (i === -1) return [p, ""];
+        return [p.slice(0, i).trim(), p.slice(i + 1).trim()];
+      })
+  );
+
+  const ts = parts.ts || parts.t || "";
+  const h1 = parts.h1 || parts.sig || parts.signature || "";
+  if (!ts || !h1) return { ok: false, error: "Signature formatı beklenenden farklı" };
+
+  const msg = `${ts}:${rawBody}`;
+  const mac = crypto.createHmac("sha256", secret).update(msg, "utf8").digest("hex");
+  return timingSafeEqualHex(mac, h1) ? { ok: true } : { ok: false, error: "Signature doğrulanamadı" };
 }
 
 function parseCSVLine(line) {
@@ -1086,7 +1349,7 @@ app.post('/api/verify-email', async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id, username: user.username },
-      "SECRET_KEY",
+      JWT_SECRET,
       { expiresIn: "30d" }
     );
 
@@ -1139,7 +1402,7 @@ app.post('/api/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id, username: user.username },
-      "SECRET_KEY",
+      JWT_SECRET,
       { expiresIn: "30d" }
     );
 
@@ -1170,9 +1433,10 @@ app.get('/api/profile', async (req, res) => {
       return res.status(401).json({ error: "Token gerekli" });
     }
 
-    const decoded = jwt.verify(token, "SECRET_KEY");
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
 
     const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
 
     res.json({
       username: user.username,
@@ -1190,12 +1454,45 @@ app.get('/api/profile', async (req, res) => {
   }
 });
 
+app.get('/api/me', async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const user = await User.findById(decoded.id).select("username nickname email avatar bio stats streak badges role premiumUntil paddleCustomerId entitlements aiUsage createdAt isVerified");
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    res.json({
+      ok: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        nickname: user.nickname || user.username,
+        email: user.email || null,
+        avatar: user.avatar || "??",
+        bio: user.bio || "",
+        isVerified: Boolean(user.isVerified),
+        role: user.role || "student",
+        premiumUntil: user.premiumUntil || null,
+        isPremium: isPremiumUser(user),
+        entitlements: user.entitlements || {},
+        stats: user.stats || { studied: 0, known: 0, unknown: 0 },
+        streak: user.streak ?? 0,
+        badges: user.badges || [],
+        aiUsage: user.aiUsage || { dayKey: "", count: 0, updatedAt: null },
+        createdAt: user.createdAt || null
+      }
+    });
+  } catch (err) {
+    res.status(401).json({ error: "Auth error" });
+  }
+});
+
 app.post('/api/profile/update', async (req, res) => {
   try {
     const token = req.headers.authorization;
     if (!token) return res.status(401).json({ error: "Token gerekli" });
 
-    const decoded = jwt.verify(token, "SECRET_KEY");
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
     const { nickname, bio, avatar, username } = req.body;
 
     const user = await User.findById(decoded.id);
@@ -1297,7 +1594,7 @@ app.post('/api/stats/update', async (req, res) => {
     const token = req.headers.authorization;
     if (!token) return res.status(401).json({ error: "Token gerekli" });
 
-    const decoded = jwt.verify(token, "SECRET_KEY");
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
     const { studied, known, unknown, wordTerm } = req.body;
 
     const user = await User.findById(decoded.id);
@@ -1382,6 +1679,24 @@ app.post('/api/stats/update', async (req, res) => {
 
     await user.save();
 
+    // progress event (for classroom analytics)
+    try {
+      const dk = known ? Number(known) : 0;
+      const du = unknown ? Number(unknown) : 0;
+      if (dk || du) {
+        await ProgressEvent.create({
+          userId: user._id,
+          activityType: "word_answer",
+          module: "words",
+          level: String(req.body?.level || user?.lastLevel || ""),
+          deltaKnown: dk,
+          deltaUnknown: du,
+          meta: wordTerm ? { term: String(wordTerm).slice(0, 80) } : {},
+          ts: new Date()
+        });
+      }
+    } catch (_) {}
+
     res.json({ 
       success: true, 
       stats: user.stats, 
@@ -1393,6 +1708,38 @@ app.post('/api/stats/update', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Stats update error" });
+  }
+});
+
+app.post('/api/progress/event', async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+    const activityType = String(req.body?.activityType || "").trim();
+    if (!activityType) return res.status(400).json({ error: "activityType gerekli" });
+    const module = String(req.body?.module || "").trim();
+    const level = String(req.body?.level || "").trim();
+    const deltaKnown = parseInt(req.body?.deltaKnown || 0, 10) || 0;
+    const deltaUnknown = parseInt(req.body?.deltaUnknown || 0, 10) || 0;
+    const meta = req.body?.meta && typeof req.body.meta === "object" ? req.body.meta : {};
+
+    await ProgressEvent.create({
+      userId: user._id,
+      activityType: activityType.slice(0, 40),
+      module: module.slice(0, 40),
+      level: level.slice(0, 10),
+      deltaKnown,
+      deltaUnknown,
+      meta,
+      ts: new Date()
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -1471,6 +1818,837 @@ app.post('/api/admin/login', (req, res) => {
     res.json({ ok: true, token, expiresInMs: ttlMs });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// --- Billing (Paddle) ---
+// Not: Render/Railway gibi ortamlarda webhook endpointi public olmalı.
+// Raw body ile signature doğrulaması yapıldığı için bu route express.json'dan önce "raw" ile parse edilir.
+app.post('/api/billing/paddle/webhook', express.raw({ type: '*/*', limit: '2mb' }), async (req, res) => {
+  try {
+    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body || '');
+    const sigHeader = req.headers["paddle-signature"] || req.headers["paddle_signature"] || req.headers["paddle-signature-v1"];
+    const v = verifyPaddleWebhookSignature(rawBody, sigHeader);
+    if (!v.ok) return res.status(401).json({ error: v.error });
+
+    let parsedJson = {};
+    try {
+      parsedJson = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
+      parsedJson = {};
+    }
+
+    // parsePaddleEvent JSON bekler
+    req.body = parsedJson;
+    const { eventType, data, raw } = parsePaddleEvent(req);
+    // Beklenen eşleme: data.custom_data.userId (veya user_id) ile User'a bağla.
+    const custom = data?.custom_data || data?.customData || {};
+    const userId = String(custom.userId || custom.user_id || data?.userId || "").trim();
+    const tier = String(custom.tier || custom.plan || "").trim();
+    const subscriptionId = String(data?.id || data?.subscription_id || data?.subscriptionId || "").trim();
+    const status = String(data?.status || data?.state || "active").trim();
+    const planId = String(data?.items?.[0]?.price?.id || data?.plan_id || data?.planId || "").trim();
+
+    if (!userId || !subscriptionId) {
+      pushAdminError("Paddle webhook missing userId/subscriptionId", { path: "billing/paddle/webhook", eventType });
+      return res.status(400).json({ error: "Eksik userId/subscriptionId" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // dönem sonu / next bill date benzeri alanlar
+    const periodEndRaw =
+      data?.current_billing_period?.ends_at ||
+      data?.currentBillingPeriod?.endsAt ||
+      data?.next_billed_at ||
+      data?.nextBilledAt ||
+      data?.current_period_end ||
+      null;
+    const periodEnd = periodEndRaw ? new Date(periodEndRaw) : null;
+    const periodEndValid = periodEnd && !Number.isNaN(periodEnd.getTime()) ? periodEnd : null;
+
+    await Subscription.findOneAndUpdate(
+      { subscriptionId },
+      {
+        $set: {
+          provider: "paddle",
+          subscriptionId,
+          userId: user._id,
+          status,
+          planId,
+          currentPeriodEnd: periodEndValid,
+          raw
+        }
+      },
+      { upsert: true, new: true }
+    );
+
+    // Entitlements + premium
+    const activeLike = ["active", "trialing", "past_due"].includes(status);
+    const until = activeLike ? (periodEndValid || new Date(Date.now() + 32 * 86400000)) : null;
+
+    // Default: subscription active => premium true (backwards compatible)
+    let ent = {};
+    const planCfg = (() => {
+      const parsed = parseBillingPlansFromEnv();
+      if (!parsed.ok) return null;
+      return findPlan(parsed.plans, tier);
+    })();
+    if (planCfg?.entitlements && typeof planCfg.entitlements === "object") {
+      ent = planCfg.entitlements;
+    } else if (tier) {
+      // minimum: tier stringini sakla
+      ent = { tier };
+    }
+
+    user.entitlements = activeLike ? { ...(user.entitlements || {}), ...ent } : {};
+    if (activeLike) user.premiumUntil = until;
+    else user.premiumUntil = null;
+    await user.save();
+
+    res.json({ ok: true });
+  } catch (e) {
+    pushAdminError(e.message, { path: "billing/paddle/webhook" });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/billing/status', async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const user = await User.findById(decoded.id).select("premiumUntil");
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    res.json({ ok: true, premiumUntil: user.premiumUntil || null, isPremium: isPremiumUser(user) });
+  } catch (e) {
+    res.status(401).json({ error: "Auth error" });
+  }
+});
+
+// --- Billing plans + checkout link (Paddle Billing) ---
+app.get('/api/billing/plans', (req, res) => {
+  const parsed = parseBillingPlansFromEnv();
+  if (!parsed.ok) return res.status(500).json({ error: parsed.error });
+  // client'a sadece gerekli alanları ver
+  const items = parsed.plans.map((p) => ({
+    tier: p.tier,
+    label: p.label,
+    description: p.description,
+    features: p.features || [],
+    allowQuantity: Boolean(p.allowQuantity),
+    defaultQuantity: p.defaultQuantity || 1
+  }));
+  res.json({ ok: true, items });
+});
+
+app.post('/api/billing/paddle/portal-link', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  try {
+    const { tier, quantity } = req.body || {};
+    const parsed = parseBillingPlansFromEnv();
+    if (!parsed.ok) return res.status(500).json({ error: parsed.error });
+    const plan = findPlan(parsed.plans, tier);
+    if (!plan) return res.status(400).json({ error: "invalid_tier" });
+
+    const q = Math.max(1, Math.min(999, parseInt(quantity ?? plan.defaultQuantity ?? 1, 10) || 1));
+    if (!plan.allowQuantity && q !== 1) return res.status(400).json({ error: "quantity_not_allowed" });
+
+    const email = String(user.email || "").trim();
+    if (!email) return res.status(400).json({ error: "email_required" });
+
+    // Ensure Paddle customer
+    if (!user.paddleCustomerId) {
+      const created = await paddleRequest("/customers", {
+        method: "POST",
+        body: { email, name: user.nickname || user.username || null, custom_data: { userId: String(user._id) } }
+      });
+      const cid = created?.data?.id;
+      if (!cid) return res.status(502).json({ error: "paddle_customer_create_failed" });
+      user.paddleCustomerId = cid;
+      await user.save();
+    }
+
+    const txn = await paddleRequest("/transactions", {
+      method: "POST",
+      body: {
+        items: [{ price_id: plan.priceId, quantity: q }],
+        customer_id: user.paddleCustomerId,
+        collection_mode: "automatic",
+        custom_data: { userId: String(user._id), tier: plan.tier }
+      }
+    });
+
+    const checkoutUrl = txn?.data?.checkout?.url;
+    if (!checkoutUrl) {
+      pushAdminError("Paddle transaction missing checkout.url", { path: "billing/paddle/portal-link" });
+      return res.status(502).json({ error: "paddle_checkout_url_missing" });
+    }
+
+    res.json({ ok: true, url: checkoutUrl });
+  } catch (e) {
+    pushAdminError(e.message, { path: "billing/paddle/portal-link" });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- Classroom ---
+app.post('/api/classes', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!ensureRole(user, "teacher")) return res.status(403).json({ error: "teacher_only" });
+
+  try {
+    const name = String(req.body?.name || "").trim();
+    if (!name || name.length < 2) return res.status(400).json({ error: "name gerekli" });
+
+    let code = generateClassCode();
+    for (let i = 0; i < 6; i += 1) {
+      const exists = await Classroom.findOne({ code });
+      if (!exists) break;
+      code = generateClassCode();
+    }
+    const doc = await Classroom.create({ name, teacherId: user._id, code });
+    res.json({ ok: true, classroom: doc });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/classes', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!ensureRole(user, "teacher")) return res.status(403).json({ error: "teacher_only" });
+  try {
+    const classes = await Classroom.find({ teacherId: user._id }).sort({ createdAt: -1 }).lean();
+    res.json({ ok: true, items: classes });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/classes/join', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!ensureRole(user, "student")) return res.status(403).json({ error: "student_only" });
+  try {
+    const code = String(req.body?.code || "").trim().toUpperCase();
+    if (!code || code.length < 4) return res.status(400).json({ error: "code gerekli" });
+    const classroom = await Classroom.findOne({ code });
+    if (!classroom) return res.status(404).json({ error: "class_not_found" });
+    await ClassMembership.findOneAndUpdate(
+      { classId: classroom._id, studentId: user._id },
+      { $setOnInsert: { joinedAt: new Date() } },
+      { upsert: true }
+    );
+    res.json({ ok: true, classroom: { id: classroom._id, name: classroom.name, code: classroom.code } });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/classes/:id/import-csv', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!ensureRole(user, "teacher")) return res.status(403).json({ error: "teacher_only" });
+  try {
+    const classId = String(req.params.id || "").trim();
+    const classroom = await Classroom.findById(classId);
+    if (!classroom) return res.status(404).json({ error: "class_not_found" });
+    if (String(classroom.teacherId) !== String(user._id) && user.role !== "admin") {
+      return res.status(403).json({ error: "forbidden" });
+    }
+
+    const csv = String(req.body?.csv || "").trim();
+    if (!csv) return res.status(400).json({ error: "csv gerekli" });
+
+    const parsed = parseSimpleCsv(csv);
+    const emailIdx = parsed.header.indexOf("email");
+    const usernameIdx = parsed.header.indexOf("username");
+
+    const items = parsed.rows
+      .map((r) => ({
+        email: String(r[emailIdx] || r[0] || "").trim(),
+        username: String(r[usernameIdx] || r[1] || "").trim()
+      }))
+      .filter((x) => x.email || x.username);
+
+    if (items.length === 0) return res.status(400).json({ error: "csv boş" });
+    if (items.length > 300) return res.status(400).json({ error: "csv_limit_300" });
+
+    const created = [];
+    const existed = [];
+    const failures = [];
+
+    for (const row of items) {
+      try {
+        const email = row.email ? row.email.toLowerCase() : "";
+        let u = null;
+        if (email) u = await User.findOne({ email });
+        if (!u && row.username) u = await User.findOne({ username: row.username });
+
+        let tempPassword = null;
+        if (!u) {
+          let baseUsername = row.username;
+          if (!baseUsername) baseUsername = email ? email.split("@")[0] : "student";
+          baseUsername = baseUsername.replace(/\s+/g, "").slice(0, 24) || "student";
+          let finalUsername = baseUsername;
+          let counter = 1;
+          while (await User.findOne({ username: finalUsername })) {
+            finalUsername = `${baseUsername}${counter}`;
+            counter += 1;
+            if (counter > 2000) throw new Error("username_generation_failed");
+          }
+
+          tempPassword = randomTempPassword();
+          const hashed = await bcrypt.hash(tempPassword, 10);
+          u = await User.create({
+            username: finalUsername,
+            email: email || undefined,
+            isVerified: true,
+            password: hashed,
+            role: "student",
+            stats: { studied: 0, known: 0, unknown: 0 },
+            streak: 0,
+            badges: [BADGES.NEWBIE.id]
+          });
+          created.push({ id: u._id, username: u.username, email: u.email || null, tempPassword });
+        } else {
+          existed.push({ id: u._id, username: u.username, email: u.email || null });
+        }
+
+        await ClassMembership.findOneAndUpdate(
+          { classId: classroom._id, studentId: u._id },
+          { $setOnInsert: { joinedAt: new Date() } },
+          { upsert: true }
+        );
+      } catch (e) {
+        failures.push({ row, error: e.message || "error" });
+      }
+    }
+
+    res.json({ ok: true, created, existed, failures });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/classes/me', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!ensureRole(user, "student")) return res.status(403).json({ error: "student_only" });
+  try {
+    const memberships = await ClassMembership.find({ studentId: user._id }).sort({ createdAt: -1 }).limit(30).lean();
+    const classIds = memberships.map((m) => m.classId);
+    const classes = await Classroom.find({ _id: { $in: classIds } }).lean();
+    const map = new Map(classes.map((c) => [String(c._id), c]));
+    const items = memberships
+      .map((m) => map.get(String(m.classId)))
+      .filter(Boolean)
+      .map((c) => ({ id: c._id, name: c.name, code: c.code }));
+    res.json({ ok: true, items });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/classes/:id/students', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!ensureRole(user, "teacher")) return res.status(403).json({ error: "teacher_only" });
+  try {
+    const id = String(req.params.id || "").trim();
+    const classroom = await Classroom.findById(id);
+    if (!classroom) return res.status(404).json({ error: "class_not_found" });
+    if (String(classroom.teacherId) !== String(user._id) && user.role !== "admin") {
+      return res.status(403).json({ error: "forbidden" });
+    }
+    const mem = await ClassMembership.find({ classId: classroom._id }).lean();
+    const ids = mem.map((m) => m.studentId);
+    const students = await User.find({ _id: { $in: ids } })
+      .select("username nickname avatar stats streak lastStudyDate badges createdAt")
+      .lean();
+    res.json({ ok: true, items: students });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/classes/:id/dashboard', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!ensureRole(user, "teacher")) return res.status(403).json({ error: "teacher_only" });
+  try {
+    const id = String(req.params.id || "").trim();
+    const classroom = await Classroom.findById(id);
+    if (!classroom) return res.status(404).json({ error: "class_not_found" });
+    if (String(classroom.teacherId) !== String(user._id) && user.role !== "admin") {
+      return res.status(403).json({ error: "forbidden" });
+    }
+    const memCount = await ClassMembership.countDocuments({ classId: classroom._id });
+    const recentActive = await User.find({ lastStudyDate: { $exists: true, $ne: null } })
+      .sort({ lastStudyDate: -1 })
+      .limit(10)
+      .select("username nickname avatar stats streak lastStudyDate")
+      .lean();
+    res.json({
+      ok: true,
+      classroom: { id: classroom._id, name: classroom.name, code: classroom.code },
+      memberCount: memCount,
+      recentActive
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/classes/:id/analytics', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!ensureRole(user, "teacher")) return res.status(403).json({ error: "teacher_only" });
+  try {
+    const id = String(req.params.id || "").trim();
+    const classroom = await Classroom.findById(id);
+    if (!classroom) return res.status(404).json({ error: "class_not_found" });
+    if (String(classroom.teacherId) !== String(user._id) && user.role !== "admin") {
+      return res.status(403).json({ error: "forbidden" });
+    }
+
+    const mem = await ClassMembership.find({ classId: classroom._id }).lean();
+    const studentIds = mem.map((m) => m.studentId);
+
+    const days = Math.min(60, Math.max(7, parseInt(req.query.days, 10) || 14));
+    const since = new Date(Date.now() - days * 86400000);
+
+    const daily = await ProgressEvent.aggregate([
+      { $match: { userId: { $in: studentIds }, ts: { $gte: since } } },
+      {
+        $group: {
+          _id: { day: { $dateToString: { date: "$ts", format: "%Y-%m-%d" } } },
+          attempts: { $sum: 1 },
+          known: { $sum: "$deltaKnown" },
+          unknown: { $sum: "$deltaUnknown" },
+          activeUsers: { $addToSet: "$userId" }
+        }
+      },
+      {
+        $project: {
+          day: "$_id.day",
+          attempts: 1,
+          known: 1,
+          unknown: 1,
+          active: { $size: "$activeUsers" }
+        }
+      },
+      { $sort: { day: 1 } }
+    ]);
+
+    const recent = await ProgressEvent.find({ userId: { $in: studentIds }, ts: { $gte: since } })
+      .sort({ ts: -1 })
+      .limit(80)
+      .lean();
+
+    res.json({
+      ok: true,
+      classroom: { id: classroom._id, name: classroom.name, code: classroom.code },
+      memberCount: studentIds.length,
+      daily,
+      recent
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- AI Mode (Anthropic) ---
+app.post('/api/ai/write', aiLimiter, async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+    const premium = isPremiumUser(user);
+    const FREE_LIMIT = 3;
+    if (!premium && !isFreeAiAllowed(user, FREE_LIMIT)) {
+      return res.status(402).json({ error: "free_limit_reached", limitPerDay: FREE_LIMIT });
+    }
+
+    const { type, tone, length, language, audience, context, inputText } = req.body || {};
+    const input = String(inputText || "").trim();
+    if (!input || input.length < 3) return res.status(400).json({ error: "inputText gerekli" });
+
+    const messages = buildWritingPrompt({ type, tone, length, language, audience, context, inputText: input });
+    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest");
+
+    const startedAt = Date.now();
+    const resp = await aiProvider.createMessage({
+      model,
+      max_tokens: 900,
+      temperature: 0.85,
+      messages
+    });
+
+    const text = (resp?.content || [])
+      .map((c) => (c && c.type === "text" ? c.text : ""))
+      .join("\n")
+      .trim();
+
+    applyDailyAiUsage(user, 1);
+    await user.save();
+
+    // DB logging (masked)
+    const elapsedMs = Date.now() - startedAt;
+    try {
+      await AiLog.create({
+        userId: user._id,
+        mode: "write",
+        provider: "anthropic",
+        model,
+        requestMeta: { type, tone, length, language, audience, context, premium },
+        promptMasked: guardAiPromptLogging(JSON.stringify(messages)),
+        outputMasked: guardAiPromptLogging(text),
+        usage: resp?.usage || null,
+        elapsedMs
+      });
+    } catch (_) {
+      // ignore log failures
+    }
+
+    res.json({
+      ok: true,
+      text,
+      usage: resp?.usage || null,
+      isPremium: premium,
+      dayKey: user.aiUsage?.dayKey || todayKey(),
+      usedToday: user.aiUsage?.count || 0,
+      limitPerDay: premium ? null : FREE_LIMIT
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "AI error" });
+  }
+});
+
+app.post('/api/ai/rewrite', aiLimiter, async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+    const premium = isPremiumUser(user);
+    const FREE_LIMIT = 3;
+    if (!premium && !isFreeAiAllowed(user, FREE_LIMIT)) {
+      return res.status(402).json({ error: "free_limit_reached", limitPerDay: FREE_LIMIT });
+    }
+
+    const { mode, tone, language, inputText } = req.body || {};
+    const input = String(inputText || "").trim();
+    if (!input || input.length < 3) return res.status(400).json({ error: "inputText gerekli" });
+    const m = String(mode || "humanize").toLowerCase();
+    const tn = String(tone || "casual").toLowerCase();
+    const lang = String(language || "tr").toLowerCase();
+
+    const directive =
+      m === "clarity"
+        ? "Metni daha net ve anlaşılır hale getir; anlamı koru."
+        : m === "shorten"
+        ? "Metni kısalt; en önemli noktaları koru."
+        : m === "expand"
+        ? "Metni uzat; örnekler ve detaylarla zenginleştir."
+        : m === "tone"
+        ? `Metnin tonunu şu tona çevir: ${tn}.`
+        : "Metni daha insani/doğal yaz; robotik ifadeleri azalt, tekrarları kır.";
+
+    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest");
+    const startedAt = Date.now();
+    const resp = await aiProvider.createMessage({
+      model,
+      max_tokens: 900,
+      temperature: 0.9,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Sen bir yeniden yazım/editing asistanısın. Çıktı doğal, insan gibi, akıcı olmalı.\n" +
+            "- Klişe kalıplardan kaçın, cümle yapısını çeşitlendir.\n" +
+            "- Gereksiz tekrar yapma.\n" +
+            "- Dil: " +
+            lang
+        },
+        { role: "user", content: `${directive}\n\nMetin:\n${input}` }
+      ]
+    });
+
+    const text = (resp?.content || [])
+      .map((c) => (c && c.type === "text" ? c.text : ""))
+      .join("\n")
+      .trim();
+
+    applyDailyAiUsage(user, 1);
+    await user.save();
+
+    const elapsedMs = Date.now() - startedAt;
+    try {
+      await AiLog.create({
+        userId: user._id,
+        mode: "rewrite",
+        provider: "anthropic",
+        model,
+        requestMeta: { mode: m, tone: tn, language: lang, premium },
+        promptMasked: guardAiPromptLogging(`${directive}\n\n${input}`),
+        outputMasked: guardAiPromptLogging(text),
+        usage: resp?.usage || null,
+        elapsedMs
+      });
+    } catch (_) {}
+
+    res.json({
+      ok: true,
+      text,
+      usage: resp?.usage || null,
+      isPremium: premium,
+      dayKey: user.aiUsage?.dayKey || todayKey(),
+      usedToday: user.aiUsage?.count || 0,
+      limitPerDay: premium ? null : FREE_LIMIT
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message || "AI error" });
+  }
+});
+
+function sseWrite(res, event, data) {
+  try {
+    if (event) res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+function setSseHeaders(res) {
+  res.status(200);
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  if (typeof res.flushHeaders === "function") res.flushHeaders();
+}
+
+app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
+  let aborted = false;
+  req.on("close", () => {
+    aborted = true;
+  });
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+    const premium = isPremiumUser(user);
+    const FREE_LIMIT = 3;
+    if (!premium && !isFreeAiAllowed(user, FREE_LIMIT)) {
+      return res.status(402).json({ error: "free_limit_reached", limitPerDay: FREE_LIMIT });
+    }
+
+    const { type, tone, length, language, audience, context, inputText } = req.body || {};
+    const input = String(inputText || "").trim();
+    if (!input || input.length < 3) return res.status(400).json({ error: "inputText gerekli" });
+
+    const messages = buildWritingPrompt({ type, tone, length, language, audience, context, inputText: input });
+    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest");
+
+    setSseHeaders(res);
+    sseWrite(res, "meta", { ok: true, mode: "write", isPremium: premium });
+
+    const startedAt = Date.now();
+    const stream = await aiProvider.createMessageStream({
+      model,
+      max_tokens: 900,
+      temperature: 0.85,
+      messages
+    });
+
+    let out = "";
+    let usage = null;
+
+    for await (const event of stream) {
+      if (aborted) break;
+      if (event?.type === "content_block_delta" && event.delta?.type === "text_delta") {
+        const chunk = String(event.delta.text || "");
+        if (chunk) {
+          out += chunk;
+          sseWrite(res, "text", { text: chunk });
+        }
+      }
+      if (event?.type === "message_delta" && event.usage) {
+        usage = event.usage;
+      }
+      if (event?.type === "message_stop" && event.message?.usage) {
+        usage = event.message.usage;
+      }
+    }
+
+    if (!aborted) {
+      applyDailyAiUsage(user, 1);
+      await user.save();
+      const elapsedMs = Date.now() - startedAt;
+      try {
+        await AiLog.create({
+          userId: user._id,
+          mode: "write_stream",
+          provider: "anthropic",
+          model,
+          requestMeta: { type, tone, length, language, audience, context, premium },
+          promptMasked: guardAiPromptLogging(JSON.stringify(messages)),
+          outputMasked: guardAiPromptLogging(out),
+          usage,
+          elapsedMs
+        });
+      } catch (_) {}
+      sseWrite(res, "done", {
+        text: out,
+        usage,
+        dayKey: user.aiUsage?.dayKey || todayKey(),
+        usedToday: user.aiUsage?.count || 0,
+        limitPerDay: premium ? null : FREE_LIMIT
+      });
+      res.end();
+    } else {
+      res.end();
+    }
+  } catch (e) {
+    try {
+      if (!res.headersSent) return res.status(500).json({ error: e.message || "AI error" });
+      sseWrite(res, "error", { error: e.message || "AI error" });
+      res.end();
+    } catch (_) {
+      /* ignore */
+    }
+  }
+});
+
+app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
+  let aborted = false;
+  req.on("close", () => {
+    aborted = true;
+  });
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+    const premium = isPremiumUser(user);
+    const FREE_LIMIT = 3;
+    if (!premium && !isFreeAiAllowed(user, FREE_LIMIT)) {
+      return res.status(402).json({ error: "free_limit_reached", limitPerDay: FREE_LIMIT });
+    }
+
+    const { mode, tone, language, inputText } = req.body || {};
+    const input = String(inputText || "").trim();
+    if (!input || input.length < 3) return res.status(400).json({ error: "inputText gerekli" });
+
+    const m = String(mode || "humanize").toLowerCase();
+    const tn = String(tone || "casual").toLowerCase();
+    const lang = String(language || "tr").toLowerCase();
+
+    const directive =
+      m === "clarity"
+        ? "Metni daha net ve anlaşılır hale getir; anlamı koru."
+        : m === "shorten"
+        ? "Metni kısalt; en önemli noktaları koru."
+        : m === "expand"
+        ? "Metni uzat; örnekler ve detaylarla zenginleştir."
+        : m === "tone"
+        ? `Metnin tonunu şu tona çevir: ${tn}.`
+        : "Metni daha insani/doğal yaz; robotik ifadeleri azalt, tekrarları kır.";
+
+    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest");
+
+    setSseHeaders(res);
+    sseWrite(res, "meta", { ok: true, mode: "rewrite", isPremium: premium });
+
+    const startedAt = Date.now();
+    const stream = await aiProvider.createMessageStream({
+      model,
+      max_tokens: 900,
+      temperature: 0.9,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Sen bir yeniden yazım/editing asistanısın. Çıktı doğal, insan gibi, akıcı olmalı.\n" +
+            "- Klişe kalıplardan kaçın, cümle yapısını çeşitlendir.\n" +
+            "- Gereksiz tekrar yapma.\n" +
+            "- Dil: " +
+            lang
+        },
+        { role: "user", content: `${directive}\n\nMetin:\n${input}` }
+      ]
+    });
+
+    let out = "";
+    let usage = null;
+
+    for await (const event of stream) {
+      if (aborted) break;
+      if (event?.type === "content_block_delta" && event.delta?.type === "text_delta") {
+        const chunk = String(event.delta.text || "");
+        if (chunk) {
+          out += chunk;
+          sseWrite(res, "text", { text: chunk });
+        }
+      }
+      if (event?.type === "message_delta" && event.usage) {
+        usage = event.usage;
+      }
+      if (event?.type === "message_stop" && event.message?.usage) {
+        usage = event.message.usage;
+      }
+    }
+
+    if (!aborted) {
+      applyDailyAiUsage(user, 1);
+      await user.save();
+      const elapsedMs = Date.now() - startedAt;
+      try {
+        await AiLog.create({
+          userId: user._id,
+          mode: "rewrite_stream",
+          provider: "anthropic",
+          model,
+          requestMeta: { mode: m, tone: tn, language: lang, premium },
+          promptMasked: guardAiPromptLogging(`${directive}\n\n${input}`),
+          outputMasked: guardAiPromptLogging(out),
+          usage,
+          elapsedMs
+        });
+      } catch (_) {}
+      sseWrite(res, "done", {
+        text: out,
+        usage,
+        dayKey: user.aiUsage?.dayKey || todayKey(),
+        usedToday: user.aiUsage?.count || 0,
+        limitPerDay: premium ? null : FREE_LIMIT
+      });
+      res.end();
+    } else {
+      res.end();
+    }
+  } catch (e) {
+    try {
+      if (!res.headersSent) return res.status(500).json({ error: e.message || "AI error" });
+      sseWrite(res, "error", { error: e.message || "AI error" });
+      res.end();
+    } catch (_) {}
   }
 });
 
@@ -1611,6 +2789,55 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
   }
 });
 
+app.post('/api/admin/bulk-users', requireAdmin, async (req, res) => {
+  try {
+    const users = Array.isArray(req.body?.users) ? req.body.users : [];
+    if (users.length === 0) return res.status(400).json({ error: "users gerekli" });
+    if (users.length > 500) return res.status(400).json({ error: "limit_500" });
+
+    const created = [];
+    const failures = [];
+    for (const row of users) {
+      try {
+        const email = String(row?.email || "").trim().toLowerCase();
+        const role = ["student", "teacher", "admin"].includes(row?.role) ? row.role : "student";
+        let username = String(row?.username || "").trim();
+        if (!username) username = email ? email.split("@")[0] : "user";
+
+        const exists = (email && (await User.findOne({ email }))) || (await User.findOne({ username }));
+        if (exists) throw new Error("user_exists");
+
+        let finalUsername = username.replace(/\s+/g, "").slice(0, 24) || "user";
+        let counter = 1;
+        while (await User.findOne({ username: finalUsername })) {
+          finalUsername = `${username}${counter}`;
+          counter += 1;
+          if (counter > 2000) throw new Error("username_generation_failed");
+        }
+
+        const tempPassword = randomTempPassword();
+        const hashed = await bcrypt.hash(tempPassword, 10);
+        const u = await User.create({
+          username: finalUsername,
+          email: email || undefined,
+          isVerified: true,
+          password: hashed,
+          role,
+          stats: { studied: 0, known: 0, unknown: 0 },
+          streak: 0,
+          badges: [BADGES.NEWBIE.id]
+        });
+        created.push({ id: u._id, username: u.username, email: u.email || null, role, tempPassword });
+      } catch (e) {
+        failures.push({ row, error: e.message || "error" });
+      }
+    }
+    res.json({ ok: true, created, failures });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.put('/api/admin/users/:id/stats', requireAdmin, async (req, res) => {
   try {
     const id = String(req.params.id || '').trim();
@@ -1676,6 +2903,57 @@ app.put('/api/admin/users/:id/stats', requireAdmin, async (req, res) => {
     });
   } catch (e) {
     pushAdminError(e.message, { path: 'admin/users/:id/stats' });
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.put('/api/admin/users/:id/role', requireAdmin, async (req, res) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    const role = String(req.body?.role || '').trim();
+    if (!id) return res.status(400).json({ error: 'id gerekli' });
+    if (!['student', 'teacher', 'admin'].includes(role)) {
+      return res.status(400).json({ error: 'role geçersiz' });
+    }
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    user.role = role;
+    await user.save();
+    res.json({ ok: true, user: { _id: user._id, username: user.username, role: user.role } });
+  } catch (e) {
+    pushAdminError(e.message, { path: 'admin/users/:id/role' });
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.put('/api/admin/users/:id/premium', requireAdmin, async (req, res) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    if (!id) return res.status(400).json({ error: 'id gerekli' });
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    // premiumUntil: ISO string | null
+    const v = req.body?.premiumUntil;
+    if (v === null || v === '' || v === false) {
+      user.premiumUntil = null;
+    } else {
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return res.status(400).json({ error: 'premiumUntil geçersiz tarih' });
+      user.premiumUntil = d;
+    }
+    await user.save();
+    res.json({
+      ok: true,
+      user: {
+        _id: user._id,
+        username: user.username,
+        premiumUntil: user.premiumUntil || null,
+        isPremium: isPremiumUser(user)
+      }
+    });
+  } catch (e) {
+    pushAdminError(e.message, { path: 'admin/users/:id/premium' });
     res.status(400).json({ error: e.message });
   }
 });

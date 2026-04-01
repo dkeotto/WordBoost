@@ -2,7 +2,37 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { buildPhrasalQuestionPool } from "../utils/questionGenerators";
 
 const LEVELS = ["ALL", "A1", "A2", "B1", "B2", "C1", "C2"];
-const shuffleArray = (arr) => [...arr].sort(() => Math.random() - 0.5);
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return function () {
+    t += 0x6D2B79F5;
+    let x = Math.imul(t ^ (t >>> 15), 1 | t);
+    x ^= x + Math.imul(x ^ (x >>> 7), 61 | x);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hashStr(s) {
+  const str = String(s || "");
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function shuffleSeeded(arr, seed) {
+  const out = [...arr];
+  const rnd = mulberry32(seed);
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rnd() * (i + 1));
+    const tmp = out[i];
+    out[i] = out[j];
+    out[j] = tmp;
+  }
+  return out;
+}
 const RECENT_LIMIT = 50;
 const keyOf = (q) => `${q?.level || "ALL"}__${q?.base || ""}__${q?.correct || ""}`;
 
@@ -18,7 +48,9 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
 
   useEffect(() => {
     let cancelled = false;
-    setAllQuestions(null);
+    const t0 = setTimeout(() => {
+      if (!cancelled) setAllQuestions(null);
+    }, 0);
     const t = setTimeout(() => {
       try {
         const pool = buildPhrasalQuestionPool(words);
@@ -29,17 +61,22 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
     }, 0);
     return () => {
       cancelled = true;
+      clearTimeout(t0);
       clearTimeout(t);
     };
   }, [words]);
 
   useEffect(() => {
     if (Array.isArray(allQuestions)) {
-      setIndex(0);
-      setSelected("");
-      setIsLocked(false);
-      setRecentKeys([]);
+      const t = setTimeout(() => {
+        setIndex(0);
+        setSelected("");
+        setIsLocked(false);
+        setRecentKeys([]);
+      }, 0);
+      return () => clearTimeout(t);
     }
+    return undefined;
   }, [allQuestions]);
 
   const filtered = useMemo(() => {
@@ -47,7 +84,7 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
     return level === "ALL" ? allQuestions : allQuestions.filter((item) => item.level === level);
   }, [allQuestions, level]);
 
-  const randomizedPool = useMemo(() => shuffleArray(filtered), [filtered]);
+  const randomizedPool = useMemo(() => shuffleSeeded(filtered, hashStr(filtered.map((q) => q.correct).join("|"))), [filtered]);
 
   const question = randomizedPool[index % Math.max(1, randomizedPool.length)];
   const questionNo = (index % Math.max(1, randomizedPool.length)) + 1;
@@ -57,7 +94,8 @@ const PhrasalVerbsView = ({ playSound, onTrackAnswer, words }) => {
   const options = useMemo(() => {
     if (!question) return [];
     const list = [...(question.options || [])];
-    return Array.from(new Set(list)).slice(0, 4).sort(() => Math.random() - 0.5);
+    const uniq = Array.from(new Set(list)).slice(0, 4);
+    return shuffleSeeded(uniq, hashStr(`${question.correct}__${index}`));
   }, [question, index]);
 
   const answer = (value) => {

@@ -19,7 +19,9 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
 
   useEffect(() => {
     let cancelled = false;
-    setAllQuestions(null);
+    const t0 = setTimeout(() => {
+      if (!cancelled) setAllQuestions(null);
+    }, 0);
     const t = setTimeout(() => {
       try {
         const pool = buildSynonymQuestionPool(words);
@@ -30,17 +32,22 @@ const SynonymsView = ({ playSound, onTrackAnswer, words }) => {
     }, 0);
     return () => {
       cancelled = true;
+      clearTimeout(t0);
       clearTimeout(t);
     };
   }, [words]);
 
   useEffect(() => {
     if (Array.isArray(allQuestions)) {
-      setQuestionIndex(0);
-      setSelected("");
-      setIsLocked(false);
-      setRecentKeys([]);
+      const t = setTimeout(() => {
+        setQuestionIndex(0);
+        setSelected("");
+        setIsLocked(false);
+        setRecentKeys([]);
+      }, 0);
+      return () => clearTimeout(t);
     }
+    return undefined;
   }, [allQuestions]);
 
   const questionPool = useMemo(() => {

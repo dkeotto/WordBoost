@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import AdSlot from "./AdSlot";
 
 const DAYS_TR = ["Paz", "Pzt", "Sal", "Car", "Per", "Cum", "Cmt"];
 
@@ -9,7 +10,10 @@ const formatDayKey = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats }) => {
+const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }) => {
+  const isPremium = Boolean(user?.isPremium);
+  const slotSidebar = import.meta.env.VITE_ADSENSE_SLOT_DASHBOARD_SIDEBAR;
+  const slotInline = import.meta.env.VITE_ADSENSE_SLOT_DASHBOARD_INLINE;
   const last7Days = useMemo(() => {
     const now = new Date();
     const days = [];
@@ -94,107 +98,127 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats }) => {
     <div className="dashboard-view">
       <h2>İlerleme Takip Paneli</h2>
 
-      <div className="dashboard-cards">
-        <div className="dashboard-card">
-          <span>Toplam Öğrenilen Kelime</span>
-          <strong>{stats.known}</strong>
-        </div>
-        <div className="dashboard-card">
-          <span>Bu Hafta Çalışılan Kelime</span>
-          <strong>{weeklyStudied}</strong>
-        </div>
-        <div className="dashboard-card">
-          <span>Haftalık Başarı Oranı</span>
-          <strong>%{successRate}</strong>
-        </div>
-        <div className="dashboard-card">
-          <span>Aktif Çalışılan Gün</span>
-          <strong>{activeDays}</strong>
-        </div>
-      </div>
-
-      <div className="dashboard-donut-box">
-        <div className="dash-donut" style={{ background: donutGradient }}>
-          <div className="dash-donut-center">
-            <strong>%{donutRate}</strong>
-            <span>Genel</span>
-          </div>
-        </div>
-        <div className="dash-donut-info">
-          <h3>Genel Başarı Özeti</h3>
-          <p>Kelime, Synonyms ve Phrasal Verbs performanslarının birleşik göstergesi.</p>
-          <div className="dash-donut-legend">
-            <span>Kelime: %{successRate}</span>
-            <span>Synonyms: %{synRate}</span>
-            <span>Phrasal: %{phrRate}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="weekly-chart-box">
-        <h3>Haftalık Çalışma Grafiği</h3>
-        <div className="weekly-chart">
-          {chartData.map((item) => (
-            <div className="bar-col" key={item.key}>
-              <div className="bar-track">
-                <div
-                  className="bar-fill"
-                  style={{ height: item.studied > 0 ? `${Math.max(6, (item.studied / maxValue) * 100)}%` : "0%" }}
-                  title={`${item.studied} kelime`}
-                />
-              </div>
-              <span>{item.label}</span>
+      <div className="dashboard-layout">
+        <div className="dashboard-main">
+          <div className="dashboard-cards">
+            <div className="dashboard-card">
+              <span>Toplam Öğrenilen Kelime</span>
+              <strong>{stats.known}</strong>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="dashboard-card">
+              <span>Bu Hafta Çalışılan Kelime</span>
+              <strong>{weeklyStudied}</strong>
+            </div>
+            <div className="dashboard-card">
+              <span>Haftalık Başarı Oranı</span>
+              <strong>%{successRate}</strong>
+            </div>
+            <div className="dashboard-card">
+              <span>Aktif Çalışılan Gün</span>
+              <strong>{activeDays}</strong>
+            </div>
+          </div>
 
-      <div className="hard-words-box">
-        <h3>En Çok Zorlanılan Kelimeler</h3>
-        {hardestWords.length === 0 ? (
-          <p className="empty">Henüz yeterli veri yok. Biraz daha çalış ve tekrar bak.</p>
-        ) : (
-          <div className="hard-word-grid">
-            {hardestWords.map((w) => (
-              <div key={w.term} className="hard-word-item">
-                <strong>{w.term}</strong>
-                <span>{w.level}</span>
-                <em>{w.count} kez zorlanıldı</em>
+          <AdSlot slot={slotInline} className="ad-slot ad-inline" isPremium={isPremium} />
+
+          <div className="dashboard-donut-box">
+            <div className="dash-donut" style={{ background: donutGradient }}>
+              <div className="dash-donut-center">
+                <strong>%{donutRate}</strong>
+                <span>Genel</span>
               </div>
-            ))}
+            </div>
+            <div className="dash-donut-info">
+              <h3>Genel Başarı Özeti</h3>
+              <p>Kelime, Synonyms ve Phrasal Verbs performanslarının birleşik göstergesi.</p>
+              <div className="dash-donut-legend">
+                <span>Kelime: %{successRate}</span>
+                <span>Synonyms: %{synRate}</span>
+                <span>Phrasal: %{phrRate}</span>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
 
-      <div className="module-stats-box">
-        <h3>Modül İstatistikleri</h3>
-        <div className="module-grid">
-          <div className="module-card">
-            <h4>Synonyms</h4>
-            <p>Toplam Soru: {syn.attempted}</p>
-            <p>Başarı: %{synRate}</p>
-            <p>En İyi Seri: {syn.bestStreak}</p>
+          <div className="weekly-chart-box">
+            <h3>Haftalık Çalışma Grafiği</h3>
+            <div className="weekly-chart">
+              {chartData.map((item) => (
+                <div className="bar-col" key={item.key}>
+                  <div className="bar-track">
+                    <div
+                      className="bar-fill"
+                      style={{ height: item.studied > 0 ? `${Math.max(6, (item.studied / maxValue) * 100)}%` : "0%" }}
+                      title={`${item.studied} kelime`}
+                    />
+                  </div>
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="module-card">
-            <h4>Phrasal Verbs</h4>
-            <p>Toplam Soru: {phr.attempted}</p>
-            <p>Başarı: %{phrRate}</p>
-            <p>En İyi Seri: {phr.bestStreak}</p>
+
+          <AdSlot slot={slotInline} className="ad-slot ad-inline" isPremium={isPremium} />
+
+          <div className="hard-words-box">
+            <h3>En Çok Zorlanılan Kelimeler</h3>
+            {hardestWords.length === 0 ? (
+              <p className="empty">Henüz yeterli veri yok. Biraz daha çalış ve tekrar bak.</p>
+            ) : (
+              <div className="hard-word-grid">
+                {hardestWords.map((w) => (
+                  <div key={w.term} className="hard-word-item">
+                    <strong>{w.term}</strong>
+                    <span>{w.level}</span>
+                    <em>{w.count} kez zorlanıldı</em>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="module-stats-box">
+            <h3>Modül İstatistikleri</h3>
+            <div className="module-grid">
+              <div className="module-card">
+                <h4>Synonyms</h4>
+                <p>Toplam Soru: {syn.attempted}</p>
+                <p>Başarı: %{synRate}</p>
+                <p>En İyi Seri: {syn.bestStreak}</p>
+              </div>
+              <div className="module-card">
+                <h4>Phrasal Verbs</h4>
+                <p>Toplam Soru: {phr.attempted}</p>
+                <p>Başarı: %{phrRate}</p>
+                <p>En İyi Seri: {phr.bestStreak}</p>
+              </div>
+            </div>
+          </div>
+
+          <AdSlot slot={slotInline} className="ad-slot ad-inline" isPremium={isPremium} />
+
+          <div className="recent-words-box">
+            <h3>Son Çalışılan Kelimeler</h3>
+            {recentWords.length === 0 ? (
+              <p className="empty">Henüz çalışma geçmişi yok.</p>
+            ) : (
+              <div className="recent-tags">
+                {recentWords.map((term, idx) => (
+                  <span key={`${term}-${idx}`}>{term}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      <div className="recent-words-box">
-        <h3>Son Çalışılan Kelimeler</h3>
-        {recentWords.length === 0 ? (
-          <p className="empty">Henüz çalışma geçmişi yok.</p>
-        ) : (
-          <div className="recent-tags">
-            {recentWords.map((term, idx) => (
-              <span key={`${term}-${idx}`}>{term}</span>
-            ))}
+        <aside className="dashboard-sidebar">
+          <div className="dash-side-card">
+            <h3>Destek</h3>
+            <p className="dash-muted">
+              Ücretsiz kullanım reklamlarla desteklenir. Premium’da reklamlar kapalıdır.
+            </p>
           </div>
-        )}
+          <AdSlot slot={slotSidebar} className="ad-slot ad-sidebar" isPremium={isPremium} />
+        </aside>
       </div>
 
       <div className="dashboard-footnote">

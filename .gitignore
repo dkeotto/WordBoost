@@ -11,6 +11,7 @@ node_modules
 .env
 .env.*
 !.env.example
+ydt-kelime-pratigi/.env
 dist
 dist-ssr
 *.local

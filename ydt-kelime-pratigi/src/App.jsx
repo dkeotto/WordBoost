@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import LoginModal from "./components/LoginModal";
 import AdminPanel from "./components/AdminPanel";
 import Navbar from "./components/Navbar";
@@ -8,6 +8,14 @@ import AvatarBuilder from "./components/AvatarBuilder";
 import DashboardView from "./components/DashboardView";
 import SynonymsView from "./components/SynonymsView";
 import PhrasalVerbsView from "./components/PhrasalVerbsView";
+import AiWritingView from "./components/AiWritingView";
+import ConsentBanner from "./components/ConsentBanner";
+import ClassroomView from "./components/ClassroomView";
+import PricingModal from "./components/PricingModal";
+import StartupScreen from "./components/StartupScreen";
+import PricingPage from "./components/PricingPage";
+import TermsPage from "./components/TermsPage";
+import PrivacyPage from "./components/PrivacyPage";
 import { sanitizeWordList } from "./utils/wordQuality";
 import { buildSynonymQuestionPool, buildPhrasalQuestionPool } from "./utils/questionGenerators";
 import { io } from "socket.io-client";
@@ -15,6 +23,17 @@ import "./App.css";
 
 
 const SOCKET_URL = window.location.origin;
+
+function readInitialViewFromUrl() {
+  if (typeof window === "undefined") return "practice";
+  const p = window.location.pathname.replace(/\/$/, "") || "/";
+  if (p === "/pricing") return "pricing";
+  if (p === "/terms") return "terms";
+  if (p === "/privacy") return "privacy";
+  const h = window.location.hash.replace("#", "").toLowerCase();
+  if (h === "admin") return "admin";
+  return "practice";
+}
 
 // BADGE CONSTANTS (Backend ile aynı olmalı)
 const BADGES = {
@@ -221,7 +240,7 @@ const WordListView = ({
       </div>
 
       <div className="word-grid">
-        {filteredWords.map((word, idx) => (
+        {filteredWords.map((word) => (
           <div key={word.term} className="word-card">
             <button
               className="fav-btn"
@@ -258,7 +277,9 @@ const SynonymListView = ({ words, level, setLevel, searchTerm, setSearchTerm, fa
   const [items, setItems] = useState(null);
   useEffect(() => {
     let cancelled = false;
-    setItems(null);
+    const t0 = setTimeout(() => {
+      if (!cancelled) setItems(null);
+    }, 0);
     const t = setTimeout(() => {
       try {
         const pool = buildSynonymQuestionPool(words);
@@ -269,6 +290,7 @@ const SynonymListView = ({ words, level, setLevel, searchTerm, setSearchTerm, fa
     }, 0);
     return () => {
       cancelled = true;
+      clearTimeout(t0);
       clearTimeout(t);
     };
   }, [words]);
@@ -329,7 +351,9 @@ const PhrasalListView = ({ words, level, setLevel, searchTerm, setSearchTerm, fa
   const [items, setItems] = useState(null);
   useEffect(() => {
     let cancelled = false;
-    setItems(null);
+    const t0 = setTimeout(() => {
+      if (!cancelled) setItems(null);
+    }, 0);
     const t = setTimeout(() => {
       try {
         const pool = buildPhrasalQuestionPool(words);
@@ -340,6 +364,7 @@ const PhrasalListView = ({ words, level, setLevel, searchTerm, setSearchTerm, fa
     }, 0);
     return () => {
       cancelled = true;
+      clearTimeout(t0);
       clearTimeout(t);
     };
   }, [words]);
@@ -460,7 +485,7 @@ const WrongWordsView = ({ wrongWords }) => (
     </div>
 );
 
-const ProfileView = ({ user, setUser, logout, setCurrentView }) => {
+const ProfileView = ({ user, setUser, logout }) => {
     // URL'den stili çıkar (varsa)
     const getStyleFromUrl = (url) => {
       if (!url) return "adventurer";
@@ -731,8 +756,9 @@ const PublicProfileView = ({ selectedUser, setCurrentView }) => {
     const known = selectedUser.stats?.known || 0;
     const unknown = selectedUser.stats?.unknown || 0;
     const successRate = studied > 0 ? Math.round((known / studied) * 100) : 0;
+    const nowMs = new Date().getTime();
     const joinedDays = selectedUser.createdAt
-      ? Math.max(1, Math.floor((Date.now() - new Date(selectedUser.createdAt).getTime()) / 86400000))
+      ? Math.max(1, Math.floor((nowMs - new Date(selectedUser.createdAt).getTime()) / 86400000))
       : 0;
     const consistencyScore = Math.min(100, (selectedUser.streak || 0) * 4);
     const baseProgress = Math.min(100, Math.round((known * 0.6 + (selectedUser.streak || 0) * 2 + successRate) / 2));
@@ -1033,7 +1059,7 @@ const MatchingGameView = ({ words, setCurrentView }) => {
     const [matchedPairs, setMatchedPairs] = useState([]);
     const [moves, setMoves] = useState(0);
     const [gameTime, setGameTime] = useState(0);
-    const [gameTimer, setGameTimer] = useState(null);
+    const gameTimerRef = useRef(null);
     const [gameFinished, setGameFinished] = useState(false);
 
     useEffect(() => {
@@ -1041,7 +1067,7 @@ const MatchingGameView = ({ words, setCurrentView }) => {
           const timer = setInterval(() => {
             setGameTime(prev => prev + 1);
           }, 1000);
-          setGameTimer(timer);
+          gameTimerRef.current = timer;
           return () => clearInterval(timer);
         }
     }, [matchingGame, gameFinished, matchedPairs.length]);
@@ -1107,7 +1133,7 @@ const MatchingGameView = ({ words, setCurrentView }) => {
             
             if (matchedPairs.length + 1 === 8) {
               setGameFinished(true);
-              if (gameTimer) clearInterval(gameTimer);
+              if (gameTimerRef.current) clearInterval(gameTimerRef.current);
             }
           } else {
             playSound('wrong');
@@ -1559,11 +1585,15 @@ function App() {
   };
 
   const [showLogin, setShowLogin] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [newBadgeNotification, setNewBadgeNotification] = useState(null); // { badges: [{ id }] }
-  const [currentView, setCurrentView] = useState('practice');
+  const [currentView, setCurrentView] = useState(readInitialViewFromUrl);
   const [words, setWords] = useState([]);
   const [loadingWords, setLoadingWords] = useState(true);
+  const splashStartRef = useRef(Date.now());
+  const [splashExiting, setSplashExiting] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
 
 
   useEffect(() => {
@@ -1609,6 +1639,17 @@ function App() {
           // Token kontrolü: Eğer token yoksa oturumu geçersiz say
           if (parsedUser && parsedUser.token) {
             setUser(parsedUser);
+            // Daha zengin kimlik/premium bilgisi için /api/me çek
+            fetch("/api/me", { headers: { Authorization: parsedUser.token } })
+              .then((r) => r.json())
+              .then((me) => {
+                if (me && me.ok && me.user) {
+                  const merged = { ...parsedUser, ...me.user, token: parsedUser.token };
+                  setUser(merged);
+                  localStorage.setItem("wb_user", JSON.stringify(merged));
+                }
+              })
+              .catch(() => {});
           } else {
             console.warn("Found user in storage but no token. Clearing.");
             localStorage.removeItem("wb_user");
@@ -1640,7 +1681,7 @@ function App() {
           return;
         }
       }
-    } catch (e) {
+    } catch {
       // cache bozuk olabilir, sessizce geç
     }
 
@@ -1677,6 +1718,22 @@ function App() {
         clearTimeout(timeoutId);
       });
   }, []);
+
+  useEffect(() => {
+    if (!loadingWords) {
+      const minMs = 1300;
+      const wait = Math.max(0, minMs - (Date.now() - splashStartRef.current));
+      const t = setTimeout(() => setSplashExiting(true), wait);
+      return () => clearTimeout(t);
+    }
+  }, [loadingWords]);
+
+  useEffect(() => {
+    if (!splashExiting) return;
+    const t = setTimeout(() => setSplashDone(true), 780);
+    return () => clearTimeout(t);
+  }, [splashExiting]);
+
   const practiceWords = useMemo(() => {
     let filtered = words;
     
@@ -1729,6 +1786,7 @@ function App() {
   
   const [roomCode, setRoomCode] = useState('');
   const [username, setUsername] = useState('');
+  // eslint-disable-next-line no-unused-vars
   const [joinCode, setJoinCode] = useState('');
   const [users, setUsers] = useState([]);
   const [roomStats, setRoomStats] = useState({});
@@ -1783,6 +1841,26 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const onPop = () => setCurrentView(readInitialViewFromUrl());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  useEffect(() => {
+    const legal = { pricing: "/pricing", terms: "/terms", privacy: "/privacy" };
+    if (legal[currentView]) {
+      if (window.location.pathname !== legal[currentView]) {
+        window.history.pushState({ view: currentView }, "", legal[currentView]);
+      }
+      return;
+    }
+    const path = window.location.pathname.replace(/\/$/, "") || "/";
+    if (["/pricing", "/terms", "/privacy"].includes(path)) {
+      window.history.replaceState({}, "", "/");
+    }
+  }, [currentView]);
+
+  useEffect(() => {
     localStorage.setItem("ydt_favorites_bundle", JSON.stringify(favorites));
   }, [favorites]);
 
@@ -1818,6 +1896,26 @@ function App() {
         },
       };
     });
+
+    // Classroom analytics için backend'e lightweight event gönder
+    try {
+      const token = user?.token;
+      if (token) {
+        fetch("/api/progress/event", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: token },
+          body: JSON.stringify({
+            activityType: `${moduleName}_answer`,
+            module: moduleName,
+            level: String(level || ""),
+            deltaKnown: isCorrect ? 1 : 0,
+            deltaUnknown: !isCorrect ? 1 : 0,
+          }),
+        }).catch(() => {});
+      }
+    } catch (e) {
+      void e;
+    }
   };
 
   useEffect(() => {
@@ -2222,13 +2320,10 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     setCurrentView('practice');
   };
 
-if (loadingWords) {
-  return (
-    <div className="loading-screen">
-      Kelime yükleniyor...
-    </div>
-  );
-}
+  if (!splashDone) {
+    return <StartupScreen exiting={splashExiting} />;
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -2297,6 +2392,33 @@ if (loadingWords) {
           practiceHistory={practiceHistory}
           wrongWords={wrongWords}
           moduleStats={moduleStats}
+          user={user}
+        />
+      )}
+      {currentView === 'pricing' && (
+        <PricingPage
+          user={user}
+          onBack={() => {
+            setCurrentView("practice");
+            window.history.replaceState({}, "", "/");
+          }}
+          onGoPremium={() => setShowPricing(true)}
+        />
+      )}
+      {currentView === 'terms' && (
+        <TermsPage
+          onBack={() => {
+            setCurrentView("practice");
+            window.history.replaceState({}, "", "/");
+          }}
+        />
+      )}
+      {currentView === 'privacy' && (
+        <PrivacyPage
+          onBack={() => {
+            setCurrentView("practice");
+            window.history.replaceState({}, "", "/");
+          }}
         />
       )}
       {currentView === 'synonyms' && <SynonymsView words={words} playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
@@ -2339,19 +2461,50 @@ if (loadingWords) {
         />
       )}
       {currentView === 'wrong-words' && <WrongWordsView wrongWords={wrongWords} />}
+      {currentView === 'ai-writing' && (
+        <AiWritingView
+          user={user}
+          onGoPremium={() => {
+            setShowPricing(true);
+          }}
+        />
+      )}
+      {currentView === 'classroom' && <ClassroomView user={user} />}
       {currentView === 'room-menu' && <RoomMenuView username={username} createRoom={createRoom} joinRoom={joinRoom} loading={loading} error={error} />}
       {currentView === 'room' && <RoomView roomCode={roomCode} users={users} username={username} isHost={isHost} setCurrentView={setCurrentView} leaveRoom={leaveRoom} />}
       {currentView === 'admin' && <AdminPanel setCurrentView={setCurrentView} />}
     </main>
+
+    <ConsentBanner />
 
     {showLogin && (
       <LoginModal
         onLogin={(u) => {
           setUser(u);
           localStorage.setItem("wb_user", JSON.stringify(u));
+          // Premium/role bilgisi için /api/me çek
+          if (u && u.token) {
+            fetch("/api/me", { headers: { Authorization: u.token } })
+              .then((r) => r.json())
+              .then((me) => {
+                if (me && me.ok && me.user) {
+                  const merged = { ...u, ...me.user, token: u.token };
+                  setUser(merged);
+                  localStorage.setItem("wb_user", JSON.stringify(merged));
+                }
+              })
+              .catch(() => {});
+          }
           setShowLogin(false);
         }}
         onClose={() => setShowLogin(false)}
+      />
+    )}
+
+    {showPricing && (
+      <PricingModal
+        user={user}
+        onClose={() => setShowPricing(false)}
       />
     )}
 

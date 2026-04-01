@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import "./AdminPanel.css";
 
 const STORAGE_TOKEN_KEY = "wb_admin_token";
@@ -50,10 +50,13 @@ export default function AdminPanel({ setCurrentView }) {
   });
   const [editSaving, setEditSaving] = useState(false);
 
-  const headers = () => ({
-    "Content-Type": "application/json",
-    "X-Admin-Token": token
-  });
+  const h = useMemo(
+    () => ({
+      "Content-Type": "application/json",
+      "X-Admin-Token": token
+    }),
+    [token]
+  );
 
   const buildUsersQuery = useCallback(() => {
     const p = new URLSearchParams();
@@ -72,7 +75,6 @@ export default function AdminPanel({ setCurrentView }) {
     if (!token) return;
     setUsersLoading(true);
     try {
-      const h = headers();
       const [meta, list] = await Promise.all([
         fetch("/api/admin/users/meta", { headers: h }).then((r) => r.json()),
         fetch(`/api/admin/users?${buildUsersQuery()}`, { headers: h }).then((r) => r.json())
@@ -91,7 +93,7 @@ export default function AdminPanel({ setCurrentView }) {
     } finally {
       setUsersLoading(false);
     }
-  }, [token, buildUsersQuery]);
+  }, [token, buildUsersQuery, h]);
 
   const loadAll = useCallback(async () => {
     if (!token) {
@@ -102,7 +104,6 @@ export default function AdminPanel({ setCurrentView }) {
     setErr("");
     try {
       sessionStorage.setItem(STORAGE_TOKEN_KEY, token);
-      const h = headers();
       const [s, d, lv, act, wq] = await Promise.all([
         fetch("/api/admin/summary", { headers: h }).then((r) => r.json()),
         fetch("/api/admin/word-difficulty?limit=50&sort=unknown", { headers: h }).then((r) => r.json()),
@@ -133,7 +134,7 @@ export default function AdminPanel({ setCurrentView }) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, h]);
 
   useEffect(() => {
     const t = sessionStorage.getItem(STORAGE_TOKEN_KEY);
@@ -230,7 +231,7 @@ export default function AdminPanel({ setCurrentView }) {
     try {
       const res = await fetch("/api/admin/words", {
         method: "POST",
-        headers: headers(),
+        headers: h,
         body: JSON.stringify(single)
       });
       const data = await res.json();
@@ -250,7 +251,7 @@ export default function AdminPanel({ setCurrentView }) {
     try {
       const res = await fetch("/api/admin/words/import", {
         method: "POST",
-        headers: headers(),
+        headers: h,
         body: JSON.stringify({ csv: csvText })
       });
       const data = await res.json();
@@ -305,7 +306,7 @@ export default function AdminPanel({ setCurrentView }) {
       };
       const res = await fetch(`/api/admin/users/${editUser._id}/stats`, {
         method: "PUT",
-        headers: headers(),
+        headers: h,
         body: JSON.stringify(payload)
       });
       const data = await res.json();
