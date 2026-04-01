@@ -18,3 +18,8 @@ export function setConsentStatus(status) {
   window.dispatchEvent(new CustomEvent("wb_consent_change", { detail: { status } }));
 }
 
+/** Navbar / ayarlardan çerez banner'ını tekrar açmak için */
+export function openConsentDialog() {
+  window.dispatchEvent(new CustomEvent("wb_consent_open"));
+}
+

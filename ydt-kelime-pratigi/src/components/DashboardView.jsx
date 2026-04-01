@@ -1,5 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import AdSlot from "./AdSlot";
+import { getConsentStatus, openConsentDialog } from "../utils/consentStorage";
 
 const DAYS_TR = ["Paz", "Pzt", "Sal", "Car", "Per", "Cum", "Cmt"];
 
@@ -11,9 +12,21 @@ const formatDayKey = (date) => {
 };
 
 const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }) => {
-  const isPremium = Boolean(user?.isPremium);
+  const [consentStatus, setConsentStatus] = useState(() => getConsentStatus().status);
+  useEffect(() => {
+    const onChange = () => setConsentStatus(getConsentStatus().status);
+    window.addEventListener("wb_consent_change", onChange);
+    return () => window.removeEventListener("wb_consent_change", onChange);
+  }, []);
+
+  const nowMs = Date.now();
+  const isPremium = Boolean(
+    user?.isPremium ||
+      (user?.premiumUntil && new Date(user.premiumUntil).getTime() > nowMs)
+  );
   const slotSidebar = import.meta.env.VITE_ADSENSE_SLOT_DASHBOARD_SIDEBAR;
   const slotInline = import.meta.env.VITE_ADSENSE_SLOT_DASHBOARD_INLINE;
+  const adsConfigured = Boolean(import.meta.env.VITE_ADSENSE_CLIENT && slotSidebar && slotInline);
   const last7Days = useMemo(() => {
     const now = new Date();
     const days = [];
@@ -94,9 +107,27 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
   const donutRate = Math.round((successRate + synRate + phrRate) / 3);
   const donutGradient = `conic-gradient(#ffb300 0% ${donutRate}%, rgba(255,255,255,0.08) ${donutRate}% 100%)`;
 
+  const showAdsHint =
+    !isPremium && adsConfigured && consentStatus !== "accepted";
+
   return (
     <div className="dashboard-view">
       <h2>İlerleme Takip Paneli</h2>
+
+      {!isPremium && !adsConfigured && import.meta.env.PROD && (
+        <p className="dash-ads-dev-hint">
+          Reklamlar için build ortamında <code>VITE_ADSENSE_CLIENT</code> ve slot değişkenleri tanımlı olmalı.
+        </p>
+      )}
+
+      {showAdsHint && (
+        <div className="dash-ads-consent-hint" role="status">
+          <span>Reklamlar yalnızca çerezleri kabul ettiğinde gösterilir.</span>
+          <button type="button" className="dash-ads-consent-btn" onClick={() => openConsentDialog()}>
+            Çerez tercihini aç
+          </button>
+        </div>
+      )}
 
       <div className="dashboard-layout">
         <div className="dashboard-main">

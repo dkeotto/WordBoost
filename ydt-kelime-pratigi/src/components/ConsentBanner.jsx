@@ -15,6 +15,12 @@ export default function ConsentBanner() {
     return () => window.removeEventListener("wb_consent_change", onChange);
   }, []);
 
+  useEffect(() => {
+    const onOpen = () => setIsOpen(true);
+    window.addEventListener("wb_consent_open", onOpen);
+    return () => window.removeEventListener("wb_consent_open", onOpen);
+  }, []);
+
   if (!isOpen) return null;
 
   return (

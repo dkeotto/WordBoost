@@ -189,6 +189,19 @@
   color: #FF9F1C;
 }
 
+.dropdown-title.active-route {
+  color: #FF9F1C;
+  border-color: rgba(255, 159, 28, 0.45);
+  background: rgba(255, 159, 28, 0.12);
+  box-shadow: 0 0 12px rgba(255, 159, 28, 0.15);
+}
+
+.nav-more .dropdown-content {
+  min-width: 220px;
+  max-height: min(70vh, 420px);
+  overflow-y: auto;
+}
+
 .title-content {
   display: flex;
   align-items: center;

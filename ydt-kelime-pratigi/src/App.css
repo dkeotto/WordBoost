@@ -1821,7 +1821,56 @@ button:disabled {
 .user-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: min(100%, 320px);
+}
+
+.nav-premium-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  line-height: 1.2;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.nav-premium-badge--free {
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-premium-badge--pro {
+  color: #1a1208;
+  background: linear-gradient(135deg, #ffd76a, #ff9f1c);
+  border-color: rgba(255, 200, 100, 0.6);
+  box-shadow: 0 0 12px rgba(255, 159, 28, 0.35);
+}
+
+.nav-cookie-mini {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 0.15rem 0.4rem;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.nav-cookie-mini:hover {
+  background: rgba(255, 159, 28, 0.15);
+  border-color: rgba(255, 159, 28, 0.4);
+}
+
+.nav-profile-name {
+  max-width: 7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .logout-icon-btn {
@@ -2877,6 +2926,47 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+.dash-ads-dev-hint {
+  font-size: 0.85rem;
+  color: rgba(255, 200, 120, 0.9);
+  margin: -0.5rem 0 0;
+}
+
+.dash-ads-dev-hint code {
+  font-size: 0.8em;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.dash-ads-consent-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  background: rgba(255, 159, 28, 0.1);
+  border: 1px solid rgba(255, 159, 28, 0.25);
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.dash-ads-consent-btn {
+  padding: 0.4rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 159, 28, 0.45);
+  background: rgba(255, 159, 28, 0.2);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.dash-ads-consent-btn:hover {
+  background: rgba(255, 159, 28, 0.3);
 }
 
 .dashboard-layout {

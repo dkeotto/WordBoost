@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { openConsentDialog } from '../utils/consentStorage';
 import './Navbar.css';
 
 const MOBILE_MQ = '(max-width: 1320px)';
@@ -17,12 +18,24 @@ const Navbar = ({
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isListsOpen, setIsListsOpen] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   const [isMobileLayout, setIsMobileLayout] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia(MOBILE_MQ).matches
   );
   const listsDropdownRef = useRef(null);
+  const moreDropdownRef = useRef(null);
   const scrollLockYRef = useRef(0);
+
+  const isPremium = useMemo(() => {
+    if (!user) return false;
+    if (user.isPremium) return true;
+    if (user.premiumUntil) {
+      const t = new Date(user.premiumUntil).getTime();
+      return !Number.isNaN(t) && t > Date.now();
+    }
+    return false;
+  }, [user]);
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_MQ);
@@ -69,6 +82,7 @@ const Navbar = ({
       if (!mq.matches) {
         setIsMenuOpen(false);
         setIsListsOpen(false);
+        setIsMoreOpen(false);
       }
     };
 
@@ -90,13 +104,36 @@ const Navbar = ({
   const closeMenuOverlay = () => {
     setIsMenuOpen(false);
     setIsListsOpen(false);
+    setIsMoreOpen(false);
   };
 
   const handleNavClick = (view) => {
     setCurrentView(view);
     setIsMenuOpen(false); // Menüyü kapat
     setIsListsOpen(false);
+    setIsMoreOpen(false);
   };
+
+  useEffect(() => {
+    if (!isMoreOpen) return undefined;
+    const onDoc = (e) => {
+      const el = moreDropdownRef.current;
+      if (el && !el.contains(e.target)) setIsMoreOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [isMoreOpen]);
+
+  const moreActive = [
+    'matching-game',
+    'leaderboard',
+    'pricing',
+    'synonyms',
+    'phrasal-verbs',
+    'classroom',
+    'room-menu',
+    'room',
+  ].includes(currentView);
 
   const navMenuLinks = (
     <>
@@ -118,22 +155,6 @@ const Navbar = ({
       </li>
       <li className="nav-item">
         <button
-          className={`nav-link ${currentView === 'matching-game' ? 'active' : ''}`}
-          onClick={() => handleNavClick('matching-game')}
-        >
-          🎮 Eşleştirme
-        </button>
-      </li>
-      <li className="nav-item">
-        <button
-          className={`nav-link ${currentView === 'leaderboard' ? 'active' : ''}`}
-          onClick={() => handleNavClick('leaderboard')}
-        >
-          🏆 Liderlik
-        </button>
-      </li>
-      <li className="nav-item">
-        <button
           className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`}
           onClick={() => handleNavClick('dashboard')}
         >
@@ -142,54 +163,75 @@ const Navbar = ({
       </li>
       <li className="nav-item">
         <button
-          type="button"
-          className={`nav-link ${currentView === 'pricing' ? 'active' : ''}`}
-          onClick={() => handleNavClick('pricing')}
-        >
-          💳 Fiyatlar
-        </button>
-      </li>
-      <li className="nav-item">
-        <button
-          className={`nav-link ${currentView === 'synonyms' ? 'active' : ''}`}
-          onClick={() => handleNavClick('synonyms')}
-        >
-          🔁 Synonyms
-        </button>
-      </li>
-      <li className="nav-item">
-        <button
-          className={`nav-link ${currentView === 'phrasal-verbs' ? 'active' : ''}`}
-          onClick={() => handleNavClick('phrasal-verbs')}
-        >
-          🧩 Phrasal Verbs
-        </button>
-      </li>
-
-      <li className="nav-item">
-        <button
           className={`nav-link ${currentView === 'ai-writing' ? 'active' : ''}`}
           onClick={() => handleNavClick('ai-writing')}
         >
-          🤖 AI Mode
+          🤖 AI
         </button>
       </li>
 
-      <li className="nav-item">
+      <li ref={moreDropdownRef} className={`nav-item dropdown nav-more ${isMoreOpen ? 'open' : ''}`}>
         <button
-          className={`nav-link ${currentView === 'classroom' ? 'active' : ''}`}
-          onClick={() => handleNavClick('classroom')}
+          type="button"
+          className={`dropdown-title ${moreActive ? 'active-route' : ''}`}
+          aria-expanded={isMoreOpen}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsListsOpen(false);
+            setIsMoreOpen((v) => !v);
+          }}
         >
-          🏫 Classroom
+          <span className="title-content">
+            <span style={{ marginRight: '5px' }}>⋯</span>
+            Daha fazla
+          </span>
         </button>
-      </li>
-      <li className="nav-item">
-        <button
-          className={`nav-link ${currentView === 'room-menu' || isInRoom ? 'active' : ''}`}
-          onClick={() => handleNavClick(isInRoom ? 'room' : 'room-menu')}
-        >
-          👥 Oda {isInRoom && '(Aktif)'}
-        </button>
+        <div className={`dropdown-content ${isMoreOpen ? 'show' : ''}`}>
+          <button
+            className={`nav-link ${currentView === 'matching-game' ? 'active' : ''}`}
+            onClick={() => handleNavClick('matching-game')}
+          >
+            🎮 Eşleştirme
+          </button>
+          <button
+            className={`nav-link ${currentView === 'leaderboard' ? 'active' : ''}`}
+            onClick={() => handleNavClick('leaderboard')}
+          >
+            🏆 Liderlik
+          </button>
+          <button
+            type="button"
+            className={`nav-link ${currentView === 'pricing' ? 'active' : ''}`}
+            onClick={() => handleNavClick('pricing')}
+          >
+            💳 Fiyatlar
+          </button>
+          <button
+            className={`nav-link ${currentView === 'synonyms' ? 'active' : ''}`}
+            onClick={() => handleNavClick('synonyms')}
+          >
+            🔁 Synonyms
+          </button>
+          <button
+            className={`nav-link ${currentView === 'phrasal-verbs' ? 'active' : ''}`}
+            onClick={() => handleNavClick('phrasal-verbs')}
+          >
+            🧩 Phrasal
+          </button>
+          <button
+            className={`nav-link ${currentView === 'classroom' ? 'active' : ''}`}
+            onClick={() => handleNavClick('classroom')}
+          >
+            🏫 Classroom
+          </button>
+          <button
+            className={`nav-link ${currentView === 'room-menu' || (currentView === 'room' && isInRoom) ? 'active' : ''}`}
+            onClick={() => handleNavClick(isInRoom ? 'room' : 'room-menu')}
+          >
+            👥 Oda {isInRoom ? '(Aktif)' : ''}
+          </button>
+        </div>
       </li>
 
       <li ref={listsDropdownRef} className={`nav-item dropdown ${isListsOpen ? 'open' : ''}`}>
@@ -200,6 +242,7 @@ const Navbar = ({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            setIsMoreOpen(false);
             setIsListsOpen((v) => !v);
           }}
         >
@@ -245,13 +288,29 @@ const Navbar = ({
       <li className="nav-item user-section">
         {user ? (
           <div className="user-controls">
+            <span
+              className={`nav-premium-badge ${isPremium ? 'nav-premium-badge--pro' : 'nav-premium-badge--free'}`}
+              title={isPremium ? 'Premium üyelik aktif' : 'Ücretsiz hesap'}
+            >
+              {isPremium ? 'PRO' : 'Ücretsiz'}
+            </span>
+            {!isPremium && (
+              <button
+                type="button"
+                className="nav-cookie-mini"
+                onClick={() => openConsentDialog()}
+                title="Çerez tercihi (reklamlar için)"
+              >
+                🍪
+              </button>
+            )}
             <button className="nav-link profile-btn" onClick={() => handleNavClick('profile')}>
               {user.avatar && (user.avatar.startsWith('http') || user.avatar.startsWith('data:')) ? (
                 <img src={user.avatar} className="nav-avatar-img" alt="avatar" />
               ) : (
                 user.avatar || '👤'
               )}
-              {user.nickname || user.username}
+              <span className="nav-profile-name">{user.nickname || user.username}</span>
             </button>
             <button className="logout-icon-btn" onClick={() => { onLogoutClick(); setIsMenuOpen(false); }} title="Çıkış Yap">
               🚪
