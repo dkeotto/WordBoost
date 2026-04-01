@@ -1,0 +1,42 @@
+{
+  "aiPlus": {
+    "priceId": "pri_01kn4z7vftyhr0re4r8a73tajd",
+    "label": "WordBoost AI+",
+    "description": "Get instant AI-powered English support anytime. Practice your English with a smart AI that helps you understand, correct, and improve your sentences in real-time. One-time purchase, lifetime access.",
+    "features": [
+      "AI chat for English practice",
+      "Instant grammar correction",
+      "Sentence improvement suggestions",
+      "Lifetime access (one-time purchase)"
+    ],
+    "entitlements": { "aiPlus": true }
+  },
+  "premium": {
+    "priceId": "pri_01kn4z6hpt9xqngpej06z9crjh",
+    "label": "WordBoost Premium",
+    "description": "Unlock the full WordBoost experience. Get everything you need to learn English faster, including AI support, unlimited access, and a distraction-free experience. Best value for serious learners.",
+    "features": [
+      "Includes ALL AI+ features",
+      "Unlimited vocabulary access",
+      "Smart repetition system",
+      "Detailed progress tracking",
+      "No ads, fully focused learning"
+    ],
+    "entitlements": { "premium": true }
+  },
+  "classroom": {
+    "priceId": "pri_01kn4z8z2epaab1zkdb7ar9ee5",
+    "label": "WordBoost Classroom",
+    "description": "The ultimate tool for teachers and schools. Easily manage your classroom, assign vocabulary tasks, and track every student's progress from a single dashboard.",
+    "features": [
+      "Teacher control panel",
+      "Student invite system",
+      "Assign tasks and word lists",
+      "Track progress in real-time",
+      "Classroom leaderboard"
+    ],
+    "allowQuantity": true,
+    "defaultQuantity": 30,
+    "entitlements": { "schoolLicense": true, "premium": true }
+  }
+}

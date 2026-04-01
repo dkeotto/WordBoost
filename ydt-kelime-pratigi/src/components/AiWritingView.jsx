@@ -55,7 +55,11 @@ function blurTextForFreeUser(text) {
 
 export default function AiWritingView({ user, onGoPremium }) {
   const token = user?.token || "";
-  const isPremium = Boolean(user?.isPremium || (user?.premiumUntil && new Date(user.premiumUntil).getTime() > Date.now()));
+  const isPremium = Boolean(
+    user?.isPremium ||
+      (user?.premiumUntil && new Date(user.premiumUntil).getTime() > Date.now()) ||
+      user?.entitlements?.aiPlus === true
+  );
 
   const [type, setType] = useState("blog");
   const [tone, setTone] = useState("casual");

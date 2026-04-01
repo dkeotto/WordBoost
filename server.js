@@ -23,7 +23,7 @@ const rateLimit = require('express-rate-limit');
 const { createAnthropicProvider } = require("./src/modules/ai/providers/anthropicProvider");
 
 const { getAuthTokenFromHeader } = require("./src/lib/authToken");
-const { isPremiumUser } = require("./src/lib/premium");
+const { isPremiumUser, hasUnlimitedAiMode } = require("./src/lib/premium");
 const { todayKey, applyDailyAiUsage, isFreeAiAllowed } = require("./src/lib/aiUsage");
 const { guardAiPromptLogging } = require("./src/lib/aiLogging");
 const { paddleRequest } = require("./src/lib/paddleApi");
@@ -1908,17 +1908,47 @@ app.post('/api/billing/paddle/webhook', express.raw({ type: '*/*', limit: '2mb' 
     const custom = data?.custom_data || data?.customData || {};
     const userId = String(custom.userId || custom.user_id || data?.userId || "").trim();
     const tier = String(custom.tier || custom.plan || "").trim();
-    const subscriptionId = String(data?.id || data?.subscription_id || data?.subscriptionId || "").trim();
+    const subscriptionId = String(
+      data?.subscription_id ||
+        data?.subscriptionId ||
+        (typeof data?.subscription === "object" && data?.subscription?.id ? data.subscription.id : "") ||
+        data?.id ||
+        ""
+    ).trim();
     const status = String(data?.status || data?.state || "active").trim();
     const planId = String(data?.items?.[0]?.price?.id || data?.plan_id || data?.planId || "").trim();
 
-    if (!userId || !subscriptionId) {
-      pushAdminError("Paddle webhook missing userId/subscriptionId", { path: "billing/paddle/webhook", eventType });
-      return res.status(400).json({ error: "Eksik userId/subscriptionId" });
+    if (!userId) {
+      pushAdminError("Paddle webhook missing userId", { path: "billing/paddle/webhook", eventType });
+      return res.status(400).json({ error: "Eksik userId" });
     }
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Tek seferlik AI+ (subscription yok): transaction.* tamamlanınca entitlements.aiPlus
+    const stLower = String(data?.status || "").toLowerCase();
+    const txnOk =
+      tier === "aiPlus" &&
+      /transaction\.(completed|paid|billed|created)/i.test(String(eventType || "")) &&
+      (!stLower || ["completed", "paid", "billed", "ready"].includes(stLower));
+    if (txnOk) {
+      const planCfg = (() => {
+        const parsed = parseBillingPlansFromEnv();
+        if (!parsed.ok) return null;
+        return findPlan(parsed.plans, tier);
+      })();
+      const ent =
+        planCfg?.entitlements && typeof planCfg.entitlements === "object" ? planCfg.entitlements : { aiPlus: true };
+      user.entitlements = { ...(user.entitlements || {}), ...ent };
+      await user.save();
+      return res.json({ ok: true });
+    }
+
+    if (!subscriptionId) {
+      pushAdminError("Paddle webhook missing subscriptionId", { path: "billing/paddle/webhook", eventType });
+      return res.status(400).json({ error: "Eksik subscriptionId" });
+    }
 
     // dönem sonu / next bill date benzeri alanlar
     const periodEndRaw =
@@ -2334,7 +2364,7 @@ app.post('/api/ai/write', aiLimiter, async (req, res) => {
     const user = await User.findById(decoded.id);
     if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
 
-    const premium = isPremiumUser(user);
+    const premium = hasUnlimitedAiMode(user);
     const FREE_LIMIT = 3;
     if (!premium && !isFreeAiAllowed(user, FREE_LIMIT)) {
       return res.status(402).json({ error: "free_limit_reached", limitPerDay: FREE_LIMIT });
@@ -2405,7 +2435,7 @@ app.post('/api/ai/rewrite', aiLimiter, async (req, res) => {
     const user = await User.findById(decoded.id);
     if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
 
-    const premium = isPremiumUser(user);
+    const premium = hasUnlimitedAiMode(user);
     const FREE_LIMIT = 3;
     if (!premium && !isFreeAiAllowed(user, FREE_LIMIT)) {
       return res.status(402).json({ error: "free_limit_reached", limitPerDay: FREE_LIMIT });
@@ -2513,7 +2543,7 @@ app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
     const user = await User.findById(decoded.id);
     if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
 
-    const premium = isPremiumUser(user);
+    const premium = hasUnlimitedAiMode(user);
     const FREE_LIMIT = 3;
     if (!premium && !isFreeAiAllowed(user, FREE_LIMIT)) {
       return res.status(402).json({ error: "free_limit_reached", limitPerDay: FREE_LIMIT });
@@ -2610,7 +2640,7 @@ app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
     const user = await User.findById(decoded.id);
     if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
 
-    const premium = isPremiumUser(user);
+    const premium = hasUnlimitedAiMode(user);
     const FREE_LIMIT = 3;
     if (!premium && !isFreeAiAllowed(user, FREE_LIMIT)) {
       return res.status(402).json({ error: "free_limit_reached", limitPerDay: FREE_LIMIT });

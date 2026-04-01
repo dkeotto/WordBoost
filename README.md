@@ -49,9 +49,11 @@ Required env:
 - `PADDLE_ENV` (`sandbox` | `live`)
 - `PADDLE_API_KEY` (server-side; never commit)
 - `PADDLE_WEBHOOK_SECRET`
-- `PADDLE_PRICE_IDS` (tier → `priceId` mapping JSON)
+- `PADDLE_PRICE_IDS` — one-line JSON: `aiPlus`, `premium`, `classroom` tiers with `priceId` (`pri_…`), `label`, `description`, `features`, and `entitlements` (see `paddle-price-ids.sample.json` in this folder). Copy the minified JSON into Railway Variables. **Price IDs are not secret tokens**, but keep them out of git if you prefer a repo without live catalog data.
 
 Frontend (`ydt-kelime-pratigi/.env`, optional for embedded Paddle.js): `VITE_PADDLE_CLIENT_TOKEN` (must match the same environment as the API key, e.g. `live_…` with `PADDLE_ENV=live`).
+
+**Entitlements:** `aiPlus` → `entitlements.aiPlus` (lifetime AI Mode, no daily cap); subscription webhooks set `premiumUntil` for `premium` / `classroom`; classroom tier allows quantity (seats).
 
 ### AI Mode (Anthropic, streaming SSE + usage tracking)
 
