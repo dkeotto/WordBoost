@@ -24,9 +24,17 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
     user?.isPremium ||
       (user?.premiumUntil && new Date(user.premiumUntil).getTime() > nowMs)
   );
+  const adsClient = import.meta.env.VITE_ADSENSE_CLIENT;
   const slotSidebar = import.meta.env.VITE_ADSENSE_SLOT_DASHBOARD_SIDEBAR;
   const slotInline = import.meta.env.VITE_ADSENSE_SLOT_DASHBOARD_INLINE;
-  const adsConfigured = Boolean(import.meta.env.VITE_ADSENSE_CLIENT && slotSidebar && slotInline);
+  const adsConfigured = Boolean(adsClient && slotSidebar && slotInline);
+  const adsMissingKeys = useMemo(() => {
+    const keys = [];
+    if (!adsClient) keys.push("VITE_ADSENSE_CLIENT");
+    if (!slotSidebar) keys.push("VITE_ADSENSE_SLOT_DASHBOARD_SIDEBAR");
+    if (!slotInline) keys.push("VITE_ADSENSE_SLOT_DASHBOARD_INLINE");
+    return keys;
+  }, [adsClient, slotSidebar, slotInline]);
   const last7Days = useMemo(() => {
     const now = new Date();
     const days = [];
@@ -116,7 +124,16 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
 
       {!isPremium && !adsConfigured && import.meta.env.PROD && (
         <p className="dash-ads-dev-hint">
-          Reklamlar için build ortamında <code>VITE_ADSENSE_CLIENT</code> ve slot değişkenleri tanımlı olmalı.
+          Reklamlar için <code>VITE_*</code> değişkenleri <strong>Vite build</strong> sırasında gömülür (runtime’da
+          backend .env okunmaz). Railway vb. için <strong>frontend</strong> servisinde Variables tanımlayıp{" "}
+          <strong>yeniden build + deploy</strong> gerekir. Şu an eksik:{" "}
+          {adsMissingKeys.map((k, i) => (
+            <React.Fragment key={k}>
+              {i > 0 ? ", " : null}
+              <code>{k}</code>
+            </React.Fragment>
+          ))}
+          .
         </p>
       )}
 
