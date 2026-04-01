@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { readResponseJson } from "../utils/httpJson";
 
 export default function ClassroomView({ user }) {
   const token = user?.token || "";
@@ -33,7 +34,7 @@ export default function ClassroomView({ user }) {
   const loadTeacherClasses = async () => {
     if (!isTeacher || !token) return;
     const res = await fetch("/api/classes", { headers });
-    const data = await res.json();
+    const data = await readResponseJson(res);
     if (!res.ok) throw new Error(data.error || "Sınıflar yüklenemedi");
     setTeacherClasses(data.items || []);
     if (!selectedClassId && data.items?.[0]?._id) setSelectedClassId(String(data.items[0]._id));
@@ -42,7 +43,7 @@ export default function ClassroomView({ user }) {
   const loadStudents = async (classId) => {
     if (!isTeacher || !token || !classId) return;
     const res = await fetch(`/api/classes/${classId}/students`, { headers });
-    const data = await res.json();
+    const data = await readResponseJson(res);
     if (!res.ok) throw new Error(data.error || "Öğrenciler yüklenemedi");
     setClassStudents(data.items || []);
   };
@@ -50,7 +51,7 @@ export default function ClassroomView({ user }) {
   const loadAnalytics = async (classId) => {
     if (!isTeacher || !token || !classId) return;
     const res = await fetch(`/api/classes/${classId}/analytics?days=14`, { headers });
-    const data = await res.json();
+    const data = await readResponseJson(res);
     if (!res.ok) throw new Error(data.error || "Analiz yüklenemedi");
     setAnalytics(data);
   };
@@ -58,7 +59,7 @@ export default function ClassroomView({ user }) {
   const loadMyClasses = async () => {
     if (!isStudent || !token) return;
     const res = await fetch("/api/classes/me", { headers });
-    const data = await res.json();
+    const data = await readResponseJson(res);
     if (!res.ok) throw new Error(data.error || "Sınıflarım yüklenemedi");
     setMyClasses(data.items || []);
   };
@@ -102,7 +103,7 @@ export default function ClassroomView({ user }) {
         headers,
         body: JSON.stringify({ name: className.trim() }),
       });
-      const data = await res.json();
+      const data = await readResponseJson(res);
       if (!res.ok) throw new Error(data.error || "Sınıf oluşturulamadı");
       setMsg(`Sınıf oluşturuldu: ${data.classroom?.name} (Kod: ${data.classroom?.code})`);
       setClassName("");
@@ -126,7 +127,7 @@ export default function ClassroomView({ user }) {
         headers,
         body: JSON.stringify({ csv: csvText }),
       });
-      const data = await res.json();
+      const data = await readResponseJson(res);
       if (!res.ok) throw new Error(data.error || "CSV içe aktarma başarısız");
       const createdN = data.created?.length || 0;
       const existedN = data.existed?.length || 0;
@@ -154,7 +155,7 @@ export default function ClassroomView({ user }) {
         headers,
         body: JSON.stringify({ code }),
       });
-      const data = await res.json();
+      const data = await readResponseJson(res);
       if (!res.ok) throw new Error(data.error || "Katılım başarısız");
       setMsg(`Sınıfa katıldın: ${data.classroom?.name} (Kod: ${data.classroom?.code})`);
       setJoinCode("");

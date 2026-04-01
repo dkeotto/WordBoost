@@ -1,6 +1,39 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./LegalPages.css";
 import { isBillingManual } from "../utils/billingMode";
+import { readResponseJson } from "../utils/httpJson";
+import { apiUrl } from "../utils/apiUrl";
+import { mergePlansWithFallback, plansForManualMode } from "../utils/planPresentation";
+import PlanContactPanel from "./PlanContactPanel";
+
+function PlanCard({ plan, user, onGoPremium, showCta }) {
+  return (
+    <article className="pricing-card pricing-card--detailed">
+      <div className="pricing-card-head">
+        <h2>{plan.label}</h2>
+        {plan.displayPrice ? (
+          <p className="pricing-price-line" role="status">
+            {plan.displayPrice}
+          </p>
+        ) : null}
+      </div>
+      {plan.description ? <p className="pricing-desc">{plan.description}</p> : null}
+      {Array.isArray(plan.features) && plan.features.length > 0 ? (
+        <ul>
+          {plan.features.map((f, i) => (
+            <li key={i}>{f}</li>
+          ))}
+        </ul>
+      ) : null}
+      {showCta && user?.token && typeof onGoPremium === "function" ? (
+        <button type="button" className="pricing-cta" onClick={onGoPremium}>
+          Satın al / yükselt
+        </button>
+      ) : null}
+      {showCta && !user?.token ? <p className="legal-note">Satın almak veya Paddle ile ödemek için giriş yap.</p> : null}
+    </article>
+  );
+}
 
 /**
  * Paddle doğrulaması ve kullanıcılar için genel fiyatlandırma sayfası.
@@ -13,8 +46,8 @@ export default function PricingPage({ user, onBack, onGoPremium }) {
 
   useEffect(() => {
     if (manual) return;
-    fetch("/api/billing/plans")
-      .then((r) => r.json())
+    fetch(apiUrl("/api/billing/plans"))
+      .then(async (r) => readResponseJson(r))
       .then((d) => {
         if (d?.ok) setPlans(d.items || []);
         else setErr(d?.error || "Planlar yüklenemedi");
@@ -22,85 +55,75 @@ export default function PricingPage({ user, onBack, onGoPremium }) {
       .catch(() => setErr("Planlar yüklenemedi"));
   }, [manual]);
 
+  const displayPlans = useMemo(() => {
+    if (manual) return plansForManualMode();
+    if (plans.length > 0) return mergePlansWithFallback(plans);
+    return plansForManualMode();
+  }, [manual, plans]);
+
+  const showPaddleCta = !manual;
+
   return (
-    <div className="legal-page">
+    <div className="legal-page legal-page--pricing">
       <button type="button" className="legal-back" onClick={onBack}>
         ← Uygulamaya dön
       </button>
 
       <header className="legal-header">
-        <h1>Fiyatlandırma</h1>
+        <h1>Planlar ve fiyatlandırma</h1>
         <p className="legal-lead">
           {manual ? (
             <>
-              WordBoost: kelime pratiği, AI yazım ve sınıf özellikleri. Şu an ödeme entegrasyonu kapalı;{" "}
-              <strong>premium hesaplar yönetici tarafından manuel atanır.</strong>
+              WordBoost: kelime pratiği, AI yazım ve sınıf özellikleri. Aşağıda paket özetleri yer alır;{" "}
+              <strong>satın alım ve kurumsal teklif için iletişime geçebilirsin.</strong> Premium hesaplar ayrıca
+              yönetici tarafından atanabilir.
             </>
           ) : (
             <>
-              YDT Kelime Pratiği: kelime öğrenme, AI yazım asistanı ve sınıf özellikleri. Ödeme güvenli şekilde{" "}
-              <strong>Paddle</strong> üzerinden alınır.
+              Paket adı, kısa açıklama ve fiyat bilgisi özet olarak listelenir. Ödeme güvenli şekilde{" "}
+              <strong>Paddle</strong> üzerinden yapılabilir; kurumsal veya özel durumlar için iletişim bölümünü kullan.
             </>
           )}
         </p>
       </header>
 
-      {manual && (
-        <section className="legal-section">
-          <p>
-            Premium veya AI+ için uygulama yöneticisiyle iletişime geç. Yetkili kullanıcı, yönetim panelinden
-            hesabına süre ve özellik atayabilir.
-          </p>
-        </section>
-      )}
+      <section className="legal-section" aria-labelledby="plans-overview-title">
+        <h2 id="plans-overview-title">Paketler</h2>
+        <p className="legal-meta">
+          Her pakette: <strong>isim</strong>, <strong>açıklama</strong> ve <strong>fiyat / satın alım notu</strong>{" "}
+          gösterilir. Sunucudaki <code>PADDLE_PRICE_IDS</code> içinde <code>displayPrice</code> alanı varsa o metin
+          önceliklidir.
+        </p>
+      </section>
 
       {!manual && err && <p className="legal-note legal-note--warn">{err}</p>}
 
-      {!manual && (
-      <div className="pricing-grid">
-        {plans.length === 0 && !err && (
-          <p className="legal-note">Planlar yükleniyor… Sunucuda <code>PADDLE_PRICE_IDS</code> tanımlı olmalı.</p>
-        )}
-        {plans.map((p) => (
-          <article key={p.tier} className="pricing-card">
-            <h2>{p.label || p.tier}</h2>
-            {p.description ? <p className="pricing-desc">{p.description}</p> : null}
-            {Array.isArray(p.features) && p.features.length > 0 ? (
-              <ul>
-                {p.features.map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
-              </ul>
-            ) : (
-              <ul>
-                <li>Premium özellikler</li>
-              </ul>
-            )}
-            {user?.token && typeof onGoPremium === "function" ? (
-              <button type="button" className="pricing-cta" onClick={onGoPremium}>
-                Satın al / yükselt
-              </button>
-            ) : (
-              <p className="legal-note">Satın almak için giriş yap.</p>
-            )}
-          </article>
+      {!manual && plans.length === 0 && !err && (
+        <p className="legal-note">Planlar yükleniyor…</p>
+      )}
+
+      <div className="pricing-grid pricing-grid--spacious">
+        {displayPlans.map((p) => (
+          <PlanCard
+            key={p.tier}
+            plan={p}
+            user={user}
+            onGoPremium={onGoPremium}
+            showCta={showPaddleCta}
+          />
         ))}
       </div>
-      )}
 
       {!manual && plans.length === 0 && err && (
         <div className="pricing-fallback">
-          <h2>Örnek paketler</h2>
-          <ul>
-            <li>
-              <strong>Premium</strong> — AI Writing Mode (sınırsız kullanım), reklamsız deneyim
-            </li>
-            <li>
-              <strong>School / Teacher</strong> — Sınıf yönetimi, toplu öğrenci, analitik (Paddle’da ayrı price)
-            </li>
-          </ul>
+          <p className="legal-note">
+            API’den plan gelmedi; yukarıda genel özet paketler gösteriliyor. Sunucuda{" "}
+            <code>PADDLE_PRICE_IDS</code> tanımlı olduğunda canlı fiyat metinleri de eklenebilir.
+          </p>
         </div>
       )}
+
+      <PlanContactPanel className="pricing-contact-panel--page" />
 
       <footer className="legal-footer">
         <a href="/terms">Kullanım şartları</a>

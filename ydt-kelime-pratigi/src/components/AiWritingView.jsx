@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
+import { apiUrl } from "../utils/apiUrl";
 
 const TYPES = [
   { id: "essay", label: "Essay" },
@@ -28,6 +29,9 @@ const ANTHROPIC_BILLING_HINT =
 
 function humanizeAiErrorMessage(raw) {
   const s = String(raw || "");
+  if (/\(404\)/.test(s) || /\b404\b/.test(s)) {
+    return `${s} — Üretimde stream isteği bazen Vercel proxy’de 404 döner. Vercel’e VITE_SOCKET_URL (veya VITE_BACKEND_URL) = Railway kökü ekleyip yeniden derle; istekler doğrudan backend’e gider.`;
+  }
   if (
     s.includes('"authentication_error"') ||
     s.includes("Invalid authentication credentials") ||
@@ -91,7 +95,8 @@ export default function AiWritingView({ user, onGoPremium }) {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const res = await fetch(path, {
+    const url = path.startsWith("http") ? path : apiUrl(path);
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: token },
       body: JSON.stringify(body),
@@ -99,7 +104,13 @@ export default function AiWritingView({ user, onGoPremium }) {
     });
 
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
+      const errText = await res.text().catch(() => "");
+      let data = {};
+      try {
+        data = errText ? JSON.parse(errText) : {};
+      } catch {
+        data = { error: errText.replace(/<[^>]*>/g, " ").trim().slice(0, 200) || `HTTP ${res.status}` };
+      }
       const raw = data?.error || `AI stream error (${res.status})`;
       const msg = humanizeAiErrorMessage(raw);
       const err = new Error(msg);

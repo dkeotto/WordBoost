@@ -294,16 +294,18 @@ const Navbar = ({
             >
               {isPremium ? 'PRO' : 'Ücretsiz'}
             </span>
-            {!isPremium && (
-              <button
-                type="button"
-                className="nav-cookie-mini"
-                onClick={() => openConsentDialog()}
-                title="Çerez tercihi (reklamlar için)"
-              >
-                🍪
-              </button>
-            )}
+            <button
+              type="button"
+              className="nav-cookie-mini"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openConsentDialog();
+              }}
+              title="Çerez ve reklam tercihleri"
+            >
+              🍪
+            </button>
             <button className="nav-link profile-btn" onClick={() => handleNavClick('profile')}>
               {user.avatar && (user.avatar.startsWith('http') || user.avatar.startsWith('data:')) ? (
                 <img src={user.avatar} className="nav-avatar-img" alt="avatar" />

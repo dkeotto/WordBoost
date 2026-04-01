@@ -223,6 +223,34 @@
   line-height: 1.25;
 }
 
+.pricing-price-tag {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffd76a;
+  margin: -0.15rem 0 0.5rem;
+  line-height: 1.35;
+}
+
+.pricing-card--readonly {
+  cursor: default;
+  text-align: left;
+}
+
+.pricing-grid--manual {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.pricing-checkout-fallback-msg {
+  margin: 0;
+  flex: 1;
+  min-width: 200px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.45;
+  align-self: center;
+}
+
 .pricing-desc {
   color: rgba(255, 255, 255, 0.72);
   font-size: 0.82rem;
@@ -2053,10 +2081,11 @@ button:disabled {
 .user-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-wrap: nowrap;
   justify-content: flex-end;
-  max-width: min(100%, 320px);
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .nav-premium-badge {
@@ -2091,6 +2120,10 @@ button:disabled {
   line-height: 1;
   cursor: pointer;
   transition: background 0.2s ease;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1003;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nav-cookie-mini:hover {

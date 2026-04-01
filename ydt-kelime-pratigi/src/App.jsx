@@ -17,6 +17,8 @@ import PricingPage from "./components/PricingPage";
 import TermsPage from "./components/TermsPage";
 import PrivacyPage from "./components/PrivacyPage";
 import { sanitizeWordList } from "./utils/wordQuality";
+import { readResponseJson } from "./utils/httpJson";
+import { apiUrl } from "./utils/apiUrl";
 import { buildSynonymQuestionPool, buildPhrasalQuestionPool } from "./utils/questionGenerators";
 import { io } from "socket.io-client";
 import "./App.css";
@@ -515,7 +517,7 @@ const ProfileView = ({ user, setUser, logout }) => {
       if (!confirm("Hesabını kalıcı olarak silmek istediğine emin misin? Bu işlem geri alınamaz!")) return;
       
       try {
-        const res = await fetch('/api/profile', {
+        const res = await fetch(apiUrl('/api/profile'), {
           method: 'DELETE',
           headers: { 'Authorization': user.token }
         });
@@ -538,7 +540,7 @@ const ProfileView = ({ user, setUser, logout }) => {
         return;
       }
 
-      fetch('/api/profile/update', {
+      fetch(apiUrl('/api/profile/update'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -551,8 +553,8 @@ const ProfileView = ({ user, setUser, logout }) => {
           avatar: editForm.avatar
         })
       })
-      .then(res => res.json())
-      .then(data => {
+      .then(async (res) => {
+        const data = await readResponseJson(res);
         if (data.success) {
           const updatedUser = { ...user, ...data.user, token: user.token };
           setUser(updatedUser);
@@ -569,7 +571,7 @@ const ProfileView = ({ user, setUser, logout }) => {
       })
       .catch(err => {
         console.error(err);
-        alert("Bağlantı hatası!");
+        alert(err?.message || "Bağlantı hatası!");
       });
     };
 
@@ -941,9 +943,9 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
     const [searchResults, setSearchResults] = useState([]);
 
     useEffect(() => {
-      fetch("/api/leaderboard")
+      fetch(apiUrl("/api/leaderboard"))
         .then(async (res) => {
-          const data = await res.json().catch(() => []);
+          const data = await readResponseJson(res);
           if (!res.ok) throw new Error("leaderboard");
           return Array.isArray(data) ? data : [];
         })
@@ -962,9 +964,10 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
       setSearchQuery(q);
       
       if (q.length > 2) {
-        fetch(`/api/users/search?q=${q}`)
-          .then(res => res.json())
-          .then(data => setSearchResults(data));
+        fetch(`${apiUrl("/api/users/search")}?q=${encodeURIComponent(q)}`)
+          .then(async (res) => readResponseJson(res))
+          .then((data) => setSearchResults(Array.isArray(data) ? data : []))
+          .catch(() => setSearchResults([]));
       } else {
         setSearchResults([]);
       }
@@ -977,9 +980,9 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
       }
 
       setLoading(true);
-      fetch(`/api/users/${encodeURIComponent(targetUsername)}`)
+      fetch(apiUrl(`/api/users/${encodeURIComponent(targetUsername)}`))
         .then(async (res) => {
-          const data = await res.json().catch(() => ({}));
+          const data = await readResponseJson(res);
           if (!res.ok) {
             const detail =
               data?.error ||
@@ -997,9 +1000,12 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
         })
         .catch((e) => {
           const msg = e?.message || String(e);
-          alert(
-            `Kullanıcı profili yüklenemedi: ${msg}\n\nVercel’de Production için BACKEND_URL (Railway) tanımlı mı kontrol et.`
-          );
+          const infraHint =
+            /HTTP\s*404|NOT_FOUND|JSON yerine metin/i.test(msg) || msg.includes("BACKEND_URL");
+          const hint = infraHint
+            ? "\n\nÇözüm: Vercel’de BACKEND_URL + (tercihen) VITE_SOCKET_URL = Railway kökü; yeniden deploy. Veya kullanıcı adı listede yoksa 404 normaldir."
+            : "";
+          alert(`Kullanıcı profili yüklenemedi: ${msg}${hint}`);
           setLoading(false);
         });
     };
@@ -1649,11 +1655,11 @@ function App() {
       const userObj = { username: usernameParam, token };
       localStorage.setItem("wb_user", JSON.stringify(userObj));
 
-      fetch("/api/profile", {
+      fetch(apiUrl("/api/profile"), {
         headers: { Authorization: token }
       })
         .then(async (res) => {
-          const data = await res.json().catch(() => ({}));
+          const data = await readResponseJson(res);
           if (!res.ok) {
             throw new Error(data?.error || `Profil alınamadı (${res.status})`);
           }
@@ -1681,8 +1687,8 @@ function App() {
           if (parsedUser && parsedUser.token) {
             setUser(parsedUser);
             // Daha zengin kimlik/premium bilgisi için /api/me çek
-            fetch("/api/me", { headers: { Authorization: parsedUser.token } })
-              .then((r) => r.json())
+            fetch(apiUrl("/api/me"), { headers: { Authorization: parsedUser.token } })
+              .then(async (r) => readResponseJson(r))
               .then((me) => {
                 if (me && me.ok && me.user) {
                   const merged = { ...parsedUser, ...me.user, token: parsedUser.token };
@@ -1730,7 +1736,7 @@ function App() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-    fetch('/api/words', { signal: controller.signal })
+    fetch(apiUrl('/api/words'), { signal: controller.signal })
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
@@ -1942,7 +1948,7 @@ function App() {
     try {
       const token = user?.token;
       if (token) {
-        fetch("/api/progress/event", {
+        fetch(apiUrl("/api/progress/event"), {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: token },
           body: JSON.stringify({
@@ -2264,7 +2270,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
 
       // Server Update (If Logged In)
       if (hasToken) {
-        fetch('/api/stats/update', {
+        fetch(apiUrl('/api/stats/update'), {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -2277,8 +2283,8 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
             wordTerm: currentWord.term
           })
         })
-        .then(res => res.json())
-        .then(data => {
+        .then(async (res) => readResponseJson(res))
+        .then((data) => {
           if (data.success) {
             setUser(prev => ({
               ...prev,
@@ -2292,7 +2298,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
             }
           }
         })
-        .catch(err => console.error("Stats update failed:", err));
+        .catch((err) => console.error("Stats update failed:", err));
       }
     }
 
@@ -2541,8 +2547,8 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
           localStorage.setItem("wb_user", JSON.stringify(u));
           // Premium/role bilgisi için /api/me çek
           if (u && u.token) {
-            fetch("/api/me", { headers: { Authorization: u.token } })
-              .then((r) => r.json())
+            fetch(apiUrl("/api/me"), { headers: { Authorization: u.token } })
+              .then(async (r) => readResponseJson(r))
               .then((me) => {
                 if (me && me.ok && me.user) {
                   const merged = { ...u, ...me.user, token: u.token };

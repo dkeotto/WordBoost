@@ -688,7 +688,20 @@ const io = new Server(server, {
   pingInterval: 25000
 });
 
-app.use(cors());
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Admin-Token",
+      "X-Admin-Key",
+      "X-Requested-With",
+    ],
+  })
+);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -2066,6 +2079,7 @@ app.get('/api/billing/plans', (req, res) => {
     tier: p.tier,
     label: p.label,
     description: p.description,
+    displayPrice: p.displayPrice || "",
     features: p.features || [],
     allowQuantity: Boolean(p.allowQuantity),
     defaultQuantity: p.defaultQuantity || 1

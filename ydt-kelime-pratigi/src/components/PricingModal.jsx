@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { isBillingManual } from "../utils/billingMode";
+import { readResponseJson } from "../utils/httpJson";
+import { apiUrl } from "../utils/apiUrl";
+import { mergePlansWithFallback, plansForManualMode } from "../utils/planPresentation";
+import PlanContactPanel from "./PlanContactPanel";
+import "./LegalPages.css";
 
 function humanizeCheckoutError(msg) {
   const s = String(msg || "");
@@ -19,7 +24,21 @@ export default function PricingModal({ user, onClose }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  const selected = useMemo(() => plans.find((p) => p.tier === tier) || null, [plans, tier]);
+  const paddleMerged = useMemo(() => mergePlansWithFallback(plans), [plans]);
+  const fallbackList = useMemo(() => plansForManualMode(), []);
+  const canPaddleCheckout = !manual && plans.length > 0;
+
+  const displayPlans = useMemo(() => {
+    if (manual) return fallbackList;
+    if (plans.length > 0) return paddleMerged;
+    if (!loading && err) return fallbackList;
+    return [];
+  }, [manual, plans.length, paddleMerged, fallbackList, loading, err]);
+
+  const selected = useMemo(
+    () => (canPaddleCheckout ? paddleMerged.find((p) => p.tier === tier) : null) || null,
+    [canPaddleCheckout, paddleMerged, tier]
+  );
 
   useEffect(() => {
     if (manual) {
@@ -28,8 +47,8 @@ export default function PricingModal({ user, onClose }) {
     }
     setErr("");
     setLoading(true);
-    fetch("/api/billing/plans")
-      .then((r) => r.json())
+    fetch(apiUrl("/api/billing/plans"))
+      .then(async (r) => readResponseJson(r))
       .then((d) => {
         if (!d?.ok) throw new Error(d?.error || "Planlar yüklenemedi");
         setPlans(d.items || []);
@@ -44,6 +63,13 @@ export default function PricingModal({ user, onClose }) {
     if (!selected) return;
     setQuantity(Math.max(1, Number(selected.defaultQuantity || 1)));
   }, [selected]);
+
+  useEffect(() => {
+    if (!canPaddleCheckout || paddleMerged.length === 0) return;
+    if (!tier || !paddleMerged.some((p) => p.tier === tier)) {
+      setTier(paddleMerged[0].tier);
+    }
+  }, [canPaddleCheckout, paddleMerged, tier]);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -63,12 +89,12 @@ export default function PricingModal({ user, onClose }) {
     setErr("");
     setLoading(true);
     try {
-      const res = await fetch("/api/billing/paddle/portal-link", {
+      const res = await fetch(apiUrl("/api/billing/paddle/portal-link"), {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: token },
         body: JSON.stringify({ tier, quantity }),
       });
-      const d = await res.json();
+      const d = await readResponseJson(res);
       if (!res.ok) {
         if (d?.error === "email_required") {
           throw new Error("Satın alma için e-posta gerekli. Profilinden e-posta ekleyip tekrar dene.");
@@ -109,11 +135,28 @@ export default function PricingModal({ user, onClose }) {
 
         {manual && (
           <div className="pricing-manual-box">
-            <p>
-              <strong>Manuel premium:</strong> Giriş yaptıktan sonra hesabın için premium veya AI+ tanımlanması gerekiyorsa
-              uygulama yöneticisiyle iletişime geç. Yönetici, admin panelinden hesabına süre ve yetki atayabilir.
+            <p className="pricing-subtitle" style={{ marginBottom: "0.75rem" }}>
+              Ödeme sağlayıcısı kapalı. Paket özetleri aşağıda; <strong>satın alım için iletişim</strong> kutusunu kullan
+              veya yöneticiden premium ataması iste.
             </p>
-            {!token ? <p className="pricing-desc">Satın alma / talep için önce giriş yap.</p> : null}
+            <div className="pricing-grid pricing-grid--manual">
+              {displayPlans.map((p) => (
+                <div key={p.tier} className="pricing-card pricing-card--readonly">
+                  <div className="pricing-title">{p.label}</div>
+                  {p.displayPrice ? <div className="pricing-price-tag">{p.displayPrice}</div> : null}
+                  {p.description ? <div className="pricing-desc">{p.description}</div> : null}
+                  {Array.isArray(p.features) && p.features.length > 0 ? (
+                    <ul className="pricing-features">
+                      {p.features.slice(0, 6).map((f, i) => (
+                        <li key={`${p.tier}-m-${i}`}>{String(f)}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            {!token ? <p className="pricing-desc">Paddle ile ödeme açıksa satın almak için giriş gerekir.</p> : null}
+            <PlanContactPanel />
             <div className="pricing-actions">
               <button type="button" className="pricing-btn pricing-btn--primary" onClick={onClose}>
                 Tamam
@@ -125,38 +168,62 @@ export default function PricingModal({ user, onClose }) {
         {!manual && loading && plans.length === 0 && <div className="pricing-loading">Planlar yükleniyor…</div>}
         {!manual && err && <div className="pricing-error-banner">{err}</div>}
 
-        {!manual && plans.length > 0 && (
+        {!manual && displayPlans.length > 0 && (
           <>
             <div className="pricing-grid">
-              {plans.map((p) => (
-                <button
-                  key={p.tier}
-                  type="button"
-                  className={`pricing-card ${tier === p.tier ? "active" : ""} ${
-                    p.tier === "premium" ? "pricing-card--featured" : ""
-                  } ${p.tier === "aiPlus" ? "pricing-card--ai" : ""} ${p.tier === "classroom" ? "pricing-card--school" : ""}`}
-                  onClick={() => setTier(p.tier)}
-                  disabled={loading}
-                >
-                  {p.tier === "aiPlus" ? <span className="pricing-tag pricing-tag--once">Tek sefer</span> : null}
-                  {p.tier === "classroom" ? <span className="pricing-tag pricing-tag--team">Okul / sınıf</span> : null}
-                  {p.tier === "premium" ? <span className="pricing-ribbon-badge">En popüler</span> : null}
-                  <div className="pricing-title">{p.label || p.tier}</div>
-                  {p.description ? <div className="pricing-desc">{p.description}</div> : null}
-                  {Array.isArray(p.features) && p.features.length > 0 ? (
-                    <ul className="pricing-features">
-                      {p.features.slice(0, 8).map((f, i) => (
-                        <li key={`${p.tier}-${i}`}>{String(f)}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="pricing-desc pricing-desc--muted">—</div>
-                  )}
-                </button>
-              ))}
+              {displayPlans.map((p) =>
+                canPaddleCheckout ? (
+                  <button
+                    key={p.tier}
+                    type="button"
+                    className={`pricing-card ${tier === p.tier ? "active" : ""} ${
+                      p.tier === "premium" ? "pricing-card--featured" : ""
+                    } ${p.tier === "aiPlus" ? "pricing-card--ai" : ""} ${p.tier === "classroom" ? "pricing-card--school" : ""}`}
+                    onClick={() => setTier(p.tier)}
+                    disabled={loading}
+                  >
+                    {p.tier === "aiPlus" ? <span className="pricing-tag pricing-tag--once">Tek sefer</span> : null}
+                    {p.tier === "classroom" ? <span className="pricing-tag pricing-tag--team">Okul / sınıf</span> : null}
+                    {p.tier === "premium" ? <span className="pricing-ribbon-badge">En popüler</span> : null}
+                    <div className="pricing-title">{p.label || p.tier}</div>
+                    {p.displayPrice ? <div className="pricing-price-tag">{p.displayPrice}</div> : null}
+                    {p.description ? <div className="pricing-desc">{p.description}</div> : null}
+                    {Array.isArray(p.features) && p.features.length > 0 ? (
+                      <ul className="pricing-features">
+                        {p.features.slice(0, 8).map((f, i) => (
+                          <li key={`${p.tier}-${i}`}>{String(f)}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="pricing-desc pricing-desc--muted">—</div>
+                    )}
+                  </button>
+                ) : (
+                  <div
+                    key={p.tier}
+                    className={`pricing-card pricing-card--readonly ${
+                      p.tier === "premium" ? "pricing-card--featured" : ""
+                    } ${p.tier === "aiPlus" ? "pricing-card--ai" : ""} ${p.tier === "classroom" ? "pricing-card--school" : ""}`}
+                  >
+                    {p.tier === "aiPlus" ? <span className="pricing-tag pricing-tag--once">Tek sefer</span> : null}
+                    {p.tier === "classroom" ? <span className="pricing-tag pricing-tag--team">Okul / sınıf</span> : null}
+                    {p.tier === "premium" ? <span className="pricing-ribbon-badge">En popüler</span> : null}
+                    <div className="pricing-title">{p.label || p.tier}</div>
+                    {p.displayPrice ? <div className="pricing-price-tag">{p.displayPrice}</div> : null}
+                    {p.description ? <div className="pricing-desc">{p.description}</div> : null}
+                    {Array.isArray(p.features) && p.features.length > 0 ? (
+                      <ul className="pricing-features">
+                        {p.features.slice(0, 8).map((f, i) => (
+                          <li key={`${p.tier}-fb-${i}`}>{String(f)}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                )
+              )}
             </div>
 
-            {selected?.allowQuantity ? (
+            {canPaddleCheckout && selected?.allowQuantity ? (
               <div className="pricing-row">
                 <label className="pricing-qty-label">
                   Öğrenci / lisans adedi
@@ -171,13 +238,26 @@ export default function PricingModal({ user, onClose }) {
               </div>
             ) : null}
 
+            <PlanContactPanel />
+
             <div className="pricing-actions">
               <button type="button" className="pricing-btn pricing-btn--ghost" onClick={onClose} disabled={loading}>
                 Vazgeç
               </button>
-              <button type="button" className="pricing-btn pricing-btn--primary" onClick={goCheckout} disabled={loading || !tier}>
-                {loading ? "Yönlendiriliyor…" : "Paddle ile satın al"}
-              </button>
+              {canPaddleCheckout ? (
+                <button
+                  type="button"
+                  className="pricing-btn pricing-btn--primary"
+                  onClick={goCheckout}
+                  disabled={loading || !tier}
+                >
+                  {loading ? "Yönlendiriliyor…" : "Paddle ile satın al"}
+                </button>
+              ) : (
+                <p className="pricing-checkout-fallback-msg">
+                  Canlı planlar yüklenemedi; satın alım için yukarıdaki iletişim bölümünü kullan.
+                </p>
+              )}
             </div>
           </>
         )}

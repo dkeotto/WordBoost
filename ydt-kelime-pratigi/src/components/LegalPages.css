@@ -6,6 +6,10 @@
   text-align: left;
 }
 
+.legal-page--pricing {
+  max-width: 960px;
+}
+
 .legal-back {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -97,9 +101,18 @@
   margin-top: 1.25rem;
 }
 
+.pricing-grid--spacious {
+  margin-top: 1.5rem;
+  gap: 1.25rem;
+}
+
 @media (min-width: 640px) {
   .pricing-grid {
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .pricing-grid--spacious {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   }
 }
 
@@ -113,6 +126,70 @@
 .pricing-card h2 {
   font-size: 1.15rem;
   margin-bottom: 0.5rem;
+}
+
+.pricing-card-head h2 {
+  margin-bottom: 0.25rem;
+}
+
+.pricing-price-line {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffd76a;
+  margin: 0 0 0.5rem;
+  line-height: 1.35;
+}
+
+.pricing-card--detailed {
+  display: flex;
+  flex-direction: column;
+}
+
+.pricing-contact-panel {
+  margin-top: 2rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 159, 28, 0.4);
+  background: rgba(255, 159, 28, 0.09);
+}
+
+.pricing-contact-panel--page {
+  margin-top: 2.25rem;
+}
+
+.pricing-contact-panel h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  color: var(--text-main, #fff);
+}
+
+.pricing-contact-panel p {
+  margin: 0.4rem 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.pricing-contact-email a {
+  color: #ffcc80;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pricing-contact-email a:hover {
+  text-decoration: underline;
+}
+
+.pricing-contact-muted {
+  color: var(--text-muted, #b0b0b0);
+  font-size: 0.88rem;
+}
+
+.pricing-contact-muted code {
+  font-size: 0.82em;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
 }
 
 .pricing-desc {

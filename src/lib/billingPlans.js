@@ -17,7 +17,8 @@ function parseBillingPlansFromEnv() {
     const allowQuantity = Boolean(v?.allowQuantity);
     const features = Array.isArray(v?.features) ? v.features.map((x) => String(x)) : [];
     const entitlements = v?.entitlements && typeof v.entitlements === "object" ? v.entitlements : {};
-    return { tier, priceId, label, description, defaultQuantity, allowQuantity, features, entitlements };
+    const displayPrice = String(v?.displayPrice || v?.priceNote || v?.price_label || "").trim();
+    return { tier, priceId, label, description, displayPrice, defaultQuantity, allowQuantity, features, entitlements };
   });
 
   const bad = plans.find((p) => !p.tier || !p.priceId || !p.priceId.startsWith("pri_"));

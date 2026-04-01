@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getGoogleAuthUrl } from "../utils/backendOrigin";
+import { readResponseJson } from "../utils/httpJson";
 
 export default function LoginModal({ onLogin, onClose }) {
   const [activeTab, setActiveTab] = useState("login"); // 'login', 'register', 'verify', 'forgot', 'reset'
@@ -40,7 +41,7 @@ export default function LoginModal({ onLogin, onClose }) {
         body: JSON.stringify({ username: loginIdentifier, password: loginPassword })
       });
 
-      const data = await res.json();
+      const data = await readResponseJson(res);
 
       if (data.success && data.token) {
         if (rememberMe) {
@@ -61,8 +62,8 @@ export default function LoginModal({ onLogin, onClose }) {
       }
 
       alert("Giriş başarısız. Bilgileri kontrol edin.");
-    } catch {
-      alert("Bağlantı hatası");
+    } catch (e) {
+      alert(e?.message || "Bağlantı hatası");
     } finally {
       setIsSubmitting(false);
     }
@@ -87,7 +88,7 @@ export default function LoginModal({ onLogin, onClose }) {
 
       let data = {};
       try {
-        data = await res.json();
+        data = await readResponseJson(res);
       } catch {
         data = {};
       }
@@ -144,7 +145,7 @@ export default function LoginModal({ onLogin, onClose }) {
         body: JSON.stringify({ email: emailNorm, code: codeNorm })
       });
 
-      const data = await res.json();
+      const data = await readResponseJson(res);
 
       if (data.success) {
         alert("Hesabınız doğrulandı! Giriş yapılıyor...");
@@ -152,8 +153,8 @@ export default function LoginModal({ onLogin, onClose }) {
       } else {
         alert(data.error || "Doğrulama başarısız");
       }
-    } catch {
-      alert("Bağlantı hatası");
+    } catch (e) {
+      alert(e?.message || "Bağlantı hatası");
     } finally {
       setIsSubmitting(false);
     }
@@ -174,7 +175,7 @@ export default function LoginModal({ onLogin, onClose }) {
         body: JSON.stringify({ email: verifyEmail })
       });
 
-      const data = await res.json();
+      const data = await readResponseJson(res);
 
       if (data.success) {
         alert("Sıfırlama kodu gönderildi.");
@@ -182,8 +183,8 @@ export default function LoginModal({ onLogin, onClose }) {
       } else {
         alert(data.error || "İşlem başarısız");
       }
-    } catch {
-      alert("Bağlantı hatası");
+    } catch (e) {
+      alert(e?.message || "Bağlantı hatası");
     } finally {
       setIsSubmitting(false);
     }
@@ -204,7 +205,7 @@ export default function LoginModal({ onLogin, onClose }) {
         body: JSON.stringify({ email: verifyEmail, code: verifyCode, newPassword })
       });
 
-      const data = await res.json();
+      const data = await readResponseJson(res);
 
       if (data.success) {
         alert("Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz.");
@@ -212,8 +213,8 @@ export default function LoginModal({ onLogin, onClose }) {
       } else {
         alert(data.error || "Sıfırlama başarısız");
       }
-    } catch {
-      alert("Bağlantı hatası");
+    } catch (e) {
+      alert(e?.message || "Bağlantı hatası");
     } finally {
       setIsSubmitting(false);
     }

@@ -22,7 +22,7 @@ Bu modda **bu klasördeki** `vercel.json` kullanılır; `YDT/vercel.json` **devr
 
 ### 2) Monorepo kökü — Root Directory = `.` (YDT)
 
-Tüm repoyu Vercel kökü seçtiysen üst dizindeki `vercel.json` devreye girer: `install` / `build` / `output` `ydt-kelime/ydt-kelime-pratigi` altına yönlendirilir; `/api/*` için **`YDT/api/[...path].js`** kullanılır (aynı proxy mantığı `lib/vercelApiProxy.mjs`).
+Tüm repoyu Vercel kökü seçtiysen üst dizindeki `vercel.json` devreye girer: `install` / `build` / `output` `ydt-kelime/ydt-kelime-pratigi` altına yönlendirilir. **`/api/*`** istekleri önce **`middleware.js`** (Node runtime, `lib/vercelMiddlewareProxy.mjs`) ile Railway’e iletilir; böylece yalnızca `api/[...path].js` algılanmadığında oluşan **404 NOT_FOUND** (ör. `/api/auth/google`) engellenir. İsteğe bağlı **`api/[...path].js`** aynı proxy’yi tekrarlar.
 
 **Özel Build / Install override kullanma** — çakışma yapar. Varsayılan `npm install` + `npm run build` yeterli (kök `package.json` script’leri ile uyumlu).
 
@@ -35,7 +35,7 @@ Tüm repoyu Vercel kökü seçtiysen üst dizindeki `vercel.json` devreye girer:
 | `VITE_BACKEND_URL` | Evet | İsteğe bağlı; Socket / eski senaryolar. |
 | `VITE_ADSENSE_*`, `VITE_PADDLE_CLIENT_TOKEN` | Evet | `.env.example` ile aynı. |
 
-`BACKEND_URL` **`VITE_` öneki almaz**; yalnızca serverless proxy okur.
+`BACKEND_URL` **`VITE_` öneki almaz**; **Routing Middleware** ve `api/[...path].js` proxy’si bunu okur (Vercel ortam değişkenlerinde tanımlı olmalı).
 
 ### Google ile giriş (OAuth)
 

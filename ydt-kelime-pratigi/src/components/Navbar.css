@@ -114,6 +114,11 @@
   flex-shrink: 0;
 }
 
+.nav-item.user-section {
+  flex-shrink: 0;
+  align-self: center;
+}
+
 .nav-link {
   color: #e0e0e0;
   display: flex;
