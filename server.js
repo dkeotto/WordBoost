@@ -2426,7 +2426,7 @@ app.post('/api/ai/write', aiLimiter, async (req, res) => {
     if (!input || input.length < 3) return res.status(400).json({ error: "inputText gerekli" });
 
     const { system, messages } = buildWritingPrompt({ type, tone, length, language, audience, context, inputText: input });
-    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest");
+    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022");
 
     const startedAt = Date.now();
     const resp = await aiProvider.createMessage({
@@ -2510,7 +2510,7 @@ app.post('/api/ai/rewrite', aiLimiter, async (req, res) => {
         ? `Metnin tonunu şu tona çevir: ${tn}.`
         : "Metni daha insani/doğal yaz; robotik ifadeleri azalt, tekrarları kır.";
 
-    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest");
+    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022");
     const startedAt = Date.now();
     const rewriteSystem =
       "Sen bir yeniden yazım/editing asistanısın. Çıktı doğal, insan gibi, akıcı olmalı.\n" +
@@ -2605,7 +2605,7 @@ app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
     if (!input || input.length < 3) return res.status(400).json({ error: "inputText gerekli" });
 
     const { system, messages } = buildWritingPrompt({ type, tone, length, language, audience, context, inputText: input });
-    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest");
+    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022");
 
     setSseHeaders(res);
     sseWrite(res, "meta", { ok: true, mode: "write", isPremium: premium });
@@ -2716,7 +2716,7 @@ app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
         ? `Metnin tonunu şu tona çevir: ${tn}.`
         : "Metni daha insani/doğal yaz; robotik ifadeleri azalt, tekrarları kır.";
 
-    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest");
+    const model = String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022");
 
     setSseHeaders(res);
     sseWrite(res, "meta", { ok: true, mode: "rewrite", isPremium: premium });

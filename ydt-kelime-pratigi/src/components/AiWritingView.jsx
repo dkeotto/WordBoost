@@ -29,6 +29,9 @@ const ANTHROPIC_BILLING_HINT =
 
 function humanizeAiErrorMessage(raw) {
   const s = String(raw || "");
+  if (s.includes("not_found_error") && s.toLowerCase().includes("model")) {
+    return `${s} — Anthropic bu modeli bulamıyor. Railway’de ANTHROPIC_MODEL’i tarihli bir ID yap (örn. claude-3-5-sonnet-20241022; *-latest kullanma) ve servisi yeniden başlat. Hâlâ 404 ise Vercel’e VITE_SOCKET_URL veya VITE_BACKEND_URL = Railway kökü ekleyip frontend’i yeniden derle.`;
+  }
   if (/\(404\)/.test(s) || /\b404\b/.test(s)) {
     return `${s} — Üretimde stream isteği bazen Vercel proxy’de 404 döner. Vercel’e VITE_SOCKET_URL (veya VITE_BACKEND_URL) = Railway kökü ekleyip yeniden derle; istekler doğrudan backend’e gider.`;
   }

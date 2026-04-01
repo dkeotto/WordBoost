@@ -37,6 +37,11 @@ Tüm repoyu Vercel kökü seçtiysen üst dizindeki `vercel.json` devreye girer:
 
 `BACKEND_URL` **`VITE_` öneki almaz**; **Routing Middleware** ve `api/[...path].js` proxy’si bunu okur (Vercel ortam değişkenlerinde tanımlı olmalı).
 
+### AI yazma (SSE / stream) 404 veya `not_found_error` (model)
+
+- **İstemci:** `VITE_SOCKET_URL` **veya** `VITE_BACKEND_URL` = Railway Express kökü (`https://xxx.up.railway.app`), **sonunda `/` yok**. Build’e gömülür; tanımladıktan sonra **yeniden deploy** gerekir. Böylece `/api/ai/*/stream` istekleri Vercel proxy’sini atlayıp doğrudan Railway’e gider.
+- **Railway (backend):** `ANTHROPIC_API_KEY` zorunlu. `ANTHROPIC_MODEL` için **`claude-3-5-sonnet-20241022`** gibi **tarihli** model ID kullan; `claude-3-5-sonnet-latest` bazı hesaplarda **404 / not_found_error** döndürüyor. Güncel listeyi [Anthropic modeller](https://docs.anthropic.com/en/docs/about-claude/models) sayfasından doğrula.
+
 ### Google ile giriş (OAuth)
 
 Sunucu (`server.js`) canlıda **`redirect_uri`** olarak şunu üretir: **`https://wordboost.com.tr/api/auth/google/callback`** (Vercel `/api/auth/*` → Railway `/auth/*`).

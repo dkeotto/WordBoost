@@ -6,11 +6,7 @@ function findExistingScript(client) {
   if (typeof document === "undefined") return null;
   const enc = encodeURIComponent(client);
   const scripts = [...document.querySelectorAll("script[src*='pagead2.googlesyndication.com/pagead/js/adsbygoogle.js']")];
-  return (
-    scripts.find((s) => s.src.includes(enc) || s.src.includes(client)) ||
-    [...document.querySelectorAll("script[data-adsense='true']")].find((n) => n.dataset.client === client) ||
-    null
-  );
+  return scripts.find((s) => s.src.includes(enc) || s.src.includes(client)) || null;
 }
 
 export function ensureAdSenseScript(client) {
@@ -34,8 +30,6 @@ export function ensureAdSenseScript(client) {
     s.async = true;
     s.crossOrigin = "anonymous";
     s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(client)}`;
-    s.dataset.adsense = "true";
-    s.dataset.client = client;
     s.onload = () => resolve();
     s.onerror = () => resolve();
     document.head.appendChild(s);
