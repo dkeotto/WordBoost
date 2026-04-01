@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { isBillingManual } from "../utils/billingMode";
 
 function humanizeCheckoutError(msg) {
   const s = String(msg || "");
@@ -11,6 +12,7 @@ function humanizeCheckoutError(msg) {
 
 export default function PricingModal({ user, onClose }) {
   const token = user?.token || "";
+  const manual = useMemo(() => isBillingManual(), []);
   const [plans, setPlans] = useState([]);
   const [tier, setTier] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -20,6 +22,10 @@ export default function PricingModal({ user, onClose }) {
   const selected = useMemo(() => plans.find((p) => p.tier === tier) || null, [plans, tier]);
 
   useEffect(() => {
+    if (manual) {
+      setLoading(false);
+      return;
+    }
     setErr("");
     setLoading(true);
     fetch("/api/billing/plans")
@@ -32,7 +38,7 @@ export default function PricingModal({ user, onClose }) {
       })
       .catch((e) => setErr(humanizeCheckoutError(e.message) || "Hata"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [manual]);
 
   useEffect(() => {
     if (!selected) return;
@@ -48,6 +54,7 @@ export default function PricingModal({ user, onClose }) {
   }, []);
 
   const goCheckout = async () => {
+    if (manual) return;
     if (!token) {
       setErr("Satın alma için giriş gerekli.");
       return;
@@ -88,18 +95,37 @@ export default function PricingModal({ user, onClose }) {
       >
         <div className="pricing-header">
           <div>
-            <h3 id="pricing-modal-title">Plan seç</h3>
-            <p className="pricing-subtitle">WordBoost paketleri — güvenli ödeme Paddle üzerinden</p>
+            <h3 id="pricing-modal-title">{manual ? "Premium" : "Plan seç"}</h3>
+            <p className="pricing-subtitle">
+              {manual
+                ? "Ödeme sağlayıcısı kullanılmıyor; premium hesaplar yönetici tarafından atanır."
+                : "WordBoost paketleri — güvenli ödeme Paddle üzerinden"}
+            </p>
           </div>
           <button type="button" className="pricing-close" onClick={onClose} aria-label="Kapat">
             ✕
           </button>
         </div>
 
-        {loading && plans.length === 0 && <div className="pricing-loading">Planlar yükleniyor…</div>}
-        {err && <div className="pricing-error-banner">{err}</div>}
+        {manual && (
+          <div className="pricing-manual-box">
+            <p>
+              <strong>Manuel premium:</strong> Giriş yaptıktan sonra hesabın için premium veya AI+ tanımlanması gerekiyorsa
+              uygulama yöneticisiyle iletişime geç. Yönetici, admin panelinden hesabına süre ve yetki atayabilir.
+            </p>
+            {!token ? <p className="pricing-desc">Satın alma / talep için önce giriş yap.</p> : null}
+            <div className="pricing-actions">
+              <button type="button" className="pricing-btn pricing-btn--primary" onClick={onClose}>
+                Tamam
+              </button>
+            </div>
+          </div>
+        )}
 
-        {plans.length > 0 && (
+        {!manual && loading && plans.length === 0 && <div className="pricing-loading">Planlar yükleniyor…</div>}
+        {!manual && err && <div className="pricing-error-banner">{err}</div>}
+
+        {!manual && plans.length > 0 && (
           <>
             <div className="pricing-grid">
               {plans.map((p) => (

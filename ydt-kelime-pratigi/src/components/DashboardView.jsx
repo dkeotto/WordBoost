@@ -239,8 +239,6 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
             </div>
           </div>
 
-          <AdSlot slot={slotInline} className="ad-slot ad-inline" isPremium={isPremium} />
-
           <div className="recent-words-box">
             <h3>Son Çalışılan Kelimeler</h3>
             {recentWords.length === 0 ? (
@@ -253,6 +251,8 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
               </div>
             )}
           </div>
+
+          <AdSlot slot={slotInline} className="ad-slot ad-inline" isPremium={isPremium} />
         </div>
 
         <aside className="dashboard-sidebar">

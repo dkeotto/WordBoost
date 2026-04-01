@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "./StartupScreen.css";
 
 /**
@@ -6,6 +6,8 @@ import "./StartupScreen.css";
  * exiting=true olduğunda yumuşak fade-out ile ana uygulamaya geçilir.
  */
 export default function StartupScreen({ exiting = false }) {
+  const [logoFailed, setLogoFailed] = useState(false);
+
   return (
     <div className={`startup-root ${exiting ? "startup-root--exit" : ""}`} aria-hidden="true">
       <div className="startup-bg" />
@@ -14,25 +16,30 @@ export default function StartupScreen({ exiting = false }) {
       <div className="startup-orb startup-orb--3" />
 
       <div className="startup-content">
-        <div className="startup-mark">
-          <span className="startup-mark__ring" />
-          <span className="startup-mark__icon" aria-hidden>
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M14 34V14l10 10 10-10v20"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        <div className="startup-brand">
+          <div className="startup-logo-wrap">
+            {!logoFailed ? (
+              <img
+                src="/wb-logo.png"
+                alt=""
+                className="startup-logo"
+                width={120}
+                height={120}
+                decoding="async"
+                onError={() => setLogoFailed(true)}
               />
-            </svg>
-          </span>
-        </div>
+            ) : (
+              <span className="startup-logo-fallback" aria-hidden>
+                WordBoost
+              </span>
+            )}
+          </div>
 
-        <h1 className="startup-title">
-          <span className="startup-title__main">YDT</span>
-          <span className="startup-title__sub">Kelime Pratiği</span>
-        </h1>
+          <h1 className="startup-title">
+            <span className="startup-title__main">WordBoost</span>
+            <span className="startup-title__sub">Kelime Pratiği</span>
+          </h1>
+        </div>
 
         <p className="startup-tagline">İngilizce kelime hazneni güçlendir</p>
 

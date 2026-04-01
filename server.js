@@ -476,8 +476,12 @@ app.get('/auth/google/callback', (req, res, next) => {
         { expiresIn: "30d" }
       );
 
-      // FRONTEND_URL'e y?nlendir (Token ile)
-      res.redirect(`${FRONTEND_URL}/?token=${token}&username=${user.username}`);
+      // FRONTEND_URL'e yönlendir (token + kullanıcı adı; özel karakterler için encode)
+      const q = new URLSearchParams({
+        token,
+        username: user.username
+      });
+      res.redirect(`${FRONTEND_URL}/?${q.toString()}`);
     });
   })(req, res, next);
 });
@@ -2775,18 +2779,23 @@ app.get('/api/admin/summary', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/users/meta', requireAdmin, async (req, res) => {
   try {
+    const now = new Date();
     const [
       total,
       withEmail,
       verified,
       googleLinked,
-      withPassword
+      withPassword,
+      premiumActive,
+      aiPlusEntitled
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ email: { $exists: true, $nin: [null, ''] } }),
       User.countDocuments({ isVerified: true }),
       User.countDocuments({ googleId: { $exists: true, $nin: [null, ''] } }),
-      User.countDocuments({ password: { $exists: true, $nin: [null, ''] } })
+      User.countDocuments({ password: { $exists: true, $nin: [null, ''] } }),
+      User.countDocuments({ premiumUntil: { $gt: now } }),
+      User.countDocuments({ 'entitlements.aiPlus': true })
     ]);
     res.json({
       ok: true,
@@ -2794,7 +2803,9 @@ app.get('/api/admin/users/meta', requireAdmin, async (req, res) => {
       withEmail,
       verified,
       googleLinked,
-      withPassword
+      withPassword,
+      premiumActive,
+      aiPlusEntitled
     });
   } catch (e) {
     pushAdminError(e.message, { path: 'admin/users/meta' });
@@ -2807,10 +2818,11 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(100, Math.max(5, parseInt(req.query.limit, 10) || 25));
     const q = String(req.query.q || '').trim();
-    const sortField = ['createdAt', 'username', 'lastStudyDate', 'streak'].includes(req.query.sort)
+    const sortField = ['createdAt', 'username', 'lastStudyDate', 'streak', 'premiumUntil'].includes(req.query.sort)
       ? req.query.sort
       : 'createdAt';
     const order = req.query.order === 'asc' ? 1 : -1;
+    const now = new Date();
 
     const conditions = [];
     if (q) {
@@ -2833,6 +2845,21 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
         $or: [{ googleId: { $exists: false } }, { googleId: null }, { googleId: '' }]
       });
     }
+    if (req.query.premium === 'active') {
+      conditions.push({ premiumUntil: { $gt: now } });
+    }
+    if (req.query.premium === 'none') {
+      conditions.push({
+        $or: [
+          { premiumUntil: { $exists: false } },
+          { premiumUntil: null },
+          { premiumUntil: { $lte: now } }
+        ]
+      });
+    }
+    if (req.query.premium === 'aiplus') {
+      conditions.push({ 'entitlements.aiPlus': true });
+    }
 
     const filter = conditions.length === 0 ? {} : { $and: conditions };
 
@@ -2849,11 +2876,13 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
 
     const items = raw.map((u) => {
       const hasPassword = Boolean(u.password && String(u.password).length > 0);
+      const premiumUntil = u.premiumUntil || null;
       return {
       _id: u._id,
       username: u.username,
       nickname: u.nickname || '',
       email: u.email || null,
+      role: u.role || 'student',
       isVerified: Boolean(u.isVerified),
       hasGoogle: Boolean(u.googleId),
       hasPassword,
@@ -2863,7 +2892,10 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
       streak: u.streak ?? 0,
       lastStudyDate: u.lastStudyDate || null,
       badges: (u.badges || []).slice(0, 30),
-      createdAt: u.createdAt || null
+      createdAt: u.createdAt || null,
+      premiumUntil,
+      isPremium: isPremiumUser({ premiumUntil }),
+      entitlements: u.entitlements && typeof u.entitlements === 'object' ? u.entitlements : {}
     };
     });
 
@@ -3034,6 +3066,16 @@ app.put('/api/admin/users/:id/premium', requireAdmin, async (req, res) => {
       if (Number.isNaN(d.getTime())) return res.status(400).json({ error: 'premiumUntil geçersiz tarih' });
       user.premiumUntil = d;
     }
+
+    // Manuel AI+ (Paddle olmadan): entitlements.aiPlus
+    if (typeof req.body?.aiPlus === 'boolean') {
+      const next = { ...(user.entitlements || {}) };
+      if (req.body.aiPlus) next.aiPlus = true;
+      else delete next.aiPlus;
+      user.entitlements = next;
+      user.markModified('entitlements');
+    }
+
     await user.save();
     res.json({
       ok: true,
@@ -3041,7 +3083,9 @@ app.put('/api/admin/users/:id/premium', requireAdmin, async (req, res) => {
         _id: user._id,
         username: user.username,
         premiumUntil: user.premiumUntil || null,
-        isPremium: isPremiumUser(user)
+        isPremium: isPremiumUser(user),
+        entitlements: user.entitlements || {},
+        hasUnlimitedAi: hasUnlimitedAiMode(user)
       }
     });
   } catch (e) {
@@ -3317,23 +3361,40 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const roomCode = generateRoomCode();
     const userAvatar = avatar || '??';
 
     console.log("Mongo'ya room yaz?l?yor...");
 
-    const mongoRoom = await Room.create({
-      code: roomCode,
-      host: username,
-      users: [{
-        username,
-        avatar: '??',
-        studied: 0,
-        known: 0,
-        unknown: 0
-      }],
-      isActive: true
-    });
+    let mongoRoom;
+    let roomCode;
+    for (let attempt = 0; attempt < 12; attempt++) {
+      roomCode = generateRoomCode();
+      try {
+        mongoRoom = await Room.create({
+          code: roomCode,
+          host: username,
+          users: [
+            {
+              username,
+              avatar: "??",
+              studied: 0,
+              known: 0,
+              unknown: 0,
+            },
+          ],
+          isActive: true,
+        });
+        break;
+      } catch (e) {
+        if (e && e.code === 11000) continue;
+        throw e;
+      }
+    }
+
+    if (!mongoRoom) {
+      callback?.({ success: false, error: "Oda kodu üretilemedi, tekrar dene" });
+      return;
+    }
 
     console.log("Mongo room yaz?ld?:", mongoRoom.code);
 

@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./LegalPages.css";
+import { isBillingManual } from "../utils/billingMode";
 
 /**
  * Paddle doğrulaması ve kullanıcılar için genel fiyatlandırma sayfası.
- * Gerçek ödeme tutarları Paddle panelindeki price’lara göre değişir.
+ * Manuel modda Paddle çağrısı yapılmaz.
  */
 export default function PricingPage({ user, onBack, onGoPremium }) {
+  const manual = useMemo(() => isBillingManual(), []);
   const [plans, setPlans] = useState([]);
   const [err, setErr] = useState("");
 
   useEffect(() => {
+    if (manual) return;
     fetch("/api/billing/plans")
       .then((r) => r.json())
       .then((d) => {
@@ -17,7 +20,7 @@ export default function PricingPage({ user, onBack, onGoPremium }) {
         else setErr(d?.error || "Planlar yüklenemedi");
       })
       .catch(() => setErr("Planlar yüklenemedi"));
-  }, []);
+  }, [manual]);
 
   return (
     <div className="legal-page">
@@ -28,13 +31,32 @@ export default function PricingPage({ user, onBack, onGoPremium }) {
       <header className="legal-header">
         <h1>Fiyatlandırma</h1>
         <p className="legal-lead">
-          YDT Kelime Pratiği: kelime öğrenme, AI yazım asistanı ve sınıf özellikleri. Ödeme güvenli şekilde{" "}
-          <strong>Paddle</strong> üzerinden alınır.
+          {manual ? (
+            <>
+              WordBoost: kelime pratiği, AI yazım ve sınıf özellikleri. Şu an ödeme entegrasyonu kapalı;{" "}
+              <strong>premium hesaplar yönetici tarafından manuel atanır.</strong>
+            </>
+          ) : (
+            <>
+              YDT Kelime Pratiği: kelime öğrenme, AI yazım asistanı ve sınıf özellikleri. Ödeme güvenli şekilde{" "}
+              <strong>Paddle</strong> üzerinden alınır.
+            </>
+          )}
         </p>
       </header>
 
-      {err && <p className="legal-note legal-note--warn">{err}</p>}
+      {manual && (
+        <section className="legal-section">
+          <p>
+            Premium veya AI+ için uygulama yöneticisiyle iletişime geç. Yetkili kullanıcı, yönetim panelinden
+            hesabına süre ve özellik atayabilir.
+          </p>
+        </section>
+      )}
 
+      {!manual && err && <p className="legal-note legal-note--warn">{err}</p>}
+
+      {!manual && (
       <div className="pricing-grid">
         {plans.length === 0 && !err && (
           <p className="legal-note">Planlar yükleniyor… Sunucuda <code>PADDLE_PRICE_IDS</code> tanımlı olmalı.</p>
@@ -64,8 +86,9 @@ export default function PricingPage({ user, onBack, onGoPremium }) {
           </article>
         ))}
       </div>
+      )}
 
-      {plans.length === 0 && err && (
+      {!manual && plans.length === 0 && err && (
         <div className="pricing-fallback">
           <h2>Örnek paketler</h2>
           <ul>

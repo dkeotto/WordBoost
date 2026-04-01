@@ -19,6 +19,7 @@ import PrivacyPage from "./components/PrivacyPage";
 import { sanitizeWordList } from "./utils/wordQuality";
 import { buildSynonymQuestionPool, buildPhrasalQuestionPool } from "./utils/questionGenerators";
 import { io } from "socket.io-client";
+import { getBackendOrigin } from "./utils/backendOrigin";
 import "./App.css";
 
 
@@ -51,10 +52,11 @@ const BADGES = {
 };
 
 const socket = io(SOCKET_URL, {
-  transports: ['websocket', 'polling'],
-  timeout: 10000,
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000
+  path: "/socket.io/",
+  transports: ["websocket", "polling"],
+  timeout: 15000,
+  reconnectionAttempts: 8,
+  reconnectionDelay: 1000,
 });
 
 socket.io.on('upgradeError', (err) => {
@@ -940,10 +942,18 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
     const [searchResults, setSearchResults] = useState([]);
 
     useEffect(() => {
-      fetch('/api/leaderboard')
-        .then(res => res.json())
-        .then(data => {
+      fetch("/api/leaderboard")
+        .then(async (res) => {
+          const data = await res.json().catch(() => []);
+          if (!res.ok) throw new Error("leaderboard");
+          return Array.isArray(data) ? data : [];
+        })
+        .then((data) => {
           setLeaders(data);
+          setLoading(false);
+        })
+        .catch(() => {
+          setLeaders([]);
           setLoading(false);
         });
     }, []);
@@ -968,15 +978,21 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
       }
 
       setLoading(true);
-      fetch(`/api/users/${targetUsername}`)
-        .then(res => res.json())
-        .then(data => {
+      fetch(`/api/users/${encodeURIComponent(targetUsername)}`)
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data?.error || res.statusText || "ok değil");
+          }
+          return data;
+        })
+        .then((data) => {
           setSelectedUser(data);
-          setCurrentView('public-profile');
+          setCurrentView("public-profile");
           setLoading(false);
         })
         .catch(() => {
-          alert("Kullanıcı profili yüklenemedi");
+          alert("Kullanıcı profili yüklenemedi (API veya ağ). Sunucu erişimini kontrol et.");
           setLoading(false);
         });
     };
@@ -1596,6 +1612,23 @@ function App() {
   const [splashExiting, setSplashExiting] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
 
+  /** Vercel’de /auth/* yalnızca SPA’dır; OAuth gerçek sunucuda (Railway). Yanlış yerde kalanları yönlendir. */
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+    const path = window.location.pathname || "";
+    if (!path.startsWith("/auth")) return;
+    const o = getBackendOrigin();
+    if (!o) return;
+    try {
+      const cur = window.location.origin;
+      const be = new URL(o).origin;
+      if (cur !== be) {
+        window.location.replace(`${o.replace(/\/$/, "")}${path}${window.location.search}`);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     // Check for token in URL (Social Login Redirect)
@@ -1615,23 +1648,32 @@ function App() {
     }
 
     if (token && usernameParam) {
-      // Save token
-      const userObj = { username: usernameParam, token }; // Minimal user obj
+      const userObj = { username: usernameParam, token };
       localStorage.setItem("wb_user", JSON.stringify(userObj));
-      
-      // Fetch full profile
-      fetch('/api/profile', {
-        headers: { 'Authorization': token }
+
+      fetch("/api/profile", {
+        headers: { Authorization: token }
       })
-      .then(res => res.json())
-      .then(data => {
-        const fullUser = { ...data, token };
-        setUser(fullUser);
-        localStorage.setItem("wb_user", JSON.stringify(fullUser));
-        // Clear URL
-        window.history.replaceState({}, document.title, "/");
-      })
-      .catch(err => console.error("Profile fetch error:", err));
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data?.error || `Profil alınamadı (${res.status})`);
+          }
+          return data;
+        })
+        .then((data) => {
+          const fullUser = { ...data, token };
+          setUser(fullUser);
+          localStorage.setItem("wb_user", JSON.stringify(fullUser));
+          window.history.replaceState({}, document.title, "/");
+        })
+        .catch((err) => {
+          console.error("Profile fetch error:", err);
+          alert(
+            "Oturum oluştu ama profil yüklenemedi. Vercel’de BACKEND_URL proxy ve Railway’de FRONTEND_URL=https://wordboost.com.tr olduğundan emin ol."
+          );
+          window.history.replaceState({}, document.title, "/");
+        });
     } else {
       const savedUser = localStorage.getItem("wb_user");
       if (savedUser) {
@@ -2015,99 +2057,115 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
 // NOTE: Synonyms/Phrasal listleri ağır soru havuzlarını gerektirdiği için
 // bu hesaplar `synonyms-list` ve `phrasal-list` view'ları açılınca yapılır.
 
-  const createRoom = async () => {
-    const usernameInput = document.getElementById('username-input');
-    const usernameValue = usernameInput ? usernameInput.value.trim() : '';
-    
+  const createRoom = () => {
+    const usernameInput = document.getElementById("username-input");
+    const usernameValue = usernameInput ? usernameInput.value.trim() : "";
+
     if (!usernameValue) {
-      setError('Lütfen kullanıcı adı girin');
+      setError("Lütfen kullanıcı adı girin");
       return;
     }
-    
-    setLoading(true);
-    setError('');
-    setUsername(usernameValue);
-    
-    try {
-      
-      socket.emit('create-room', {
-  username: usernameValue
-}, (data) => {
-
-  if (!data.success) {
-    setError(data.error);
-    return;
-  }
-
-  setRoomCode(data.roomCode);
-
-  // 🔥 ÖNEMLİ KISIM
-  setUsers(data.users || []);
-  setRoomStats(data.stats || {});
-
-  setIsHost(true);
-  setIsInRoom(true);
-
-  setCurrentView('room');
-});
-      
-      setIsInRoom(true);
-      setIsHost(true);
-      setCurrentView('room');
-      
-    } catch (err) {
-      setError(`Hata: ${err.message}`);
-    } finally {
-      setLoading(false);
+    if (usernameValue.length < 2) {
+      setError("Kullanıcı adı en az 2 karakter olmalı");
+      return;
     }
+
+    if (!socket.connected) {
+      setError(
+        "Sunucuya bağlı değil (Socket). Sayfayı yenileyin. Vercel kullanıyorsan VITE_SOCKET_URL (Railway adresi) tanımlı olmalı."
+      );
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setUsername(usernameValue);
+
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      setLoading(false);
+      setError("Oda oluşturma zaman aşımı. Backend ve Socket adresini kontrol et.");
+    }, 20000);
+
+    socket.emit("create-room", { username: usernameValue }, (data) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      setLoading(false);
+
+      if (!data || !data.success) {
+        setError(data?.error || "Oda oluşturulamadı");
+        return;
+      }
+
+      setRoomCode(data.roomCode);
+      setUsers(data.users || []);
+      setRoomStats(data.stats || {});
+      setIsHost(true);
+      setIsInRoom(true);
+      setCurrentView("room");
+    });
   };
 
   const joinRoom = () => {
-    const usernameInput = document.getElementById('username-input');
-    const joinCodeInput = document.getElementById('joincode-input');
-    const usernameValue = usernameInput ? usernameInput.value.trim() : '';
-    const codeValue = joinCodeInput ? joinCodeInput.value.trim() : '';
-    
+    const usernameInput = document.getElementById("username-input");
+    const joinCodeInput = document.getElementById("joincode-input");
+    const usernameValue = usernameInput ? usernameInput.value.trim() : "";
+    const codeValue = joinCodeInput ? joinCodeInput.value.trim() : "";
+
     if (!usernameValue) {
-      setError('Lütfen kullanıcı adı girin');
+      setError("Lütfen kullanıcı adı girin");
+      return;
+    }
+    if (usernameValue.length < 2) {
+      setError("Kullanıcı adı en az 2 karakter olmalı");
       return;
     }
     if (!codeValue || codeValue.length !== 6) {
-      setError('Lütfen geçerli 6 haneli oda kodu girin');
+      setError("Lütfen geçerli 6 haneli oda kodu girin");
       return;
     }
-    
+
+    if (!socket.connected) {
+      setError(
+        "Sunucuya bağlı değil (Socket). Sayfayı yenileyin. Vercel kullanıyorsan VITE_SOCKET_URL (Railway adresi) tanımlı olmalı."
+      );
+      return;
+    }
+
     setLoading(true);
-    setError('');
+    setError("");
     setUsername(usernameValue);
     setJoinCode(codeValue);
-    
-    socket.emit(
-  'join-room',
-  { roomCode: codeValue, username: usernameValue },
-  (response) => {
 
-    if (!response.success) {
-      setError(response.error);
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
       setLoading(false);
-      return;
-    }
+      setError("Odaya katılma zaman aşımı. Kodu ve Socket bağlantısını kontrol et.");
+    }, 20000);
 
-    setRoomCode(response.roomCode);
-    setUsers(response.users || []);
-    setRoomStats(response.stats || {});
-    setIsHost(response.isHost || false);
+    socket.emit("join-room", { roomCode: codeValue, username: usernameValue }, (response) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      setLoading(false);
 
-    setIsInRoom(true);
-    setCurrentView('room');
-    setLoading(false);
-  }
-);
-    setTimeout(() => {
+      if (!response || !response.success) {
+        setError(response?.error || "Odaya katılınamadı");
+        return;
+      }
+
+      setRoomCode(response.roomCode);
+      setUsers(response.users || []);
+      setRoomStats(response.stats || {});
+      setIsHost(response.isHost || false);
       setIsInRoom(true);
-      setCurrentView('room');
-      setLoading(false);
-    }, 500);
+      setCurrentView("room");
+    });
   };
 
   const triggerCooldown = (duration = 800) => {

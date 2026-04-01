@@ -104,6 +104,7 @@
 
 .nav-item {
   position: relative;
+  flex-shrink: 0;
 }
 
 .nav-link {
@@ -112,29 +113,31 @@
   align-items: center;
   text-decoration: none;
   padding: 0.38rem 0.58rem;
+  min-height: 2.15rem;
   height: 100%;
   cursor: pointer;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 12px;
-  transition: all 0.3s ease;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .nav-link:hover {
   background: rgba(255, 159, 28, 0.1);
   color: #FF9F1C;
   border-color: rgba(255, 159, 28, 0.3);
-  transform: translateY(-2px);
+  transform: none;
 }
 
 .nav-link.active {
   background: rgba(255, 159, 28, 0.15);
   border-color: #FF9F1C;
   color: #FF9F1C;
-  box-shadow: 0 0 15px rgba(255, 159, 28, 0.2);
+  box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.35), 0 0 12px rgba(255, 159, 28, 0.18);
 }
 
 .login-btn {

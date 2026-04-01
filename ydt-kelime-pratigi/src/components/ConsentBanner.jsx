@@ -4,7 +4,7 @@ import { getConsentStatus, setConsentStatus } from "../utils/consentStorage";
 
 export default function ConsentBanner() {
   const [status, setStatus] = useState(() => getConsentStatus().status);
-  const [isOpen, setIsOpen] = useState(() => status === "unknown");
+  const [isOpen, setIsOpen] = useState(() => getConsentStatus().status === "unknown");
   /** Navbar’dan “çerez aç” ile hemen göster; ilk girişte kısa gecikme + hafif animasyon */
   const [instantReveal, setInstantReveal] = useState(false);
 
@@ -13,6 +13,7 @@ export default function ConsentBanner() {
       const s = getConsentStatus().status;
       setStatus(s);
       setIsOpen(s === "unknown");
+      setInstantReveal(false);
     };
     window.addEventListener("wb_consent_change", onChange);
     return () => window.removeEventListener("wb_consent_change", onChange);
@@ -23,8 +24,9 @@ export default function ConsentBanner() {
       setInstantReveal(true);
       setIsOpen(true);
     };
-    window.addEventListener("wb_consent_open", onOpen);
-    return () => window.removeEventListener("wb_consent_open", onOpen);
+    if (typeof document === "undefined") return undefined;
+    document.addEventListener("wb_consent_open", onOpen);
+    return () => document.removeEventListener("wb_consent_open", onOpen);
   }, []);
 
   if (!isOpen) return null;

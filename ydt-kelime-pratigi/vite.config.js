@@ -22,6 +22,7 @@ function spaLegalRoutesFallback() {
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/',
   plugins: [react(), spaLegalRoutesFallback()],
   server: {
     proxy: {
@@ -34,7 +35,12 @@ export default defineConfig({
         target: 'http://localhost:3000',
         ws: true,
         changeOrigin: true
-      }
+      },
+      '/auth': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
     }
   }
 })

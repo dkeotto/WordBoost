@@ -109,9 +109,60 @@
   position: relative;
   z-index: 2;
   text-align: center;
-  padding: 2rem;
-  max-width: 420px;
+  padding: max(1.25rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1.25rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  max-width: min(420px, 100%);
+  width: 100%;
+  box-sizing: border-box;
   animation: startup-content-in 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.startup-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.startup-logo-wrap {
+  width: min(120px, 28vw);
+  height: min(120px, 28vw);
+  max-width: 120px;
+  max-height: 120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255, 159, 28, 0.12), rgba(255, 69, 0, 0.06));
+  border: 1px solid rgba(255, 159, 28, 0.22);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.startup-logo {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.startup-logo-fallback {
+  font-size: clamp(1rem, 4.5vw, 1.35rem);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  background: linear-gradient(45deg, #ff9f1c, #ffd700);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  line-height: 1.15;
 }
 
 @keyframes startup-content-in {
@@ -125,63 +176,17 @@
   }
 }
 
-.startup-mark {
-  position: relative;
-  width: 88px;
-  height: 88px;
-  margin: 0 auto 1.5rem;
-}
-
-.startup-mark__ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 24px;
-  border: 2px solid rgba(255, 159, 28, 0.35);
-  animation: startup-ring-pulse 2.4s ease-in-out infinite;
-}
-
-@keyframes startup-ring-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.9;
-  }
-  50% {
-    transform: scale(1.06);
-    opacity: 0.5;
-  }
-}
-
-.startup-mark__icon {
-  position: absolute;
-  inset: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 18px;
-  background: linear-gradient(145deg, rgba(255, 159, 28, 0.25), rgba(255, 69, 0, 0.12));
-  color: var(--primary-color, #ff9f1c);
-  box-shadow:
-    0 8px 32px rgba(255, 159, 28, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.startup-mark__icon svg {
-  width: 40px;
-  height: 40px;
-}
-
 .startup-title {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  margin-bottom: 0.75rem;
+  margin: 0 0 0.75rem;
 }
 
 .startup-title__main {
-  font-size: clamp(2.25rem, 6vw, 3rem);
+  font-size: clamp(1.85rem, 5.5vw, 2.75rem);
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.06em;
   background: linear-gradient(120deg, #fff 0%, #ffb347 45%, #ff9f1c 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -200,17 +205,19 @@
 }
 
 .startup-title__sub {
-  font-size: 1.05rem;
+  font-size: clamp(0.9rem, 3.2vw, 1.05rem);
   font-weight: 600;
   color: rgba(255, 255, 255, 0.72);
   letter-spacing: 0.04em;
 }
 
 .startup-tagline {
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 3vw, 0.95rem);
   color: rgba(255, 255, 255, 0.45);
-  margin-bottom: 2rem;
+  margin-bottom: clamp(1.25rem, 4.5vw, 2rem);
   letter-spacing: 0.02em;
+  padding: 0 0.25rem;
+  line-height: 1.45;
 }
 
 .startup-progress {
@@ -250,11 +257,40 @@
 }
 
 .startup-hint {
-  font-size: 0.75rem;
+  font-size: clamp(0.68rem, 2.5vw, 0.75rem);
   text-transform: uppercase;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.2em;
   color: rgba(255, 255, 255, 0.35);
   animation: startup-hint-fade 2s ease-in-out infinite;
+}
+
+@media (max-width: 380px) {
+  .startup-logo-wrap {
+    width: min(100px, 32vw);
+    height: min(100px, 32vw);
+    padding: 8px;
+    border-radius: 18px;
+  }
+
+  .startup-title__main {
+    letter-spacing: 0.04em;
+  }
+}
+
+@media (max-height: 520px) {
+  .startup-brand {
+    gap: 0.5rem;
+  }
+
+  .startup-logo-wrap {
+    width: min(88px, 22vw);
+    height: min(88px, 22vw);
+    padding: 6px;
+  }
+
+  .startup-tagline {
+    margin-bottom: 1rem;
+  }
 }
 
 @keyframes startup-hint-fade {
@@ -269,8 +305,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .startup-bg,
-  .startup-orb,
-  .startup-mark__ring,
   .startup-orb,
   .startup-progress__fill,
   .startup-title__main,

@@ -97,6 +97,17 @@
   line-height: 1.45;
 }
 
+.pricing-manual-box {
+  padding: 0.75rem 0 0.25rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.pricing-manual-box p {
+  margin: 0 0 0.75rem;
+}
+
 .pricing-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -368,13 +379,18 @@ main {
   gap: 1rem; /* Bileşenler arası boşluk eklendi */
 }
 
-/* Header Wrapper */
+/* Header Wrapper — tıklanabilirlik: sadece navbar alır; boş şeffaf alan ana içeriğe geçer */
 .header {
   position: sticky;
   top: 0;
   z-index: 1000;
   width: 100%;
   margin-bottom: 0; /* Header altı boşluk sıfırlandı */
+  pointer-events: none;
+}
+
+.header .navbar {
+  pointer-events: auto;
 }
 
 /* Practice View & Flashcard */
@@ -3168,6 +3184,10 @@ button:disabled {
   border: 1px solid rgba(255, 159, 28, 0.25);
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.88);
+  position: relative;
+  z-index: 4;
+  isolation: isolate;
+  pointer-events: auto;
 }
 
 .dashboard-view .dash-ads-consent-btn {
@@ -3194,9 +3214,16 @@ button:disabled {
 
 .dashboard-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+  gap: 1.25rem;
   align-items: start;
+}
+
+.dashboard-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .dashboard-sidebar {
@@ -3229,18 +3256,30 @@ button:disabled {
 }
 
 .ad-inline {
-  margin: 0.1rem 0 0.4rem;
+  margin: 0.75rem 0 0;
 }
 
 .ad-sidebar {
-  position: sticky;
-  top: 90px;
+  position: static;
+  max-height: 320px;
+  overflow: hidden;
 }
 
 @media screen and (max-width: 768px) {
   .ad-slot {
-    max-height: 280px;
+    max-height: 240px;
     overflow: hidden;
+  }
+}
+
+@media screen and (min-width: 769px) and (max-width: 1100px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-sidebar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
   }
 }
 
@@ -3391,18 +3430,20 @@ button:disabled {
 
 .dashboard-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.85rem;
 }
 
 .dashboard-card {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  padding: 1rem;
+  padding: 0.85rem 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .dashboard-card strong {

@@ -5,7 +5,7 @@ const STORAGE_TOKEN_KEY = "wb_admin_token";
 
 export default function AdminPanel({ setCurrentView }) {
   const [token, setToken] = useState(() => sessionStorage.getItem(STORAGE_TOKEN_KEY) || "");
-  const [username, setUsername] = useState(() => localStorage.getItem("wb_admin_user") || "dkeotto");
+  const [username, setUsername] = useState(() => localStorage.getItem("wb_admin_user") || "");
   const [password, setPassword] = useState("");
   const [isAuthed, setIsAuthed] = useState(() => Boolean(sessionStorage.getItem(STORAGE_TOKEN_KEY)));
   const [summary, setSummary] = useState(null);
@@ -38,6 +38,7 @@ export default function AdminPanel({ setCurrentView }) {
   const [userOrder, setUserOrder] = useState("desc");
   const [userFilterVerified, setUserFilterVerified] = useState(""); // '' | 'true' | 'false'
   const [userFilterOauth, setUserFilterOauth] = useState(""); // '' | 'google' | 'local'
+  const [userFilterPremium, setUserFilterPremium] = useState(""); // '' | 'active' | 'none' | 'aiplus'
   const [usersLoading, setUsersLoading] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -46,9 +47,12 @@ export default function AdminPanel({ setCurrentView }) {
     unknown: "",
     streak: "",
     lastStudyDate: "",
-    badgesText: ""
+    badgesText: "",
+    premiumUntilLocal: "",
+    aiPlus: false
   });
   const [editSaving, setEditSaving] = useState(false);
+  const [premiumSaving, setPremiumSaving] = useState(false);
 
   const h = useMemo(
     () => ({
@@ -68,8 +72,9 @@ export default function AdminPanel({ setCurrentView }) {
     if (qv) p.set("q", qv);
     if (userFilterVerified) p.set("verified", userFilterVerified);
     if (userFilterOauth) p.set("oauth", userFilterOauth);
+    if (userFilterPremium) p.set("premium", userFilterPremium);
     return p.toString();
-  }, [usersPage, userLimit, userQ, userSort, userOrder, userFilterVerified, userFilterOauth]);
+  }, [usersPage, userLimit, userQ, userSort, userOrder, userFilterVerified, userFilterOauth, userFilterPremium]);
 
   const loadUsers = useCallback(async () => {
     if (!token) return;
@@ -174,7 +179,7 @@ export default function AdminPanel({ setCurrentView }) {
 
   useEffect(() => {
     setUsersPage(1);
-  }, [userQ, userFilterVerified, userFilterOauth, userLimit, userSort, userOrder]);
+  }, [userQ, userFilterVerified, userFilterOauth, userFilterPremium, userLimit, userSort, userOrder]);
 
   useEffect(() => {
     if (!isAuthed || !token) return;
@@ -276,13 +281,16 @@ export default function AdminPanel({ setCurrentView }) {
       unknown: String(u?.stats?.unknown ?? 0),
       streak: String(u?.streak ?? 0),
       lastStudyDate: u?.lastStudyDate ? new Date(u.lastStudyDate).toISOString().slice(0, 16) : "",
-      badgesText: (u?.badges || []).join(", ")
+      badgesText: (u?.badges || []).join(", "),
+      premiumUntilLocal: u?.premiumUntil ? new Date(u.premiumUntil).toISOString().slice(0, 16) : "",
+      aiPlus: Boolean(u?.entitlements?.aiPlus)
     });
   };
 
   const closeEdit = () => {
     setEditUser(null);
     setEditSaving(false);
+    setPremiumSaving(false);
   };
 
   const saveEdit = async () => {
@@ -311,7 +319,7 @@ export default function AdminPanel({ setCurrentView }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Kaydetme başarısız");
-      setMsg(`Güncellendi: ${editUser.username}`);
+      setMsg(`İstatistik güncellendi: ${editUser.username}`);
       closeEdit();
       loadUsers();
     } catch (e) {
@@ -321,10 +329,66 @@ export default function AdminPanel({ setCurrentView }) {
     }
   };
 
+  const setPremiumEnd = (days) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    setEditForm((f) => ({ ...f, premiumUntilLocal: d.toISOString().slice(0, 16) }));
+  };
+
+  const setPremiumLifetime = () => {
+    setEditForm((f) => ({ ...f, premiumUntilLocal: "2099-12-31T23:59" }));
+  };
+
+  const clearPremiumEnd = () => {
+    setEditForm((f) => ({ ...f, premiumUntilLocal: "" }));
+  };
+
+  const savePremium = async () => {
+    if (!editUser?._id) return;
+    setPremiumSaving(true);
+    setErr("");
+    setMsg("");
+    try {
+      const body = {
+        premiumUntil: editForm.premiumUntilLocal ? new Date(editForm.premiumUntilLocal).toISOString() : null,
+        aiPlus: Boolean(editForm.aiPlus)
+      };
+      const res = await fetch(`/api/admin/users/${editUser._id}/premium`, {
+        method: "PUT",
+        headers: h,
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Premium kaydedilemedi");
+      setMsg(
+        `Manuel premium güncellendi: ${editUser.username} (Premium: ${data.user?.isPremium ? "evet" : "hayır"}, AI+: ${data.user?.hasUnlimitedAi ? "evet" : "hayır"})`
+      );
+      setEditUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              premiumUntil: data.user?.premiumUntil ?? null,
+              isPremium: data.user?.isPremium,
+              entitlements: data.user?.entitlements || {}
+            }
+          : prev
+      );
+      loadUsers();
+    } catch (e) {
+      setErr(e.message || "Premium kaydedilemedi");
+    } finally {
+      setPremiumSaving(false);
+    }
+  };
+
   return (
     <div className="admin-panel">
-      <div className="admin-header">
-        <h2>Yönetim paneli</h2>
+      <div className="admin-hero">
+        <div className="admin-hero__text">
+          <p className="admin-hero__eyebrow">WordBoost</p>
+          <h2 className="admin-hero__title">Yönetim paneli</h2>
+          <p className="admin-hero__sub">Kullanıcılar, premium, kelime verisi ve sunucu özeti</p>
+        </div>
         <button type="button" className="admin-back" onClick={() => setCurrentView("practice")}>
           ← Uygulamaya dön
         </button>
@@ -451,14 +515,33 @@ export default function AdminPanel({ setCurrentView }) {
       )}
 
       {isAuthed && usersMeta && (
-        <section className="admin-section">
-          <h3>Kullanıcı özeti (veritabanı)</h3>
-          <div className="admin-chip-row">
-            <span className="admin-chip">Toplam: <strong>{usersMeta.total}</strong></span>
+        <section className="admin-section admin-section--premium-overview">
+          <h3>Kullanıcı &amp; premium özeti</h3>
+          <p className="admin-small">Aktif premium: <code>premiumUntil</code> şu andan sonra olan kullanıcılar. AI+: manuel veya Paddle ile işaretlenmiş sınırsız AI modu.</p>
+          <div className="admin-stat-cards">
+            <div className="admin-stat-card">
+              <span className="admin-stat-card__label">Kayıtlı kullanıcı</span>
+              <strong className="admin-stat-card__value">{usersMeta.total}</strong>
+            </div>
+            <div className="admin-stat-card admin-stat-card--accent">
+              <span className="admin-stat-card__label">Aktif premium</span>
+              <strong className="admin-stat-card__value">{usersMeta.premiumActive ?? 0}</strong>
+              <span className="admin-stat-card__hint">Şu an geçerli abonelik / manuel tarih</span>
+            </div>
+            <div className="admin-stat-card admin-stat-card--ai">
+              <span className="admin-stat-card__label">AI+ yetkili</span>
+              <strong className="admin-stat-card__value">{usersMeta.aiPlusEntitled ?? 0}</strong>
+              <span className="admin-stat-card__hint">entitlements.aiPlus</span>
+            </div>
+            <div className="admin-stat-card">
+              <span className="admin-stat-card__label">Doğrulanmış e-posta</span>
+              <strong className="admin-stat-card__value">{usersMeta.verified}</strong>
+            </div>
+          </div>
+          <div className="admin-chip-row admin-chip-row--tight">
             <span className="admin-chip">E-posta kayıtlı: <strong>{usersMeta.withEmail}</strong></span>
-            <span className="admin-chip">E-posta doğrulanmış: <strong>{usersMeta.verified}</strong></span>
-            <span className="admin-chip">Google bağlı: <strong>{usersMeta.googleLinked}</strong></span>
-            <span className="admin-chip">Şifre (yerel): <strong>{usersMeta.withPassword}</strong></span>
+            <span className="admin-chip">Google: <strong>{usersMeta.googleLinked}</strong></span>
+            <span className="admin-chip">Yerel şifre: <strong>{usersMeta.withPassword}</strong></span>
           </div>
         </section>
       )}
@@ -495,6 +578,17 @@ export default function AdminPanel({ setCurrentView }) {
             </select>
             <select
               className="admin-select"
+              value={userFilterPremium}
+              onChange={(e) => setUserFilterPremium(e.target.value)}
+              aria-label="Premium filtresi"
+            >
+              <option value="">Tüm premium durumları</option>
+              <option value="active">Şu an premium (süresi geçerli)</option>
+              <option value="none">Premium yok / süresi dolmuş</option>
+              <option value="aiplus">Manuel AI+ (aiPlus)</option>
+            </select>
+            <select
+              className="admin-select"
               value={userSort}
               onChange={(e) => setUserSort(e.target.value)}
               aria-label="Sırala"
@@ -503,6 +597,7 @@ export default function AdminPanel({ setCurrentView }) {
               <option value="lastStudyDate">Son çalışma</option>
               <option value="streak">Streak</option>
               <option value="username">Kullanıcı adı</option>
+              <option value="premiumUntil">Premium bitiş tarihi</option>
             </select>
             <select
               className="admin-select"
@@ -533,6 +628,55 @@ export default function AdminPanel({ setCurrentView }) {
             Toplam {usersTotal} kayıt · sayfa {usersPage} / {usersPages}
             {usersLoading ? " · yükleniyor…" : ""}
           </p>
+          <div className="admin-users-mobile">
+            {usersList.map((u) => (
+              <article
+                key={`m-${String(u._id)}`}
+                className={`admin-user-card ${u.isPremium ? "admin-user-card--premium" : ""}`}
+              >
+                <div className="admin-user-card__top">
+                  <div className="admin-user-card__identity">
+                    {u.avatar && (u.avatar.startsWith("http") || u.avatar.startsWith("data:")) ? (
+                      <img src={u.avatar} alt="" className="admin-user-avatar admin-user-avatar--lg" />
+                    ) : null}
+                    <div>
+                      <div className="admin-user-card__name">{u.username}</div>
+                      <div className="admin-user-card__email">{u.email || "—"}</div>
+                    </div>
+                  </div>
+                  <button type="button" className="admin-user-card__edit" onClick={() => openEdit(u)}>
+                    Düzenle
+                  </button>
+                </div>
+                <div className="admin-user-card__meta">
+                  <span>
+                    Premium:{" "}
+                    {u.premiumUntil ? (
+                      <strong className={u.isPremium ? "admin-text-ok" : "admin-text-warn"}>
+                        {u.isPremium ? "Aktif" : "Dolmuş"}{" "}
+                        ({new Date(u.premiumUntil).toLocaleDateString("tr-TR")})
+                      </strong>
+                    ) : (
+                      "—"
+                    )}
+                  </span>
+                  <span>
+                    AI+:{" "}
+                    <strong>{u.entitlements?.aiPlus ? "Evet" : "Hayır"}</strong>
+                  </span>
+                </div>
+                <div className="admin-user-card__stats">
+                  <span>Çalışılan {u.stats?.studied ?? 0}</span>
+                  <span>Streak {u.streak ?? 0}</span>
+                  <span>Kayıt {u.createdAt ? new Date(u.createdAt).toLocaleDateString("tr-TR") : "—"}</span>
+                </div>
+              </article>
+            ))}
+            {usersList.length === 0 && !usersLoading && (
+              <p className="admin-user-card-empty">Kayıt yok veya filtrelere uymuyor.</p>
+            )}
+          </div>
+
           <div className="admin-table-wrap admin-users-table-wrap">
             <table className="admin-table admin-users-table">
               <thead>
@@ -550,6 +694,8 @@ export default function AdminPanel({ setCurrentView }) {
                   <th>Son çalışma</th>
                   <th>Kayıt</th>
                   <th>Rozet</th>
+                  <th>Premium</th>
+                  <th>AI+</th>
                   <th>İşlem</th>
                 </tr>
               </thead>
@@ -584,6 +730,31 @@ export default function AdminPanel({ setCurrentView }) {
                     <td className="admin-badges-cell" title={(u.badges || []).join(", ")}>
                       {(u.badges || []).length ? `${(u.badges || []).length} adet` : "—"}
                     </td>
+                    <td className="admin-td-premium">
+                      {u.premiumUntil ? (
+                        <div className="admin-premium-cell">
+                          <span
+                            className={`admin-premium-badge ${u.isPremium ? "admin-premium-badge--on" : "admin-premium-badge--off"}`}
+                          >
+                            {u.isPremium ? "Aktif" : "Dolmuş"}
+                          </span>
+                          <span className="admin-premium-date">
+                            {new Date(u.premiumUntil).toLocaleDateString("tr-TR")}
+                          </span>
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>
+                      {u.entitlements?.aiPlus ? (
+                        <span className="admin-ai-badge" title="AI+ sınırsız mod">
+                          AI+
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td>
                       <button type="button" onClick={() => openEdit(u)}>
                         Düzenle
@@ -593,7 +764,7 @@ export default function AdminPanel({ setCurrentView }) {
                 ))}
                 {usersList.length === 0 && !usersLoading && (
                   <tr>
-                    <td colSpan={14}>Kayıt yok veya filtrelere uymuyor.</td>
+                    <td colSpan={16}>Kayıt yok veya filtrelere uymuyor.</td>
                   </tr>
                 )}
               </tbody>
@@ -683,12 +854,71 @@ export default function AdminPanel({ setCurrentView }) {
                 />
               </label>
             </div>
+
+            <div className="admin-modal-premium">
+              <h4 className="admin-modal-subtitle">Premium &amp; AI+ kontrolü</h4>
+              <p className="admin-premium-live">
+                Kayıttaki durum:{" "}
+                <strong className={editUser.isPremium ? "admin-text-ok" : undefined}>
+                  Premium {editUser.isPremium ? "aktif" : "yok"}
+                </strong>
+                {" · "}
+                <strong>{editUser.entitlements?.aiPlus ? "AI+ açık" : "AI+ kapalı"}</strong>
+              </p>
+              <p className="admin-small">
+                <strong>Premium bitiş:</strong> reklamsız deneyim süresi. Boş bırakırsan premium kalkar. Paddle ile gelen
+                abonelikler de burada tarih olarak görünür; manuel düzenleme dikkatli kullanılmalıdır.
+              </p>
+              <div className="admin-modal-grid">
+                <label className="admin-modal-wide">
+                  Premium geçerlilik bitişi
+                  <input
+                    type="datetime-local"
+                    value={editForm.premiumUntilLocal}
+                    onChange={(e) => setEditForm((f) => ({ ...f, premiumUntilLocal: e.target.value }))}
+                  />
+                </label>
+                <label className="admin-modal-wide admin-modal-check">
+                  <input
+                    type="checkbox"
+                    checked={editForm.aiPlus}
+                    onChange={(e) => setEditForm((f) => ({ ...f, aiPlus: e.target.checked }))}
+                  />
+                  <span>AI yazım modu sınırı yok (manuel AI+)</span>
+                </label>
+              </div>
+              <div className="admin-premium-quick">
+                <button type="button" className="admin-modal-secondary" onClick={() => setPremiumEnd(30)}>
+                  +30 gün
+                </button>
+                <button type="button" className="admin-modal-secondary" onClick={() => setPremiumEnd(365)}>
+                  +1 yıl
+                </button>
+                <button type="button" className="admin-modal-secondary" onClick={setPremiumLifetime}>
+                  Uzun süre (2099)
+                </button>
+                <button type="button" className="admin-modal-secondary" onClick={clearPremiumEnd}>
+                  Premium tarihini sil
+                </button>
+              </div>
+              <div className="admin-modal-actions admin-modal-actions--split">
+                <button
+                  type="button"
+                  className="admin-modal-primary"
+                  onClick={savePremium}
+                  disabled={premiumSaving || editSaving}
+                >
+                  {premiumSaving ? "Kaydediliyor…" : "Premium / AI+ kaydet"}
+                </button>
+              </div>
+            </div>
+
             <div className="admin-modal-actions">
               <button type="button" className="admin-modal-secondary" onClick={closeEdit} disabled={editSaving}>
                 Vazgeç
               </button>
               <button type="button" onClick={saveEdit} disabled={editSaving}>
-                {editSaving ? "Kaydediliyor…" : "Kaydet"}
+                {editSaving ? "Kaydediliyor…" : "İstatistik kaydet"}
               </button>
             </div>
           </div>
