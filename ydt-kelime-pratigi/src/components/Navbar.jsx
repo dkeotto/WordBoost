@@ -24,6 +24,7 @@ const Navbar = ({
     typeof window !== 'undefined' && window.matchMedia(MOBILE_MQ).matches
   );
   const moreDropdownRef = useRef(null);
+  const listsDropdownRef = useRef(null);
   const scrollLockYRef = useRef(0);
 
   const isPremium = useMemo(() => {
@@ -109,14 +110,17 @@ const Navbar = ({
   };
 
   useEffect(() => {
-    if (!isMoreOpen) return undefined;
+    if (!isMoreOpen && !isListsOpen) return undefined;
     const onDoc = (e) => {
-      const el = moreDropdownRef.current;
-      if (el && !el.contains(e.target)) setIsMoreOpen(false);
+      const t = e.target;
+      const inMore = moreDropdownRef.current?.contains(t);
+      const inLists = listsDropdownRef.current?.contains(t);
+      if (isMoreOpen && !inMore) setIsMoreOpen(false);
+      if (isListsOpen && !inLists) setIsListsOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
-  }, [isMoreOpen]);
+  }, [isMoreOpen, isListsOpen]);
 
   const moreActive = [
     'matching-game',
@@ -228,7 +232,7 @@ const Navbar = ({
         </div>
       </li>
 
-      <li className={`nav-item dropdown nav-lists ${isListsOpen ? 'open' : ''}`}>
+      <li ref={listsDropdownRef} className={`nav-item dropdown nav-lists ${isListsOpen ? 'open' : ''}`}>
         <button
           type="button"
           className="dropdown-title"

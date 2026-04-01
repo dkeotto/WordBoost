@@ -615,13 +615,26 @@
     box-shadow: none;
     border-bottom: none;
     padding-bottom: max(24px, calc(16px + env(safe-area-inset-bottom, 0px)));
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    align-items: stretch;
+  }
+
+  .nav-menu-drawer .nav-menu--portal .nav-item.dropdown {
+    overflow: visible;
+    max-width: 100%;
   }
 }
 
-/* Masaüstü: öğeler arası nefes */
+/* Masaüstü: öğeler arası nefes; overflow-x:auto + yatay scroll, açılır menüleri kırpar (WG dropdown “bozuk”) */
 @media screen and (min-width: 1321px) {
   .nav-menu {
     gap: 10px;
+    overflow: visible;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 6px;
   }
 }
 

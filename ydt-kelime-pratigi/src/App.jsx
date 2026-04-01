@@ -2383,11 +2383,11 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     setCurrentView('practice');
   };
 
-  if (!splashDone) {
-    return <StartupScreen exiting={splashExiting} />;
-  }
-
   return (
+    <>
+      {!splashDone ? (
+        <StartupScreen exiting={splashExiting} />
+      ) : (
     <div className="app">
       <header className="header">
         <Navbar 
@@ -2538,8 +2538,6 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
       {currentView === 'admin' && <AdminPanel setCurrentView={setCurrentView} />}
     </main>
 
-    <ConsentBanner />
-
     {showLogin && (
       <LoginModal
         onLogin={(u) => {
@@ -2616,7 +2614,10 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     )}
 
   </div>
-);
+      )}
+      <ConsentBanner />
+    </>
+  );
 }
 
 export default App;

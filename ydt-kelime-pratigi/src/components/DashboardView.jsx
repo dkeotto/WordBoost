@@ -140,7 +140,10 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
 
       {showAdsHint && (
         <div className="dash-ads-consent-hint" role="status">
-          <span>Reklamlar yalnızca çerezleri kabul ettiğinde gösterilir.</span>
+          <span>
+            Kişiselleştirilmiş reklamlar için çerezleri kabul etmen gerekir. Henüz seçim yapmadıysan genel (kişiselleştirilmemiş)
+            reklamlar gösterilebilir; reddettiysen reklam alanları boş kalır.
+          </span>
           <button type="button" className="dash-ads-consent-btn" onClick={() => openConsentDialog()}>
             Çerez tercihini aç
           </button>

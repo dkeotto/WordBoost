@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getConsentStatus, setConsentStatus, subscribeConsentDialogOpen } from "../utils/consentStorage";
 
@@ -19,7 +19,7 @@ export default function ConsentBanner() {
     return () => window.removeEventListener("wb_consent_change", onChange);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const onOpen = () => {
       setInstantReveal(true);
       setIsOpen(true);

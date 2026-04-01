@@ -3303,11 +3303,16 @@ button:disabled {
   box-sizing: border-box;
 }
 
-/* AdSense boş/yüklenirken dev beyaz blok — mobilde yükseklik sınırı */
+/* Yeterli yükseklik: min-height:0 AdSense responsive’a alan bırakmayıp boş beyaz kutu gibi görünebiliyordu */
 .ad-slot .adsbygoogle {
   display: block;
-  min-height: 0 !important;
+  min-height: 100px;
   background: transparent;
+}
+
+.ad-slot .adsbygoogle iframe {
+  max-width: 100%;
+  vertical-align: bottom;
 }
 
 .ad-inline {
@@ -3316,8 +3321,8 @@ button:disabled {
 
 .ad-sidebar {
   position: static;
-  max-height: 320px;
-  overflow: hidden;
+  max-height: min(420px, 55vh);
+  overflow: visible;
 }
 
 @media screen and (max-width: 768px) {
