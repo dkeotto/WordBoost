@@ -3,6 +3,13 @@
 Backend: Node.js + Express + MongoDB (Mongoose)  
 Frontend: React + Vite
 
+## Üretim sitesi
+
+- **Canlı adres:** [https://wordboost.com.tr/](https://wordboost.com.tr/)
+- **Railway (Express):** `FRONTEND_URL=https://wordboost.com.tr` — Google OAuth dönüşü ve e-posta bağlantıları için zorunlu.
+- **Vercel:** Custom domain `wordboost.com.tr` → bu proje; `BACKEND_URL` Railway kök URL’i olmalı.
+- **Google OAuth:** Yetkili yönlendirme URI → `https://wordboost.com.tr/api/auth/google/callback` (bkz. `ydt-kelime-pratigi/VERCEL.md`).
+
 ## Local development
 
 ### 1) Backend
@@ -30,9 +37,9 @@ npm run dev
 
 Canlı sitede şu yollar çalışmalı (SPA: tüm route’lar `index.html`’e düşmeli):
 
-- `https://<domain>/pricing` — fiyatlandırma
-- `https://<domain>/terms` — kullanım şartları
-- `https://<domain>/privacy` — gizlilik
+- `https://wordboost.com.tr/pricing` — fiyatlandırma
+- `https://wordboost.com.tr/terms` — kullanım şartları
+- `https://wordboost.com.tr/privacy` — gizlilik
 
 Yerel geliştirmede Vite bu üç path için `index.html` döndürür.
 

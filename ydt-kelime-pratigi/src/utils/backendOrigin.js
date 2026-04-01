@@ -8,8 +8,15 @@ export function getBackendOrigin() {
   return String(raw).trim().replace(/\/$/, "");
 }
 
-/** Google OAuth başlatma — production’da mutlaka backend köküne gitmeli (aynı origin’de /auth yok). */
+/**
+ * Google OAuth başlatma.
+ * Production + Vercel: aynı origin üzerinden /api/auth/* → proxy ile Railway; Google “uygulama” olarak ana domaini gösterir.
+ * Geliştirme: VITE_* ile doğrudan backend /auth/google.
+ */
 export function getGoogleAuthUrl() {
+  if (import.meta.env.PROD && typeof window !== "undefined") {
+    return `${window.location.origin}/api/auth/google`;
+  }
   const origin = getBackendOrigin();
   if (origin) return `${origin}/auth/google`;
   return "/auth/google";

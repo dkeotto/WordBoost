@@ -19,7 +19,6 @@ import PrivacyPage from "./components/PrivacyPage";
 import { sanitizeWordList } from "./utils/wordQuality";
 import { buildSynonymQuestionPool, buildPhrasalQuestionPool } from "./utils/questionGenerators";
 import { io } from "socket.io-client";
-import { getBackendOrigin } from "./utils/backendOrigin";
 import "./App.css";
 
 
@@ -982,7 +981,12 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
         .then(async (res) => {
           const data = await res.json().catch(() => ({}));
           if (!res.ok) {
-            throw new Error(data?.error || res.statusText || "ok değil");
+            const detail =
+              data?.error ||
+              data?.detail ||
+              (typeof data === "string" ? data : null) ||
+              `HTTP ${res.status}`;
+            throw new Error(detail);
           }
           return data;
         })
@@ -991,8 +995,11 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
           setCurrentView("public-profile");
           setLoading(false);
         })
-        .catch(() => {
-          alert("Kullanıcı profili yüklenemedi (API veya ağ). Sunucu erişimini kontrol et.");
+        .catch((e) => {
+          const msg = e?.message || String(e);
+          alert(
+            `Kullanıcı profili yüklenemedi: ${msg}\n\nVercel’de Production için BACKEND_URL (Railway) tanımlı mı kontrol et.`
+          );
           setLoading(false);
         });
     };
@@ -1612,21 +1619,12 @@ function App() {
   const [splashExiting, setSplashExiting] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
 
-  /** Vercel’de /auth/* yalnızca SPA’dır; OAuth gerçek sunucuda (Railway). Yanlış yerde kalanları yönlendir. */
+  /** Eski /auth/google yer işaretleri → /api/auth/google (aynı origin OAuth) */
   useEffect(() => {
     if (!import.meta.env.PROD) return;
     const path = window.location.pathname || "";
-    if (!path.startsWith("/auth")) return;
-    const o = getBackendOrigin();
-    if (!o) return;
-    try {
-      const cur = window.location.origin;
-      const be = new URL(o).origin;
-      if (cur !== be) {
-        window.location.replace(`${o.replace(/\/$/, "")}${path}${window.location.search}`);
-      }
-    } catch {
-      /* ignore */
+    if (path === "/auth/google" || path.startsWith("/auth/google")) {
+      window.location.replace(`/api/auth/google${window.location.search || ""}`);
     }
   }, []);
 
@@ -1670,7 +1668,7 @@ function App() {
         .catch((err) => {
           console.error("Profile fetch error:", err);
           alert(
-            "Oturum oluştu ama profil yüklenemedi. Vercel’de BACKEND_URL proxy ve Railway’de FRONTEND_URL=https://wordboost.com.tr olduğundan emin ol."
+            `Oturum oluştu ama profil yüklenemedi: ${err?.message || err}\n\nVercel Production’da BACKEND_URL (Railway kökü) ve Railway’de FRONTEND_URL=https://wordboost.com.tr tanımlı olmalı.`
           );
           window.history.replaceState({}, document.title, "/");
         });

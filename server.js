@@ -78,7 +78,7 @@ function buildServerMetrics() {
     socketConnections: 0
   };
 }
-app.set('trust proxy', 1); // Proxy arkas?nda (Render/Railway) ?al??t??? i?in gerekli
+app.set('trust proxy', true); // Vercel → Railway proxy + X-Forwarded-Host (OAuth session / cookie)
 const server = http.createServer(app);
 
 // Session Config (Passport i?in gerekli)
@@ -124,6 +124,13 @@ const WordStatSchema = new mongoose.Schema(
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = String(process.env.JWT_SECRET || "SECRET_KEY");
+
+/** Admin panel: JWT imza anahtarı (ADMIN_SECRET ≥12 ise o, yoksa JWT_SECRET). Çoklu Railway pod’da bellek oturumu kullanılmaz. */
+function getAdminJwtSecret() {
+  const a = process.env.ADMIN_SECRET;
+  if (a && String(a).trim().length >= 12) return String(a).trim();
+  return JWT_SECRET;
+}
 
 function normalizeAnthropicApiKey(raw) {
   let s = String(raw || "").trim();
@@ -367,16 +374,36 @@ if (process.env.RENDER_EXTERNAL_URL) {
 if (!BACKEND_URL) BACKEND_URL = 'http://localhost:3000';
 if (!FRONTEND_URL) FRONTEND_URL = 'http://localhost:5173';
 
+/** Google OAuth redirect_uri: prod’da ana domain (Vercel) /api/auth/... → proxy ile Railway; Google ekranında wordboost.com.tr görünür */
+function isLocalFrontendUrl(url) {
+  if (!url) return true;
+  try {
+    const u = String(url).toLowerCase();
+    return u.includes('localhost') || u.startsWith('http://127.');
+  } catch {
+    return true;
+  }
+}
+function resolveGoogleOAuthCallbackUrl() {
+  if (process.env.GOOGLE_CALLBACK_URL) {
+    return String(process.env.GOOGLE_CALLBACK_URL).replace(/\/$/, '');
+  }
+  const fe = FRONTEND_URL && !isLocalFrontendUrl(FRONTEND_URL) ? String(FRONTEND_URL).replace(/\/$/, '') : '';
+  if (fe) return `${fe}/api/auth/google/callback`;
+  return `${String(BACKEND_URL).replace(/\/$/, '')}/auth/google/callback`;
+}
+const GOOGLE_OAUTH_CALLBACK_URL = resolveGoogleOAuthCallbackUrl();
+
 console.log("?? Final Configuration:");
 console.log(`   - FRONTEND: ${FRONTEND_URL}`);
 console.log(`   - BACKEND: ${BACKEND_URL}`);
 
-console.log("?? Google Callback URL:", `${BACKEND_URL}/auth/google/callback`);
+console.log("?? Google OAuth redirect (callback) URL:", GOOGLE_OAUTH_CALLBACK_URL);
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "GOOGLE_CLIENT_ID_BURAYA",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "GOOGLE_CLIENT_SECRET_BURAYA",
-    callbackURL: `${BACKEND_URL}/auth/google/callback`,
+    callbackURL: GOOGLE_OAUTH_CALLBACK_URL,
     passReqToCallback: true,
     proxy: true // Railway/Render i?in gerekli
   },
@@ -672,7 +699,6 @@ const roomStats = new Map();    // roomCode -> { username: { studied, known, unk
 const roomHosts = new Map();    // roomCode -> hostUsername (g?venlik i?in)
 
 const adminErrorLog = [];
-const adminSessions = new Map(); // token -> expiresAt
 function pushAdminError(msg, meta = {}) {
   try {
     adminErrorLog.unshift({
@@ -687,24 +713,28 @@ function pushAdminError(msg, meta = {}) {
 }
 
 function requireAdmin(req, res, next) {
-  const secret = process.env.ADMIN_SECRET;
   const adminToken = req.headers['x-admin-token'];
-  if (adminToken && adminSessions.has(adminToken)) {
-    const expiresAt = adminSessions.get(adminToken);
-    if (Date.now() < expiresAt) {
-      return next();
+  if (adminToken) {
+    try {
+      const decoded = jwt.verify(adminToken, getAdminJwtSecret());
+      if (decoded && decoded.typ === 'wb_admin' && decoded.sub === 'panel') {
+        return next();
+      }
+    } catch (_) {
+      /* süresi dolmuş veya imza uyuşmuyor */
     }
-    adminSessions.delete(adminToken);
   }
 
-  // ADMIN_SECRET yoksa sadece token ile izin ver (login ile token üretilir).
-  if (!secret || String(secret).length < 12) {
-    return res.status(401).json({ error: 'Yetkisiz (ADMIN_SECRET eksik)' });
+  const secret = process.env.ADMIN_SECRET;
+  if (secret && String(secret).trim().length >= 12 && req.headers['x-admin-key'] === secret) {
+    return next();
   }
-  if (req.headers['x-admin-key'] !== secret) {
-    return res.status(401).json({ error: 'Yetkisiz' });
-  }
-  next();
+
+  return res.status(401).json({
+    error: adminToken
+      ? 'Admin oturumu geçersiz veya süresi doldu. Tekrar giriş yap.'
+      : 'Yetkisiz (admin girişi veya geçerli X-Admin-Key gerekli)'
+  });
 }
 
 function ymdKey(d = new Date()) {
@@ -1879,9 +1909,12 @@ app.post('/api/admin/login', (req, res) => {
       return res.status(401).json({ error: 'Kullanici adi veya sifre hatali' });
     }
 
-    const token = crypto.randomBytes(24).toString('hex');
     const ttlMs = 1000 * 60 * 60 * 8; // 8 saat
-    adminSessions.set(token, Date.now() + ttlMs);
+    const token = jwt.sign(
+      { typ: 'wb_admin', sub: 'panel' },
+      getAdminJwtSecret(),
+      { expiresIn: Math.floor(ttlMs / 1000) }
+    );
     res.json({ ok: true, token, expiresInMs: ttlMs });
   } catch (e) {
     res.status(500).json({ error: e.message });

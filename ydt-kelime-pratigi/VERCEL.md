@@ -1,5 +1,7 @@
 # Vercel ile deploy (tam uyumluluk)
 
+**Üretim domain:** `https://wordboost.com.tr/` — Vercel’de bu hostname’i projeye bağla (DNS).
+
 Bu klasör **Vite + React** istemcisidir. **Express** (`ydt-kelime/server.js`) Vercel’de çalışmaz; Railway vb. üzerinde kalır. `/api/*` istekleri `api/[...path].js` + `lib/vercelApiProxy.mjs` ile backend’e proxylanır.
 
 ## İki geçerli kurulum
@@ -29,17 +31,47 @@ Tüm repoyu Vercel kökü seçtiysen üst dizindeki `vercel.json` devreye girer:
 | Değişken | Build’e gömülür mü | Açıklama |
 |----------|-------------------|----------|
 | `BACKEND_URL` | Hayır | Zorunlu. Railway Express kök URL’i, **sonunda `/` yok**. |
-| `VITE_SOCKET_URL` | Evet | Socket.io **ve** Google OAuth başlatma URL’i; `BACKEND_URL` ile **aynı** Railway kökü olmalı. |
-| `VITE_BACKEND_URL` | Evet | İsteğe bağlı; boşsa `VITE_SOCKET_URL` kullanılır (OAuth için aynı amaç). |
+| `VITE_SOCKET_URL` | Evet | Socket.io için Railway kök URL (Google girişi artık aynı origin `/api/auth/*` ile; VITE OAuth için zorunlu değil). |
+| `VITE_BACKEND_URL` | Evet | İsteğe bağlı; Socket / eski senaryolar. |
 | `VITE_ADSENSE_*`, `VITE_PADDLE_CLIENT_TOKEN` | Evet | `.env.example` ile aynı. |
 
 `BACKEND_URL` **`VITE_` öneki almaz**; yalnızca serverless proxy okur.
 
 ### Google ile giriş (OAuth)
 
-- Tarayıcı **`https://SENİN-RAILWAY.app/auth/google`** adresine gitmeli (Vercel’de `/auth` yok; bu yüzden `VITE_SOCKET_URL` / `VITE_BACKEND_URL` şart).
-- **Google Cloud Console** → OAuth → Yetkili yönlendirme URI: `https://SENİN-RAILWAY.app/auth/google/callback`
-- **Railway** → `FRONTEND_URL=https://wordboost.com.tr` (veya kendi domain’in), `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` doğru olsun.
+Sunucu (`server.js`) canlıda **`redirect_uri`** olarak şunu üretir: **`https://wordboost.com.tr/api/auth/google/callback`** (Vercel `/api/auth/*` → Railway `/auth/*`).
+
+#### Google Cloud Console → OAuth istemcisi
+
+**Yetkili JavaScript kökenleri** (Authorized JavaScript origins):
+
+| Ekle | Örnek |
+|------|--------|
+| Zorunlu (canlı) | `https://wordboost.com.tr` |
+| İsteğe bağlı (lokal Vite) | `http://localhost:5173` |
+| İsteğe bağlı (doğrudan Railway testi) | `https://wordboost.up.railway.app` |
+
+**Yetkili yönlendirme URI’leri** (Authorized redirect URIs) — **Google’ın birebir eşleştirdiği adres; yanlış path `redirect_uri_mismatch` verir.**
+
+| Durum | URI |
+|--------|-----|
+| **Canlı — mutlaka olmalı** | `https://wordboost.com.tr/api/auth/google/callback` |
+| Lokal (backend `localhost:3000`) | `http://localhost:3000/auth/google/callback` |
+| İsteğe bağlı (eski / yedek) | `https://wordboost.up.railway.app/auth/google/callback` |
+
+**Sil / kullanma (yanlış veya gereksiz):**
+
+- `https://wordboost.com.tr/auth/google/callback` → **yanlış** (arada `/api` yok; kod `/api/auth/...` kullanıyor).
+- `https://wordboost.com.tr/auth/google` → callback değil; genelde **gereksiz**.
+- `https://wordboost.com.tr/` → OAuth callback **değil**; **sil**.
+
+Özet: Listende **sadece** yukarıdaki “mutlaka” + ihtiyacın olan lokal/Railway satırları kalsın; **`…/api/auth/google/callback`** canlı domain için şart.
+
+#### Sunucu env (Railway)
+
+- `FRONTEND_URL=https://wordboost.com.tr` (sonunda `/` yok)
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_CALLBACK_URL` genelde **boş** bırakılır (sunucu `FRONTEND_URL` + `/api/auth/google/callback` üretir).
 
 ## Node sürümü
 

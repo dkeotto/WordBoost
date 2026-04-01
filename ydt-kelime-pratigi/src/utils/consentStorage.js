@@ -18,23 +18,17 @@ export function setConsentStatus(status) {
   window.dispatchEvent(new CustomEvent("wb_consent_change", { detail: { status } }));
 }
 
-/** Navbar / dashboard’dan çerez panelini açmak için (CustomEvent + geriye dönük uyumluluk) */
+/** Navbar / dashboard’dan çerez panelini açmak için — window + document (bazı ortamlarda tek hedef yetmez) */
 export function openConsentDialog() {
-  const ev = new CustomEvent("wb_consent_open", { bubbles: true });
   try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("wb_consent_open", { bubbles: true }));
+    }
     if (typeof document !== "undefined") {
-      document.dispatchEvent(ev);
-    } else if (typeof window !== "undefined") {
-      window.dispatchEvent(ev);
+      document.dispatchEvent(new CustomEvent("wb_consent_open", { bubbles: true }));
     }
   } catch {
-    try {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("wb_consent_open"));
-      }
-    } catch {
-      /* ignore */
-    }
+    /* ignore */
   }
 }
 

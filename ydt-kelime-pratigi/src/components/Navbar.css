@@ -23,6 +23,7 @@
   height: 100%;
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   padding: 0 16px;
   gap: 10px;
   overflow: visible;
@@ -80,17 +81,23 @@
   display: flex;
   list-style: none;
   text-align: center;
-  gap: 8px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   align-items: center;
   flex: 1;
   min-width: 0;
   justify-content: flex-end;
-  overflow: visible;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: visible;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 159, 28, 0.4) transparent;
-  gap: 6px;
+  contain: layout style;
+}
+
+.nav-item.dropdown {
+  flex-shrink: 0;
 }
 
 .nav-menu::-webkit-scrollbar {

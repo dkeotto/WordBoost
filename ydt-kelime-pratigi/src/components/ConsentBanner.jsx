@@ -24,9 +24,12 @@ export default function ConsentBanner() {
       setInstantReveal(true);
       setIsOpen(true);
     };
-    if (typeof document === "undefined") return undefined;
+    window.addEventListener("wb_consent_open", onOpen);
     document.addEventListener("wb_consent_open", onOpen);
-    return () => document.removeEventListener("wb_consent_open", onOpen);
+    return () => {
+      window.removeEventListener("wb_consent_open", onOpen);
+      document.removeEventListener("wb_consent_open", onOpen);
+    };
   }, []);
 
   if (!isOpen) return null;

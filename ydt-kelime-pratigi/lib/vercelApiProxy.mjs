@@ -23,13 +23,22 @@ export default function vercelApiProxy(req, res) {
   }
 
   const incoming = new URL(req.url || "/", "http://127.0.0.1");
-  const pathAndQuery = incoming.pathname + incoming.search;
+  let pathname = incoming.pathname;
+  // Vercel’de Google OAuth aynı origin: /api/auth/* → Railway’de /auth/*
+  if (pathname.startsWith("/api/auth")) {
+    pathname = pathname.replace(/^\/api\/auth/, "/auth") || "/";
+  }
+  const pathAndQuery = pathname + incoming.search;
   const target = new URL(pathAndQuery, base);
 
   const isHttps = target.protocol === "https:";
   const lib = isHttps ? https : http;
 
   const headers = { ...req.headers };
+  const clientHost = headers["x-forwarded-host"] || headers.host || "";
+  const clientProto = headers["x-forwarded-proto"] || "https";
+  headers["x-forwarded-host"] = clientHost;
+  headers["x-forwarded-proto"] = clientProto;
   headers.host = target.host;
   delete headers.connection;
 

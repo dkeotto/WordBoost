@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getBackendOrigin, getGoogleAuthUrl } from "../utils/backendOrigin";
+import { getGoogleAuthUrl } from "../utils/backendOrigin";
 
 export default function LoginModal({ onLogin, onClose }) {
   const [activeTab, setActiveTab] = useState("login"); // 'login', 'register', 'verify', 'forgot', 'reset'
@@ -447,12 +447,6 @@ export default function LoginModal({ onLogin, onClose }) {
                 className="btn-google"
                 type="button"
                 onClick={() => {
-                  if (import.meta.env.PROD && !getBackendOrigin()) {
-                    alert(
-                      "Google girişi için VITE_BACKEND_URL veya VITE_SOCKET_URL (Railway kök URL) Vercel ortam değişkenlerinde tanımlı olmalı."
-                    );
-                    return;
-                  }
                   window.location.href = getGoogleAuthUrl();
                 }}
               >
