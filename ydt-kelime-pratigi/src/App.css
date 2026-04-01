@@ -853,15 +853,22 @@ button:disabled {
 }
 
 .level-selector-embedded select {
-  background: #333;
+  background-color: #333;
   border: 1px solid rgba(255,255,255,0.1);
   color: white;
-  padding: 8px 15px;
+  padding: 8px 32px 8px 12px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
   flex: 1;
   max-width: 200px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, rgba(255, 159, 28, 0.85) 50%),
+    linear-gradient(135deg, rgba(255, 159, 28, 0.85) 50%, transparent 50%);
+  background-position: calc(100% - 14px) calc(50% - 3px), calc(100% - 9px) calc(50% - 3px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
 }
 
 .level-selector-embedded select option {
@@ -870,7 +877,7 @@ button:disabled {
 }
 
 .level-selector-embedded select:hover {
-  background: rgba(255,255,255,0.1);
+  background-color: rgba(255,255,255,0.12);
 }
 
 /* Word Grid & Lists */
@@ -3684,11 +3691,19 @@ button:disabled {
 }
 
 .syn-controls select {
-  background: #333;
+  background-color: #333;
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 8px 32px 8px 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, rgba(255, 159, 28, 0.85) 50%),
+    linear-gradient(135deg, rgba(255, 159, 28, 0.85) 50%, transparent 50%);
+  background-position: calc(100% - 14px) calc(50% - 3px), calc(100% - 9px) calc(50% - 3px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
 }
 
 .syn-score {
@@ -4042,6 +4057,8 @@ button:disabled {
   background: rgba(255,255,255,0.08);
   color: #fff;
   text-transform: none;
+  border: 1px solid transparent;
+  box-sizing: border-box;
 }
 
 .syn-prev-btn.active {

@@ -67,6 +67,15 @@ Sunucu (`server.js`) canlıda **`redirect_uri`** olarak şunu üretir: **`https:
 
 Özet: Listende **sadece** yukarıdaki “mutlaka” + ihtiyacın olan lokal/Railway satırları kalsın; **`…/api/auth/google/callback`** canlı domain için şart.
 
+#### Hata: `Error 400: redirect_uri_mismatch`
+
+Google, uygulamanın gönderdiği `redirect_uri` ile Console’daki **Authorized redirect URIs** listesindeki satırlardan birini **karakter karakter** eşleştirmek zorunda.
+
+1. Railway deploy loglarında veya `server.js` başlangıcında şu satıra bak: **`Google OAuth redirect (callback) URL:`** — eklemen gereken değer budur.
+2. [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials** → OAuth 2.0 Client ID → **Authorized redirect URIs** → **Add URI** ile aynı adresi yapıştır.
+3. Sık hatalar: `https://wordboost.com.tr/auth/google/callback` yazmak (**yanlış**; arada **`/api`** olmalı). `http` ile `https` karıştırmak. Sitede **`www`** kullanıyorsan (`https://www.wordboost.com.tr`) hem **JavaScript origin** hem **redirect URI** için **`www`’lü** adresi ekle ve Railway’de **`FRONTEND_URL`**’i de aynı host ile ver (sonunda `/` yok).
+4. Değişiklikten sonra Google tarafında kaydet; tarayıcı önbelleği / gizli pencereden tekrar dene.
+
 #### Sunucu env (Railway)
 
 - `FRONTEND_URL=https://wordboost.com.tr` (sonunda `/` yok)

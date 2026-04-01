@@ -23,7 +23,6 @@ const Navbar = ({
   const [isMobileLayout, setIsMobileLayout] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia(MOBILE_MQ).matches
   );
-  const listsDropdownRef = useRef(null);
   const moreDropdownRef = useRef(null);
   const scrollLockYRef = useRef(0);
 
@@ -44,11 +43,6 @@ const Navbar = ({
     mq.addEventListener('change', sync);
     return () => mq.removeEventListener('change', sync);
   }, []);
-
-  useEffect(() => {
-    if (!isListsOpen || !listsDropdownRef.current) return;
-    listsDropdownRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [isListsOpen]);
 
   useEffect(() => {
     if (!isMenuOpen) return undefined;
@@ -234,7 +228,7 @@ const Navbar = ({
         </div>
       </li>
 
-      <li ref={listsDropdownRef} className={`nav-item dropdown ${isListsOpen ? 'open' : ''}`}>
+      <li className={`nav-item dropdown ${isListsOpen ? 'open' : ''}`}>
         <button
           type="button"
           className="dropdown-title"
