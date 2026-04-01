@@ -58,8 +58,8 @@ Required env:
 - Daily free limit: 3 requests/day (non-premium).
 - DB logging: `AiLog` collection (prompt/output masked).
 
-Required env:
-- `ANTHROPIC_API_KEY`
+Required env (same rule as `BREVO_API_KEY`: set in **Railway / Render Variables** or local `.env` only; **never commit** real keys):
+- `ANTHROPIC_API_KEY` ([Anthropic Console](https://console.anthropic.com); if leaked or rotated, create a new key and update the variable)
 - `ANTHROPIC_MODEL` (optional)
 
 ### Ads + GDPR
@@ -80,5 +80,5 @@ Cookie consent is required before loading AdSense. Premium users do not see ads.
 
 ## Notes
 
-- Do not commit `.env`.
+- Do not commit `.env`. Treat `ANTHROPIC_API_KEY` like mail/API secrets (`BREVO_API_KEY`, etc.): production values live only in the host’s environment variables.
 - Webhook endpoint must be publicly reachable in production.

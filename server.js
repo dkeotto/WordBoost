@@ -2,8 +2,9 @@
  * Yerel gelistirmede .env kullan. Railway/Render'da sadece platform "Variables"
  * kullanilsin ? boylece repoya yanlislikla giren .env deploy'da okunmaz (Brevo key sizintisi).
  */
+const path = require('path');
 if (!process.env.RAILWAY_PUBLIC_DOMAIN && !process.env.RENDER_EXTERNAL_URL) {
-  require('dotenv').config();
+  require('dotenv').config({ path: path.join(__dirname, '.env') });
 }
 
 const express = require('express');
@@ -11,7 +12,6 @@ const mongoose = require('mongoose');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const path = require('path');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
@@ -123,8 +123,46 @@ const WordStatSchema = new mongoose.Schema(
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = String(process.env.JWT_SECRET || "SECRET_KEY");
-const ANTHROPIC_API_KEY = String(process.env.ANTHROPIC_API_KEY || "").trim();
+
+function normalizeAnthropicApiKey(raw) {
+  let s = String(raw || "").trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).trim();
+  }
+  if (s.charCodeAt(0) === 0xfeff) s = s.slice(1);
+  return s;
+}
+
+const ANTHROPIC_AUTH_HELP =
+  "Anthropic API anahtarı geçersiz veya iptal edilmiş. console.anthropic.com üzerinden yeni anahtar oluştur; yerelde ydt-kelime/.env içinde ANTHROPIC_API_KEY güncelle, Railway/Render’da Variables’a yaz ve sunucuyu yeniden başlat.";
+
+/** Anthropic SDK hatalarını kullanıcıya anlaşılır mesaja çevir (401 = geçersiz anahtar). */
+function formatAnthropicError(err) {
+  const status = err?.status ?? err?.statusCode;
+  const msg = String(err?.message || "");
+  const looksLikeAnthropic401 =
+    status === 401 ||
+    msg.includes('"authentication_error"') ||
+    msg.includes("Invalid authentication credentials") ||
+    /^401\s+\{/.test(msg.trim());
+  if (looksLikeAnthropic401) {
+    return {
+      http: 502,
+      code: "anthropic_auth_invalid",
+      message: ANTHROPIC_AUTH_HELP
+    };
+  }
+  return { http: 500, code: "ai_error", message: msg || "AI hatası" };
+}
+
+const ANTHROPIC_API_KEY = normalizeAnthropicApiKey(process.env.ANTHROPIC_API_KEY);
 const aiProvider = createAnthropicProvider({ apiKey: ANTHROPIC_API_KEY });
+
+if (!process.env.RAILWAY_PUBLIC_DOMAIN && !process.env.RENDER_EXTERNAL_URL) {
+  console.log(
+    `[Anthropic] ${ANTHROPIC_API_KEY ? `API key yüklendi (${ANTHROPIC_API_KEY.length} karakter)` : "UYARI: ANTHROPIC_API_KEY boş — .env veya ortam değişkenini kontrol et"}`
+  );
+}
 
 function buildWritingPrompt({ type, tone, length, language, audience, context, inputText }) {
   const t = String(type || "blog").toLowerCase();
@@ -2328,7 +2366,8 @@ app.post('/api/ai/write', aiLimiter, async (req, res) => {
       limitPerDay: premium ? null : FREE_LIMIT
     });
   } catch (e) {
-    res.status(500).json({ error: e.message || "AI error" });
+    const f = formatAnthropicError(e);
+    res.status(f.http).json({ error: f.message, code: f.code });
   }
 });
 
@@ -2417,7 +2456,8 @@ app.post('/api/ai/rewrite', aiLimiter, async (req, res) => {
       limitPerDay: premium ? null : FREE_LIMIT
     });
   } catch (e) {
-    res.status(500).json({ error: e.message || "AI error" });
+    const f = formatAnthropicError(e);
+    res.status(f.http).json({ error: f.message, code: f.code });
   }
 });
 
@@ -2524,9 +2564,10 @@ app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
       res.end();
     }
   } catch (e) {
+    const f = formatAnthropicError(e);
     try {
-      if (!res.headersSent) return res.status(500).json({ error: e.message || "AI error" });
-      sseWrite(res, "error", { error: e.message || "AI error" });
+      if (!res.headersSent) return res.status(f.http).json({ error: f.message, code: f.code });
+      sseWrite(res, "error", { error: f.message, code: f.code });
       res.end();
     } catch (_) {
       /* ignore */
@@ -2644,9 +2685,10 @@ app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
       res.end();
     }
   } catch (e) {
+    const f = formatAnthropicError(e);
     try {
-      if (!res.headersSent) return res.status(500).json({ error: e.message || "AI error" });
-      sseWrite(res, "error", { error: e.message || "AI error" });
+      if (!res.headersSent) return res.status(f.http).json({ error: f.message, code: f.code });
+      sseWrite(res, "error", { error: f.message, code: f.code });
       res.end();
     } catch (_) {}
   }

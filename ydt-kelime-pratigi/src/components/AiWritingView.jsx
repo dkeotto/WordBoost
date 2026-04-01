@@ -20,6 +20,21 @@ const LENGTHS = [
   { id: "long", label: "Long" },
 ];
 
+const ANTHROPIC_AUTH_HINT =
+  "Anthropic API anahtarı geçersiz. console.anthropic.com üzerinden yeni anahtar oluştur, sunucunun .env / Railway Variables içinde ANTHROPIC_API_KEY olarak kaydet ve backend’i yeniden başlat.";
+
+function humanizeAiErrorMessage(raw) {
+  const s = String(raw || "");
+  if (
+    s.includes('"authentication_error"') ||
+    s.includes("Invalid authentication credentials") ||
+    /^401\s+\{/.test(s.trim())
+  ) {
+    return ANTHROPIC_AUTH_HINT;
+  }
+  return s;
+}
+
 function blurTextForFreeUser(text) {
   const s = String(text || "");
   if (s.length <= 160) return s;
@@ -71,7 +86,8 @@ export default function AiWritingView({ user, onGoPremium }) {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      const msg = data?.error || `AI stream error (${res.status})`;
+      const raw = data?.error || `AI stream error (${res.status})`;
+      const msg = humanizeAiErrorMessage(raw);
       const err = new Error(msg);
       err.payload = data;
       throw err;
@@ -106,7 +122,8 @@ export default function AiWritingView({ user, onGoPremium }) {
         }
         if (currentEvent === "text") onText?.(payload?.text || "");
         if (currentEvent === "done") onDone?.(payload);
-        if (currentEvent === "error") throw new Error(payload?.error || "AI error");
+        if (currentEvent === "error")
+          throw new Error(humanizeAiErrorMessage(payload?.error || "AI error"));
       }
     }
   };
@@ -135,7 +152,7 @@ export default function AiWritingView({ user, onGoPremium }) {
         setLimitPerDay(e.payload.limitPerDay ?? 3);
         setUsedToday(e.payload.usedToday ?? null);
       }
-      setErr(e.message || "AI hata");
+      setErr(humanizeAiErrorMessage(e.message) || "AI hata");
     } finally {
       setIsBusy(false);
     }
@@ -166,7 +183,7 @@ export default function AiWritingView({ user, onGoPremium }) {
         },
       });
     } catch (e) {
-      setErr(e.message || "AI hata");
+      setErr(humanizeAiErrorMessage(e.message) || "AI hata");
     } finally {
       setIsBusy(false);
     }
