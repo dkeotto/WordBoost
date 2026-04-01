@@ -1,6 +1,7 @@
 /**
  * Yerel gelistirmede .env kullan. Railway/Render'da sadece platform "Variables"
- * kullanilsin ? boylece repoya yanlislikla giren .env deploy'da okunmaz (Brevo key sizintisi).
+ * kullanilsin; boylece repoya yanlislikla giren .env deploy'da okunmaz.
+ * API anahtarlari (BREVO_API_KEY, ANTHROPIC_API_KEY, vb.) uretimde yalnizca Variables.
  */
 const path = require('path');
 if (!process.env.RAILWAY_PUBLIC_DOMAIN && !process.env.RENDER_EXTERNAL_URL) {
