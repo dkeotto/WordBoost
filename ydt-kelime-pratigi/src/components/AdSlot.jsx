@@ -2,16 +2,31 @@ import React, { useEffect, useRef, useState } from "react";
 import { getConsentStatus } from "../utils/consentStorage";
 
 function loadAdSense(client) {
-  if (!client) return;
-  if (typeof window === "undefined") return;
-  if (document.querySelector(`script[data-adsense="true"][data-client="${client}"]`)) return;
-  const s = document.createElement("script");
-  s.async = true;
-  s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(client)}`;
-  s.crossOrigin = "anonymous";
-  s.dataset.adsense = "true";
-  s.dataset.client = client;
-  document.head.appendChild(s);
+  return new Promise((resolve) => {
+    if (!client || typeof window === "undefined") {
+      resolve();
+      return;
+    }
+    const existing = [...document.querySelectorAll("script[data-adsense='true']")].find(
+      (n) => n.dataset.client === client
+    );
+    if (existing) {
+      if (window.adsbygoogle) {
+        resolve();
+        return;
+      }
+      existing.addEventListener("load", () => resolve(), { once: true });
+      return;
+    }
+    const s = document.createElement("script");
+    s.async = true;
+    s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(client)}`;
+    s.crossOrigin = "anonymous";
+    s.dataset.adsense = "true";
+    s.dataset.client = client;
+    s.onload = () => resolve();
+    document.head.appendChild(s);
+  });
 }
 
 export default function AdSlot({ slot, format = "auto", style, className, isPremium }) {
@@ -20,8 +35,13 @@ export default function AdSlot({ slot, format = "auto", style, className, isPrem
 
   const [inView, setInView] = useState(false);
   const ref = useRef(null);
+  const pushedRef = useRef(false);
 
   const [consentOk, setConsentOk] = useState(() => getConsentStatus().status === "accepted");
+
+  useEffect(() => {
+    pushedRef.current = false;
+  }, [slot]);
 
   useEffect(() => {
     const onChange = () => setConsentOk(getConsentStatus().status === "accepted");
@@ -46,18 +66,26 @@ export default function AdSlot({ slot, format = "auto", style, className, isPrem
   }, [enabled, isPremium]);
 
   useEffect(() => {
-    if (!enabled || isPremium) return;
-    if (!consentOk) return;
-    if (!inView) return;
-    loadAdSense(client);
-    // AdSense render trigger
-    try {
-      window.adsbygoogle = window.adsbygoogle || [];
-      window.adsbygoogle.push({});
-    } catch {
-      // ignore
-    }
-  }, [enabled, isPremium, consentOk, inView, client]);
+    if (!enabled || isPremium || !consentOk || !inView) return;
+    if (pushedRef.current) return;
+    let cancelled = false;
+    loadAdSense(client).then(() => {
+      if (cancelled) return;
+      requestAnimationFrame(() => {
+        if (cancelled || pushedRef.current) return;
+        try {
+          window.adsbygoogle = window.adsbygoogle || [];
+          window.adsbygoogle.push({});
+          pushedRef.current = true;
+        } catch {
+          // ignore
+        }
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, isPremium, consentOk, inView, client, slot]);
 
   if (!enabled || isPremium) return null;
   if (!consentOk) return null;

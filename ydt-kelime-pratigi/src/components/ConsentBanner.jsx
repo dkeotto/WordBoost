@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { getConsentStatus, setConsentStatus } from "../utils/consentStorage";
 
 export default function ConsentBanner() {
   const [status, setStatus] = useState(() => getConsentStatus().status);
   const [isOpen, setIsOpen] = useState(() => status === "unknown");
+  /** Navbar’dan “çerez aç” ile hemen göster; ilk girişte kısa gecikme + hafif animasyon */
+  const [instantReveal, setInstantReveal] = useState(false);
 
   useEffect(() => {
     const onChange = () => {
@@ -16,48 +19,60 @@ export default function ConsentBanner() {
   }, []);
 
   useEffect(() => {
-    const onOpen = () => setIsOpen(true);
+    const onOpen = () => {
+      setInstantReveal(true);
+      setIsOpen(true);
+    };
     window.addEventListener("wb_consent_open", onOpen);
     return () => window.removeEventListener("wb_consent_open", onOpen);
   }, []);
 
   if (!isOpen) return null;
 
-  return (
-    <div className="consent-banner" role="region" aria-label="Cookie consent">
+  const banner = (
+    <div
+      className={`consent-banner ${instantReveal ? "consent-banner--now" : "consent-banner--delayed"}`}
+      role="region"
+      aria-label="Çerez bildirimi"
+    >
       <div className="consent-inner">
-        <div className="consent-text">
-          <strong>Çerez tercihi</strong>
-          <p>
-            Bu uygulama, reklam ve temel ölçümleme için çerez kullanabilir. İstersen reddedebilir veya kabul edebilirsin.
-          </p>
-        </div>
+        <p className="consent-text">
+          <span className="consent-cookie" aria-hidden>
+            🍪
+          </span>
+          Deneyimi ve reklamları iyileştirmek için çerez kullanıyoruz. İstediğin zaman ayarlardan değiştirebilirsin.
+        </p>
         <div className="consent-actions">
           <button
-            className="consent-btn secondary"
-            type="button"
-            onClick={() => {
-              setConsentStatus("rejected");
-              setStatus("rejected");
-              setIsOpen(false);
-            }}
-          >
-            Reddet
-          </button>
-          <button
-            className="consent-btn"
+            className="consent-btn consent-btn--primary"
             type="button"
             onClick={() => {
               setConsentStatus("accepted");
               setStatus("accepted");
               setIsOpen(false);
+              setInstantReveal(false);
             }}
           >
             Kabul et
+          </button>
+          <button
+            className="consent-btn consent-btn--ghost"
+            type="button"
+            onClick={() => {
+              setConsentStatus("rejected");
+              setStatus("rejected");
+              setIsOpen(false);
+              setInstantReveal(false);
+            }}
+          >
+            Reddet
           </button>
         </div>
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(banner, document.body);
 }
 

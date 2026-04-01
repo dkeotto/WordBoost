@@ -3170,7 +3170,7 @@ button:disabled {
   color: rgba(255, 255, 255, 0.88);
 }
 
-.dash-ads-consent-btn {
+.dashboard-view .dash-ads-consent-btn {
   padding: 0.4rem 0.85rem;
   border-radius: 10px;
   border: 1px solid rgba(255, 159, 28, 0.45);
@@ -3179,10 +3179,17 @@ button:disabled {
   font-weight: 600;
   cursor: pointer;
   font-size: 0.85rem;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: none;
+  position: relative;
+  z-index: 2;
 }
 
-.dash-ads-consent-btn:hover {
+.dashboard-view .dash-ads-consent-btn:hover {
   background: rgba(255, 159, 28, 0.3);
+  transform: translateY(-1px);
+  filter: none;
 }
 
 .dashboard-layout {
@@ -3208,8 +3215,17 @@ button:disabled {
 .ad-slot {
   border-radius: 14px;
   border: 1px dashed rgba(255, 159, 28, 0.25);
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.22);
   padding: 0.5rem;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* AdSense boş/yüklenirken dev beyaz blok — mobilde yükseklik sınırı */
+.ad-slot .adsbygoogle {
+  display: block;
+  min-height: 0 !important;
+  background: transparent;
 }
 
 .ad-inline {
@@ -3221,54 +3237,156 @@ button:disabled {
   top: 90px;
 }
 
+@media screen and (max-width: 768px) {
+  .ad-slot {
+    max-height: 280px;
+    overflow: hidden;
+  }
+}
+
+/* Çerez: ince şerit — tüm şerit tıklanabilir (pointer-events none bazı masaüstü tarayıcılarda sorun çıkarıyordu) */
 .consent-banner {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 9999;
-  padding: 12px;
+  z-index: 2147483645;
+  padding: max(6px, env(safe-area-inset-bottom)) 10px 10px;
+  pointer-events: auto;
 }
 
-.consent-inner {
-  max-width: 1100px;
+.consent-banner .consent-inner {
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+  max-width: 920px;
   margin: 0 auto;
-  background: rgba(15, 15, 15, 0.96);
-  border: 1px solid rgba(255, 159, 28, 0.25);
-  border-radius: 14px;
-  padding: 12px 14px;
+  background: rgba(18, 18, 22, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 0.45rem 0.65rem 0.45rem 0.9rem;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 0.5rem 0.85rem;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35);
 }
 
-.consent-text p {
-  margin: 6px 0 0;
-  color: #bdbdbd;
-  font-size: 0.9rem;
+.consent-banner--delayed .consent-inner {
+  animation: consent-rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.9s both;
+}
+
+.consent-banner--now .consent-inner {
+  animation: consent-rise-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes consent-rise-in {
+  from {
+    transform: translateY(calc(100% + 14px));
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.consent-banner .consent-text {
+  margin: 0;
+  flex: 1 1 200px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.consent-cookie {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+  opacity: 0.9;
 }
 
 .consent-actions {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 0.35rem;
   flex-shrink: 0;
+  position: relative;
+  z-index: 2;
 }
 
-.consent-btn {
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: none;
+.consent-banner .consent-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.95rem;
+  border-radius: 999px;
   cursor: pointer;
-  font-weight: 800;
-  background: linear-gradient(45deg, #ff9f1c, #ff6b35);
-  color: #111;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  box-shadow: none;
+  border: 1px solid transparent;
+  white-space: nowrap;
 }
 
-.consent-btn.secondary {
+@media (prefers-reduced-motion: reduce) {
+  .consent-banner--delayed .consent-inner,
+  .consent-banner--now .consent-inner {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.consent-banner .consent-btn--primary {
+  background: linear-gradient(135deg, #ff9f1c, #ff7700);
+  color: #1a0f00;
+  border-color: rgba(255, 200, 120, 0.35);
+}
+
+.consent-banner .consent-btn--primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.consent-banner .consent-btn--ghost {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.consent-banner .consent-btn--ghost:hover {
+  color: #fff;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #ddd;
+  border-color: rgba(255, 255, 255, 0.28);
+  transform: translateY(-1px);
+  filter: none;
+}
+
+@media (max-width: 520px) {
+  .consent-banner .consent-inner {
+    border-radius: 16px;
+    padding: 0.55rem 0.65rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .consent-actions {
+    justify-content: stretch;
+  }
+
+  .consent-banner .consent-btn {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 .dashboard-cards {

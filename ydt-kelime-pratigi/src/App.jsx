@@ -22,7 +22,8 @@ import { io } from "socket.io-client";
 import "./App.css";
 
 
-const SOCKET_URL = window.location.origin;
+/** Production’da API Vercel proxy ile aynı origin; Socket.io ise Railway’e doğrudan (VITE_SOCKET_URL). */
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
 
 function readInitialViewFromUrl() {
   if (typeof window === "undefined") return "practice";

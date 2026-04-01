@@ -133,7 +133,8 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
               <code>{k}</code>
             </React.Fragment>
           ))}
-          .
+          . Slot ID’leri Google AdSense’te oluşturduğun <strong>reklam birimlerinin</strong> sayısal kimliği; yereldeki{" "}
+          <code>ydt-kelime-pratigi/.env</code> ile aynı değerleri Railway frontend Variables’a yazabilirsin.
         </p>
       )}
 
@@ -166,8 +167,6 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
               <strong>{activeDays}</strong>
             </div>
           </div>
-
-          <AdSlot slot={slotInline} className="ad-slot ad-inline" isPremium={isPremium} />
 
           <div className="dashboard-donut-box">
             <div className="dash-donut" style={{ background: donutGradient }}>
@@ -204,8 +203,6 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
               ))}
             </div>
           </div>
-
-          <AdSlot slot={slotInline} className="ad-slot ad-inline" isPremium={isPremium} />
 
           <div className="hard-words-box">
             <h3>En Çok Zorlanılan Kelimeler</h3>
