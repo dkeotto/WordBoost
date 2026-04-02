@@ -257,6 +257,7 @@ function buildChatSystemPrompt(memorySummary, userDisplayName, userDoc) {
     `Sen WordBoost içinde çalışan, ücretli üyelere açık **üst düzey İngilizce koçu** ve dil öğretimi uzmanısın. Genel sohbet botlarından (ChatGPT varsayılan tonu, Claude’un genel asistan modu) **bilerek** ayrılıyorsun: daha net, daha öğretici, daha az “şablon neşe”, daha çok sonuç.`,
     "",
     "### Kimlik ve ton",
+    "- Asistanın adı **Wordy** (WordBoost maskotu / tilki). Gerekirse kendini Wordy olarak tanıt; kullanıcıya hitapta bunu kullan.",
     `- Hitap: kullanıcı adını veya tercih ettiği ismi kullan (varsayılan: "${name}").`,
     "- Sıcak ama profesyonel; gereksiz övgü, “Harika soru!”, “Tabii ki yardımcı olayım!” gibi boş nezaket yok.",
     "- Özgüvenli ve sakin; cevapların **yoğun bilgi** taşısın, su katma.",
@@ -271,6 +272,7 @@ function buildChatSystemPrompt(memorySummary, userDisplayName, userDoc) {
     "- Karmaşık sorularda önce zihninde adımları netleştir; çıktıda **kısa başlıklar** veya numaralı yapı kullan (okunabilirlik).",
     "",
     "### Üslup ve format",
+    "- Kullanıcı metin dosyası (.txt, .md, CSV, JSON) eklediyse ekteki içeriği talimatın parçası say; önce dosyayı okuyup sonra yanıt ver.",
     "- Markdown: anlamlı yerde **kalın**, kısa listeler, gerekirse tablo; abartısız.",
     "- Uzun yanıtlarda girişte 1 cümleyle **ne yapacağını** söyle; sonra detay.",
     "- Kod / alıntı / e-posta düzenleme istenirse düzgün bloklar kullan.",
@@ -633,11 +635,19 @@ const AiLog = mongoose.model("AiLog", AiLogSchema);
 
 const AiChatThreadSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    title: { type: String, default: "Yeni sohbet" },
     messages: [
       {
         role: { type: String, enum: ["user", "assistant"], required: true },
         content: { type: String, default: "" },
+        files: [
+          {
+            name: { type: String, default: "" },
+            mimeType: { type: String, default: "" },
+            size: { type: Number, default: 0 },
+          },
+        ],
         createdAt: { type: Date, default: Date.now },
       },
     ],
@@ -646,6 +656,8 @@ const AiChatThreadSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+AiChatThreadSchema.index({ userId: 1, updatedAt: -1 });
 
 const AiChatThread = mongoose.model("AiChatThread", AiChatThreadSchema);
 
@@ -693,6 +705,53 @@ const CHAT_CONTEXT_MESSAGES = 40;
 const CHAT_SUMMARY_MIN_NEW = 12;
 const CHAT_USER_MESSAGE_MAX = 6000;
 const CHAT_ASSISTANT_STORE_MAX = 16000;
+const CHAT_ATTACHMENTS_MAX = 5;
+const CHAT_ATTACHMENT_TEXT_MAX = 32000;
+const CHAT_MERGED_BODY_MAX = 140000;
+
+function normalizeChatAttachments(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  for (const a of raw.slice(0, CHAT_ATTACHMENTS_MAX)) {
+    const name = String(a?.name || "dosya").trim().slice(0, 200) || "dosya";
+    const mimeType = String(a?.mimeType || "text/plain").trim().slice(0, 120) || "text/plain";
+    const text = String(a?.text || "");
+    if (!text.trim()) continue;
+    const mt = mimeType.toLowerCase();
+    const okMime =
+      mt.startsWith("text/") ||
+      mt === "application/json" ||
+      mt === "application/csv" ||
+      mt.endsWith("+json");
+    if (!okMime) continue;
+    const clipped = clipChatText(text, CHAT_ATTACHMENT_TEXT_MAX);
+    out.push({ name, mimeType, text: clipped, size: text.length });
+  }
+  return out;
+}
+
+function buildUserMessageWithAttachments(rawMsg, attachments) {
+  const base = String(rawMsg || "").trim();
+  const parts = [];
+  if (base) parts.push(base);
+  for (const a of attachments) {
+    parts.push(
+      `\n\n---\n📎 **${a.name}** (${a.mimeType})\n\`\`\`\n${a.text}\n\`\`\``
+    );
+  }
+  const full = parts.join("");
+  return full.trim() || "(boş mesaj)";
+}
+
+function maybeAutoTitleChatThread(thread) {
+  const t = String(thread?.title || "").trim();
+  if (t && t !== "Yeni sohbet") return;
+  const first = (thread.messages || []).find((m) => m.role === "user");
+  if (!first || !String(first.content || "").trim()) return;
+  const plain = String(first.content).split(/\n\n---\n📎/)[0].trim();
+  const derived = clipChatText(plain, 56).replace(/\s+/g, " ").trim();
+  if (derived) thread.title = derived;
+}
 
 function chatApiMessageSlice(thread) {
   let ctx = (thread.messages || []).slice(-CHAT_CONTEXT_MESSAGES);
@@ -756,6 +815,11 @@ async function startServer() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("?? MongoDB connected");
+    try {
+      await AiChatThread.syncIndexes();
+    } catch (e) {
+      console.warn("[ai-chat] syncIndexes:", e?.message || e);
+    }
     await ensureMailTransport();
 
     // CLEANUP GHOST USERS & UNVERIFIED USERS
@@ -2943,28 +3007,150 @@ app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
   }
 });
 
-// --- AI Sohbet (Premium veya AI+; thread + bellek özeti) ---
-app.get("/api/ai/chat", aiLimiter, async (req, res) => {
+// --- AI Sohbet (Premium veya AI+; çoklu thread + dosya ekleri + bellek özeti) ---
+async function loadAiChatUser(req, res) {
+  const token = req.headers.authorization;
+  if (!token) {
+    res.status(401).json({ error: "Token gerekli" });
+    return null;
+  }
   try {
-    const token = req.headers.authorization;
-    if (!token) return res.status(401).json({ error: "Token gerekli" });
     const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
     const user = await User.findById(decoded.id);
-    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    if (!user) {
+      res.status(404).json({ error: "Kullanıcı bulunamadı" });
+      return null;
+    }
     if (!hasUnlimitedAiMode(user)) {
-      return res.status(403).json({
+      res.status(403).json({
         error: "ai_chat_premium_required",
         message: "AI Sohbet yalnızca Premium veya AI+ üyelikle kullanılabilir.",
       });
+      return null;
     }
-    const thread = await AiChatThread.findOne({ userId: user._id }).lean();
-    const messages = (thread?.messages || []).map((m) => ({
+    return user;
+  } catch (e) {
+    res.status(401).json({ error: "Auth error" });
+    return null;
+  }
+}
+
+app.get("/api/ai/chat/threads", aiLimiter, async (req, res) => {
+  try {
+    const user = await loadAiChatUser(req, res);
+    if (!user) return;
+    const rows = await AiChatThread.find({ userId: user._id })
+      .sort({ updatedAt: -1 })
+      .limit(80)
+      .select("title updatedAt messages")
+      .lean();
+    const threads = rows.map((row) => {
+      const msgs = row.messages || [];
+      const last = msgs.length ? msgs[msgs.length - 1] : null;
+      const preview = last
+        ? clipChatText(String(last.content || "").replace(/\n/g, " "), 72)
+        : "";
+      return {
+        id: String(row._id),
+        title: row.title || "Yeni sohbet",
+        updatedAt: row.updatedAt,
+        messageCount: msgs.length,
+        preview,
+      };
+    });
+    res.json({ ok: true, threads });
+  } catch (e) {
+    res.status(500).json({ error: "threads_list_failed" });
+  }
+});
+
+app.post("/api/ai/chat/threads", aiLimiter, async (req, res) => {
+  try {
+    const user = await loadAiChatUser(req, res);
+    if (!user) return;
+    const titleIn = String(req.body?.title || "").trim().slice(0, 120);
+    const thread = await AiChatThread.create({
+      userId: user._id,
+      title: titleIn || "Yeni sohbet",
+      messages: [],
+    });
+    res.json({
+      ok: true,
+      thread: {
+        id: String(thread._id),
+        title: thread.title,
+        updatedAt: thread.updatedAt,
+        messageCount: 0,
+        preview: "",
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ error: "thread_create_failed" });
+  }
+});
+
+app.patch("/api/ai/chat/threads/:threadId", aiLimiter, async (req, res) => {
+  try {
+    const user = await loadAiChatUser(req, res);
+    if (!user) return;
+    const tid = req.params.threadId;
+    if (!mongoose.isValidObjectId(tid)) return res.status(400).json({ error: "invalid_thread" });
+    const title = String(req.body?.title || "").trim().slice(0, 120);
+    if (!title) return res.status(400).json({ error: "title gerekli" });
+    const thread = await AiChatThread.findOneAndUpdate(
+      { _id: tid, userId: user._id },
+      { $set: { title } },
+      { new: true }
+    ).lean();
+    if (!thread) return res.status(404).json({ error: "thread_not_found" });
+    res.json({ ok: true, id: thread._id, title: thread.title });
+  } catch (e) {
+    res.status(500).json({ error: "thread_patch_failed" });
+  }
+});
+
+app.delete("/api/ai/chat/threads/:threadId", aiLimiter, async (req, res) => {
+  try {
+    const user = await loadAiChatUser(req, res);
+    if (!user) return;
+    const tid = req.params.threadId;
+    if (!mongoose.isValidObjectId(tid)) return res.status(400).json({ error: "invalid_thread" });
+    const r = await AiChatThread.deleteOne({ _id: tid, userId: user._id });
+    if (!r.deletedCount) return res.status(404).json({ error: "thread_not_found" });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: "thread_delete_failed" });
+  }
+});
+
+app.get("/api/ai/chat", aiLimiter, async (req, res) => {
+  try {
+    const user = await loadAiChatUser(req, res);
+    if (!user) return;
+    const qid = req.query.threadId ? String(req.query.threadId) : "";
+    let thread = null;
+    if (qid && mongoose.isValidObjectId(qid)) {
+      thread = await AiChatThread.findOne({ _id: qid, userId: user._id }).lean();
+    }
+    if (!thread) {
+      thread = await AiChatThread.findOne({ userId: user._id }).sort({ updatedAt: -1 }).lean();
+    }
+    if (!thread) {
+      return res.json({ ok: true, messages: [], threadId: null, title: null });
+    }
+    const messages = (thread.messages || []).map((m) => ({
       id: m._id,
       role: m.role,
       content: m.content,
+      files: Array.isArray(m.files) ? m.files : [],
       createdAt: m.createdAt,
     }));
-    res.json({ ok: true, messages });
+    res.json({
+      ok: true,
+      messages,
+      threadId: String(thread._id),
+      title: thread.title || "Yeni sohbet",
+    });
   } catch (e) {
     res.status(401).json({ error: "Auth error" });
   }
@@ -2972,15 +3158,14 @@ app.get("/api/ai/chat", aiLimiter, async (req, res) => {
 
 app.delete("/api/ai/chat", aiLimiter, async (req, res) => {
   try {
-    const token = req.headers.authorization;
-    if (!token) return res.status(401).json({ error: "Token gerekli" });
-    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
-    const user = await User.findById(decoded.id);
-    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
-    if (!hasUnlimitedAiMode(user)) {
-      return res.status(403).json({ error: "ai_chat_premium_required" });
+    const user = await loadAiChatUser(req, res);
+    if (!user) return;
+    const tid = req.query.threadId ? String(req.query.threadId) : "";
+    if (!tid || !mongoose.isValidObjectId(tid)) {
+      return res.status(400).json({ error: "threadId gerekli" });
     }
-    await AiChatThread.findOneAndDelete({ userId: user._id });
+    const r = await AiChatThread.deleteOne({ _id: tid, userId: user._id });
+    if (!r.deletedCount) return res.status(404).json({ error: "thread_not_found" });
     res.json({ ok: true });
   } catch (e) {
     res.status(401).json({ error: "Auth error" });
@@ -2993,33 +3178,50 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
     aborted = true;
   });
   try {
-    const token = req.headers.authorization;
-    if (!token) return res.status(401).json({ error: "Token gerekli" });
-    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
-    const user = await User.findById(decoded.id);
-    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
-    if (!hasUnlimitedAiMode(user)) {
-      return res.status(403).json({
-        error: "ai_chat_premium_required",
-        message: "AI Sohbet yalnızca Premium veya AI+ üyelikle kullanılabilir.",
-      });
-    }
+    const user = await loadAiChatUser(req, res);
+    if (!user) return;
 
     const rawMsg = String(req.body?.message || "").trim();
-    if (!rawMsg) return res.status(400).json({ error: "message gerekli" });
+    const attachments = normalizeChatAttachments(req.body?.attachments);
+    if (!rawMsg && attachments.length === 0) {
+      return res.status(400).json({ error: "message veya ek gerekli" });
+    }
     if (rawMsg.length > CHAT_USER_MESSAGE_MAX) {
       return res.status(400).json({ error: "message_too_long", max: CHAT_USER_MESSAGE_MAX });
     }
 
-    let thread = await AiChatThread.findOne({ userId: user._id });
-    if (!thread) {
-      thread = await AiChatThread.create({ userId: user._id, messages: [] });
+    const merged = buildUserMessageWithAttachments(rawMsg, attachments);
+    if (merged.length > CHAT_MERGED_BODY_MAX) {
+      return res.status(400).json({ error: "message_with_attachments_too_long" });
     }
 
-    thread.messages.push({ role: "user", content: rawMsg, createdAt: new Date() });
+    const bodyTid = req.body?.threadId ? String(req.body.threadId) : "";
+    let thread = null;
+    if (bodyTid && mongoose.isValidObjectId(bodyTid)) {
+      thread = await AiChatThread.findOne({ _id: bodyTid, userId: user._id });
+      if (!thread) {
+        return res.status(404).json({ error: "thread_not_found" });
+      }
+    } else {
+      thread = await AiChatThread.create({ userId: user._id, title: "Yeni sohbet", messages: [] });
+    }
+
+    const fileMeta = attachments.map((a) => ({
+      name: a.name,
+      mimeType: a.mimeType,
+      size: a.size,
+    }));
+
+    thread.messages.push({
+      role: "user",
+      content: merged,
+      files: fileMeta,
+      createdAt: new Date(),
+    });
     if (thread.messages.length > CHAT_MAX_STORED_MESSAGES) {
       thread.messages = thread.messages.slice(-CHAT_MAX_STORED_MESSAGES);
     }
+    maybeAutoTitleChatThread(thread);
     await thread.save();
 
     const apiMessages = chatApiMessageSlice(thread);
@@ -3031,7 +3233,11 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
     const model = getAiModel(aiProviderName);
 
     setSseHeaders(res);
-    sseWrite(res, "meta", { ok: true, mode: "chat" });
+    sseWrite(res, "meta", {
+      ok: true,
+      mode: "chat",
+      threadId: String(thread._id),
+    });
 
     const startedAt = Date.now();
     const stream = await aiProvider.createMessageStream({
@@ -3064,12 +3270,13 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
 
     if (!aborted) {
       const storedAssistant = clipChatText(out, CHAT_ASSISTANT_STORE_MAX);
-      const t2 = await AiChatThread.findOne({ userId: user._id });
+      const t2 = await AiChatThread.findById(thread._id);
       if (t2) {
         t2.messages.push({ role: "assistant", content: storedAssistant, createdAt: new Date() });
         if (t2.messages.length > CHAT_MAX_STORED_MESSAGES) {
           t2.messages = t2.messages.slice(-CHAT_MAX_STORED_MESSAGES);
         }
+        maybeAutoTitleChatThread(t2);
         await t2.save();
         setImmediate(() => {
           maybeUpdateChatMemorySummary(t2._id).catch(() => {});
@@ -3086,8 +3293,14 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
           mode: "chat_stream",
           provider: aiProviderName,
           model,
-          requestMeta: { premium: true },
-          promptMasked: guardAiPromptLogging(JSON.stringify({ systemPreview: system.slice(0, 400), userMsgLen: rawMsg.length })),
+          requestMeta: { premium: true, threadId: String(thread._id), attachmentCount: attachments.length },
+          promptMasked: guardAiPromptLogging(
+            JSON.stringify({
+              systemPreview: system.slice(0, 400),
+              userMsgLen: merged.length,
+              attachmentCount: attachments.length,
+            })
+          ),
           outputMasked: guardAiPromptLogging(storedAssistant),
           usage,
           elapsedMs,
@@ -3097,6 +3310,7 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
       sseWrite(res, "done", {
         text: out,
         usage,
+        threadId: String(thread._id),
         dayKey: user.aiUsage?.dayKey || todayKey(),
         usedToday: user.aiUsage?.count || 0,
         limitPerDay: null,

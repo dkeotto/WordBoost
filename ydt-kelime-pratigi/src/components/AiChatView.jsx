@@ -23,6 +23,29 @@ const CHAT_STARTERS = [
   },
 ];
 
+const MAX_PENDING_FILES = 5;
+const MAX_FILE_CHARS = 78000;
+
+function threadStorageKey(username) {
+  return `wb_ai_chat_thread_${username || "anon"}`;
+}
+
+function userVisibleText(content) {
+  const s = String(content || "");
+  const marker = "\n\n---\n📎";
+  const idx = s.indexOf(marker);
+  return idx >= 0 ? s.slice(0, idx).trim() : s.trim();
+}
+
+function WordyAssistantLabel() {
+  return (
+    <span className="ai-chat-bubble-label ai-chat-bubble-label--wordy">
+      <img src="/wb-logo.png" alt="" className="ai-chat-wordy-avatar" width={20} height={20} decoding="async" />
+      Wordy
+    </span>
+  );
+}
+
 function humanizeAiErrorMessage(raw, payload) {
   const code = payload?.code;
   if (code === "groq_auth_invalid" || code === "groq_rate_limit") {
@@ -37,40 +60,147 @@ function humanizeAiErrorMessage(raw, payload) {
 export default function AiChatView({ user, onGoPremium, onGoWriting }) {
   const token = user?.token || "";
   const canChat = hasUnlimitedAiClient(user);
+  const uname = user?.username || "";
+
+  const [threads, setThreads] = useState([]);
+  const [activeThreadId, setActiveThreadId] = useState(null);
+  const [threadTitle, setThreadTitle] = useState("");
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [pendingFiles, setPendingFiles] = useState([]);
+
+  const [loadingThreads, setLoadingThreads] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [streamingText, setStreamingText] = useState("");
   const [thinkingVisible, setThinkingVisible] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const abortRef = useRef(null);
   const bottomRef = useRef(null);
-  const listRef = useRef(null);
   const thinkingTimerRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  const loadHistory = useCallback(async () => {
-    if (!token || !canChat) return;
-    setLoadingHistory(true);
-    try {
-      const r = await fetch(apiUrl("/api/ai/chat"), { headers: { Authorization: token } });
-      const d = await readResponseJson(r);
-      if (!r.ok) {
-        const msg = d?.message || d?.error || `HTTP ${r.status}`;
-        throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
-      }
-      setMessages(Array.isArray(d.messages) ? d.messages : []);
-      setErr("");
-    } catch (e) {
-      setErr(e?.message || "Geçmiş yüklenemedi");
-    } finally {
-      setLoadingHistory(false);
+  const fetchThreadList = useCallback(async () => {
+    if (!token || !canChat) return [];
+    const r = await fetch(apiUrl("/api/ai/chat/threads"), { headers: { Authorization: token } });
+    const d = await readResponseJson(r);
+    if (!r.ok) {
+      const msg = d?.message || d?.error || `HTTP ${r.status}`;
+      throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
     }
+    return Array.isArray(d.threads) ? d.threads : [];
   }, [token, canChat]);
 
+  const loadThreads = useCallback(async () => {
+    if (!token || !canChat) return;
+    setLoadingThreads(true);
+    try {
+      const list = await fetchThreadList();
+      setThreads(list);
+      return list;
+    } catch (e) {
+      setErr(e?.message || "Sohbet listesi yüklenemedi");
+      return [];
+    } finally {
+      setLoadingThreads(false);
+    }
+  }, [token, canChat, fetchThreadList]);
+
+  const createThreadRemote = useCallback(async () => {
+    const r = await fetch(apiUrl("/api/ai/chat/threads"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: token },
+      body: JSON.stringify({}),
+    });
+    const d = await readResponseJson(r);
+    if (!r.ok) {
+      const msg = d?.message || d?.error || `HTTP ${r.status}`;
+      throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+    }
+    return d.thread;
+  }, [token]);
+
+  const loadMessages = useCallback(
+    async (threadId) => {
+      if (!token || !canChat || !threadId) return;
+      setLoadingHistory(true);
+      try {
+        const q = new URLSearchParams({ threadId: String(threadId) });
+        const r = await fetch(apiUrl(`/api/ai/chat?${q}`), { headers: { Authorization: token } });
+        const d = await readResponseJson(r);
+        if (!r.ok) {
+          const msg = d?.message || d?.error || `HTTP ${r.status}`;
+          throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+        }
+        setMessages(Array.isArray(d.messages) ? d.messages : []);
+        if (d.threadId) setActiveThreadId(String(d.threadId));
+        setThreadTitle(d.title || "Yeni sohbet");
+        setErr("");
+      } catch (e) {
+        setErr(e?.message || "Geçmiş yüklenemedi");
+      } finally {
+        setLoadingHistory(false);
+      }
+    },
+    [token, canChat]
+  );
+
   useEffect(() => {
-    loadHistory();
-  }, [loadHistory]);
+    if (!token || !canChat) return;
+    let cancelled = false;
+    (async () => {
+      const list = await loadThreads();
+      if (cancelled) return;
+      if (list.length === 0) {
+        try {
+          const t = await createThreadRemote();
+          if (cancelled || !t?.id) return;
+          setThreads([t]);
+          setActiveThreadId(String(t.id));
+          setThreadTitle(t.title || "Yeni sohbet");
+          setMessages([]);
+          try {
+            localStorage.setItem(threadStorageKey(uname), String(t.id));
+          } catch {
+            /* ignore */
+          }
+        } catch (e) {
+          if (!cancelled) setErr(e?.message || "İlk sohbet oluşturulamadı");
+        }
+        return;
+      }
+      let pick = null;
+      try {
+        pick = localStorage.getItem(threadStorageKey(uname));
+      } catch {
+        pick = null;
+      }
+      if (pick && list.some((x) => String(x.id) === String(pick))) {
+        setActiveThreadId(String(pick));
+        await loadMessages(pick);
+      } else {
+        const first = list[0];
+        setActiveThreadId(String(first.id));
+        await loadMessages(first.id);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, canChat, uname, loadThreads, createThreadRemote, loadMessages]);
+
+  useEffect(() => {
+    if (activeThreadId && uname) {
+      try {
+        localStorage.setItem(threadStorageKey(uname), activeThreadId);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [activeThreadId, uname]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -100,7 +230,7 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
     setBusy(false);
   };
 
-  const streamSse = async ({ body, onText, onDone }) => {
+  const streamSse = async ({ body, onText, onMeta, onDone }) => {
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -161,6 +291,7 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
           payload = { text: dataLine };
         }
         if (currentEvent === "text") onText?.(payload?.text || "");
+        if (currentEvent === "meta") onMeta?.(payload);
         if (currentEvent === "done") onDone?.(payload);
         if (currentEvent === "error") {
           throw new Error(humanizeAiErrorMessage(payload?.error || "AI error", payload));
@@ -171,49 +302,135 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
 
   const send = async () => {
     const t = input.trim();
-    if (!t || !token || !canChat || busy) return;
+    const filesSnapshot = pendingFiles.slice();
+    const hasFiles = filesSnapshot.length > 0;
+    if ((!t && !hasFiles) || !token || !canChat || busy || !activeThreadId) return;
     setInput("");
+    setPendingFiles([]);
     setErr("");
     setStreamingText("");
     setBusy(true);
+
+    const attachments = filesSnapshot.map((f) => ({
+      name: f.name,
+      mimeType: f.mimeType,
+      text: f.text,
+    }));
+
     const optimistic = [
       ...messages,
-      { id: `tmp-${Date.now()}`, role: "user", content: t, createdAt: new Date().toISOString() },
+      {
+        id: `tmp-${Date.now()}`,
+        role: "user",
+        content: t || (hasFiles ? "(Ekli dosyalar)" : ""),
+        files: filesSnapshot.map((f) => ({ name: f.name, mimeType: f.mimeType, size: f.size })),
+        createdAt: new Date().toISOString(),
+      },
     ];
     setMessages(optimistic);
+
     try {
       await streamSse({
-        body: { message: t },
+        body: { message: t, threadId: activeThreadId, attachments },
         onText: (chunk) => setStreamingText((prev) => prev + chunk),
+        onMeta: (payload) => {
+          if (payload?.threadId) {
+            setActiveThreadId(String(payload.threadId));
+          }
+        },
         onDone: () => {
           setStreamingText("");
         },
       });
-      await loadHistory();
+      await loadMessages(activeThreadId);
+      await loadThreads();
     } catch (e) {
       if (e?.name === "AbortError") {
-        await loadHistory();
+        await loadMessages(activeThreadId);
+        await loadThreads();
         return;
       }
       setErr(humanizeAiErrorMessage(e.message, e.payload));
-      await loadHistory();
+      await loadMessages(activeThreadId);
+      await loadThreads();
     } finally {
       setBusy(false);
       setStreamingText("");
     }
   };
 
-  const clearChat = async () => {
-    if (!token || !canChat) return;
-    if (!window.confirm("Tüm sohbet ve hatırlanan özet silinsin mi?")) return;
+  const deleteCurrentThread = async () => {
+    if (!token || !canChat || !activeThreadId) return;
+    if (!window.confirm("Bu sohbet kalıcı olarak silinsin mi?")) return;
     setErr("");
     try {
-      const r = await fetch(apiUrl("/api/ai/chat"), { method: "DELETE", headers: { Authorization: token } });
+      const r = await fetch(apiUrl(`/api/ai/chat/threads/${activeThreadId}`), {
+        method: "DELETE",
+        headers: { Authorization: token },
+      });
       const d = await readResponseJson(r);
       if (!r.ok) throw new Error(d?.error || `HTTP ${r.status}`);
-      setMessages([]);
+      const list = await fetchThreadList();
+      setThreads(list);
+      if (list.length === 0) {
+        const t = await createThreadRemote();
+        setThreads([t]);
+        setActiveThreadId(String(t.id));
+        setThreadTitle(t.title || "Yeni sohbet");
+        setMessages([]);
+      } else {
+        const next = list[0];
+        setActiveThreadId(String(next.id));
+        await loadMessages(next.id);
+      }
     } catch (e) {
-      setErr(e?.message || "Sohbet temizlenemedi");
+      setErr(e?.message || "Sohbet silinemedi");
+    }
+  };
+
+  const startNewChat = async () => {
+    if (!token || !canChat || busy) return;
+    setErr("");
+    try {
+      const t = await createThreadRemote();
+      setThreads((prev) => [t, ...prev]);
+      setActiveThreadId(String(t.id));
+      setThreadTitle(t.title || "Yeni sohbet");
+      setMessages([]);
+      setSidebarOpen(false);
+    } catch (e) {
+      setErr(e?.message || "Yeni sohbet açılamadı");
+    }
+  };
+
+  const selectThread = async (id) => {
+    if (!id || busy || String(id) === String(activeThreadId)) {
+      setSidebarOpen(false);
+      return;
+    }
+    setActiveThreadId(String(id));
+    await loadMessages(id);
+    setSidebarOpen(false);
+  };
+
+  const renameThread = async () => {
+    if (!token || !activeThreadId) return;
+    const next = window.prompt("Sohbet başlığı", threadTitle || "");
+    if (next == null) return;
+    const title = String(next).trim().slice(0, 120);
+    if (!title) return;
+    try {
+      const r = await fetch(apiUrl(`/api/ai/chat/threads/${activeThreadId}`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: token },
+        body: JSON.stringify({ title }),
+      });
+      const d = await readResponseJson(r);
+      if (!r.ok) throw new Error(d?.error || `HTTP ${r.status}`);
+      setThreadTitle(d.title || title);
+      await loadThreads();
+    } catch (e) {
+      setErr(e?.message || "Başlık güncellenemedi");
     }
   };
 
@@ -228,140 +445,333 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
     setInput(text);
   };
 
+  const onPickFiles = (e) => {
+    const fl = e.target?.files;
+    if (!fl || !fl.length) return;
+    const take = Math.min(fl.length, MAX_PENDING_FILES - pendingFiles.length);
+    for (let i = 0; i < take; i++) {
+      const file = fl[i];
+      const reader = new FileReader();
+      reader.onload = () => {
+        let text = String(reader.result || "");
+        if (text.length > MAX_FILE_CHARS) {
+          text = `${text.slice(0, MAX_FILE_CHARS)}\n…(dosya kısaltıldı)`;
+        }
+        setPendingFiles((prev) => {
+          if (prev.length >= MAX_PENDING_FILES) return prev;
+          return [
+            ...prev,
+            {
+              id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              name: file.name || "dosya",
+              mimeType: file.type || "text/plain",
+              text,
+              size: file.size,
+            },
+          ];
+        });
+      };
+      reader.readAsText(file, "UTF-8");
+    }
+    e.target.value = "";
+  };
+
+  const removePendingFile = (id) => {
+    setPendingFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
   return (
-    <div className="ai-chat">
-      <div className="ai-header">
-        <h2>WordBoost AI · Sohbet</h2>
-        <p className="ai-chat-tagline">
-          Koç seviyesinde geri bildirim, hafızalı bağlam ve uzun, düşünülmüş yanıtlar — tek amaç: seni gerçekten ilerletmek.
+    <div className="ai-chat-root">
+      <aside className={`ai-chat-sidebar ${sidebarOpen ? "ai-chat-sidebar--open" : ""}`}>
+        <div className="ai-chat-sidebar-head">
+          <div className="ai-chat-sidebar-brand-row" aria-label="Wordy asistan">
+            <img src="/wb-logo.png" alt="" className="ai-chat-sidebar-logo" width={28} height={28} decoding="async" />
+            <span className="ai-chat-sidebar-brand">Wordy</span>
+          </div>
+          <button
+            type="button"
+            className="ai-chat-sidebar-close"
+            aria-label="Kenar çubuğunu kapat"
+            onClick={() => setSidebarOpen(false)}
+          >
+            ×
+          </button>
+        </div>
+        <button type="button" className="ai-chat-new-chat" onClick={startNewChat} disabled={busy || loadingThreads}>
+          + Yeni sohbet
+        </button>
+        <div className="ai-chat-thread-list" role="navigation" aria-label="Sohbet geçmişi">
+          {loadingThreads && threads.length === 0 ? (
+            <p className="ai-chat-sidebar-hint">Yükleniyor…</p>
+          ) : null}
+          {threads.map((th) => (
+            <div
+              key={th.id}
+              className={`ai-chat-thread-item ${String(th.id) === String(activeThreadId) ? "ai-chat-thread-item--active" : ""}`}
+            >
+              <button
+                type="button"
+                className="ai-chat-thread-item-main"
+                onClick={() => selectThread(th.id)}
+                disabled={busy}
+              >
+                <span className="ai-chat-thread-item-title">{th.title || "Sohbet"}</span>
+                {th.preview ? <span className="ai-chat-thread-item-preview">{th.preview}</span> : null}
+              </button>
+              <button
+                type="button"
+                className="ai-chat-thread-item-del"
+                aria-label="Sohbeti sil"
+                disabled={busy}
+                onClick={async (ev) => {
+                  ev.stopPropagation();
+                  if (!window.confirm("Bu sohbet silinsin mi?")) return;
+                  try {
+                    const r = await fetch(apiUrl(`/api/ai/chat/threads/${th.id}`), {
+                      method: "DELETE",
+                      headers: { Authorization: token },
+                    });
+                    const d = await readResponseJson(r);
+                    if (!r.ok) throw new Error(d?.error || `HTTP ${r.status}`);
+                    const list = await fetchThreadList();
+                    setThreads(list);
+                    if (String(th.id) === String(activeThreadId)) {
+                      if (list.length === 0) {
+                        const nt = await createThreadRemote();
+                        setThreads([nt]);
+                        setActiveThreadId(String(nt.id));
+                        setMessages([]);
+                        setThreadTitle(nt.title || "Yeni sohbet");
+                      } else {
+                        const nx = list[0];
+                        setActiveThreadId(String(nx.id));
+                        await loadMessages(nx.id);
+                      }
+                    }
+                  } catch (errDel) {
+                    setErr(errDel?.message || "Silinemedi");
+                  }
+                }}
+              >
+                🗑
+              </button>
+            </div>
+          ))}
+        </div>
+        <p className="ai-chat-sidebar-foot">
+          Modeller bağlam + özet ile uzun yanıt üretir. Metin dosyası ekleyebilirsin (.txt, .md, .csv, .json).
         </p>
-        <p className="ai-sub">
+      </aside>
+
+      {sidebarOpen ? (
+        <button
+          type="button"
+          className="ai-chat-sidebar-backdrop"
+          aria-label="Kenar çubuğunu kapat"
+          onClick={() => setSidebarOpen(false)}
+        />
+      ) : null}
+
+      <div className="ai-chat-main">
+        <header className="ai-chat-topbar">
+          <button
+            type="button"
+            className="ai-chat-menu-btn"
+            aria-label="Sohbet listesi"
+            onClick={() => setSidebarOpen((v) => !v)}
+          >
+            ☰
+          </button>
+          <div className="ai-chat-topbar-center">
+            <h2 className="ai-chat-topbar-title">{threadTitle || "AI Sohbet"}</h2>
+            <p className="ai-chat-topbar-sub">
+              ChatGPT tarzı sohbet · geçmiş konuşmalar · dosya ekle
+            </p>
+          </div>
+          <div className="ai-chat-topbar-actions">
+            {typeof onGoWriting === "function" ? (
+              <button type="button" className="ai-chat-link-btn ai-chat-link-btn--compact" onClick={onGoWriting}>
+                ✍️ Yazım
+              </button>
+            ) : null}
+            <button type="button" className="ai-chat-link-btn ai-chat-link-btn--compact" onClick={renameThread}>
+              ✎ Ad
+            </button>
+            <button type="button" className="ai-chat-link-btn ai-chat-link-btn--compact" onClick={() => loadThreads()} disabled={loadingThreads || busy}>
+              ↻
+            </button>
+            <button type="button" className="ai-chat-link-btn ai-chat-link-btn--compact ai-chat-link-btn--danger" onClick={deleteCurrentThread} disabled={busy || !activeThreadId}>
+              Sil
+            </button>
+          </div>
+        </header>
+
+        <div className="ai-chat-pro-banner">
           {canChat ? (
             <span className="ai-badge ai-badge--pro">Pro sohbet</span>
           ) : (
             <span className="ai-badge ai-badge--free">Kilitli</span>
           )}
           <span className="ai-hint-inline">
-            Premium veya AI+ ile açılır. Konuşmaların özetlenir; asistan sana göre kalır.
+            Premium veya AI+ gerekir. Sohbetler sunucuda saklanır; profil özeti ile kişiselleşir.
           </span>
-        </p>
-        <div className="ai-chat-mode-switch">
-          {typeof onGoWriting === "function" ? (
-            <button type="button" className="ai-chat-link-btn" onClick={onGoWriting}>
-              ✍️ AI Yazım moduna geç
-            </button>
-          ) : null}
         </div>
-      </div>
 
-      {!token && (
-        <div className="ai-error" role="alert">
-          Sohbet için giriş yapmalısın.
-        </div>
-      )}
+        {!token && (
+          <div className="ai-error" role="alert">
+            Sohbet için giriş yapmalısın.
+          </div>
+        )}
 
-      {token && !canChat && (
-        <div className="ai-chat-upsell">
-          <p>AI Sohbet yalnızca <strong>Premium</strong> veya <strong>AI+</strong> ile açılır. Geçmiş konuşmalar sunucuda saklanır; periyodik özet ile asistan sana göre uyum sağlar.</p>
-          {typeof onGoPremium === "function" ? (
-            <button type="button" className="ai-btn-primary" onClick={onGoPremium}>
-              Planları gör
-            </button>
-          ) : null}
-        </div>
-      )}
-
-      {err && (
-        <div className="ai-error" role="alert">
-          {err}
-        </div>
-      )}
-
-      {token && canChat && (
-        <>
-          <div className="ai-chat-toolbar">
-            <button type="button" className="ai-secondary" onClick={loadHistory} disabled={loadingHistory || busy}>
-              {loadingHistory ? "Yükleniyor…" : "Yenile"}
-            </button>
-            <button type="button" className="ai-secondary ai-chat-clear" onClick={clearChat} disabled={busy || messages.length === 0}>
-              Sohbeti sıfırla
-            </button>
-            {busy ? (
-              <button type="button" className="ai-secondary" onClick={stopGeneration}>
-                Durdur
+        {token && !canChat && (
+          <div className="ai-chat-upsell">
+            <p>
+              AI Sohbet yalnızca <strong>Premium</strong> veya <strong>AI+</strong> ile açılır. Çoklu sohbet, dosya ekleme ve
+              akıllı bağlam dahildir.
+            </p>
+            {typeof onGoPremium === "function" ? (
+              <button type="button" className="ai-btn-primary" onClick={onGoPremium}>
+                Planları gör
               </button>
             ) : null}
           </div>
+        )}
 
-          <div className="ai-chat-scroll" ref={listRef}>
-            {messages.length === 0 && !busy && !loadingHistory && (
-              <div className="ai-chat-onboarding">
-                <p className="ai-chat-empty">
-                  Aşağıdan hızlı başlat veya doğrudan yaz. Asistan, WordBoost verin + geçmiş özetin ile uyumlu cevap verir.
-                </p>
-                <div className="ai-chat-starters" role="group" aria-label="Hızlı başlangıç önerileri">
-                  {CHAT_STARTERS.map((s) => (
-                    <button
-                      key={s.label}
-                      type="button"
-                      className="ai-chat-starter-chip"
-                      onClick={() => applyStarter(s.text)}
-                    >
-                      {s.label}
-                    </button>
+        {err && (
+          <div className="ai-error" role="alert">
+            {err}
+          </div>
+        )}
+
+        {token && canChat && (
+          <>
+            <div className="ai-chat-scroll">
+              {messages.length === 0 && !busy && !loadingHistory && (
+                <div className="ai-chat-onboarding">
+                  <p className="ai-chat-empty">
+                    Yeni bir konu yaz veya dosya ekle. Soldaki listeden eski sohbetlere dön.
+                  </p>
+                  <div className="ai-chat-starters" role="group" aria-label="Hızlı başlangıç önerileri">
+                    {CHAT_STARTERS.map((s) => (
+                      <button
+                        key={s.label}
+                        type="button"
+                        className="ai-chat-starter-chip"
+                        onClick={() => applyStarter(s.text)}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {loadingHistory && messages.length === 0 ? (
+                <p className="ai-chat-loading-msg">Mesajlar yükleniyor…</p>
+              ) : null}
+              {messages.map((m) => (
+                <div key={m.id || `${m.role}-${m.createdAt}`} className={`ai-chat-bubble ai-chat-bubble--${m.role}`}>
+                  {m.role === "user" ? (
+                    <span className="ai-chat-bubble-label">Sen</span>
+                  ) : (
+                    <WordyAssistantLabel />
+                  )}
+                  {m.role === "assistant" ? (
+                    <div className="ai-chat-md">
+                      <ReactMarkdown>{m.content || ""}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <>
+                      {userVisibleText(m.content) ? (
+                        <p className="ai-chat-plain">{userVisibleText(m.content)}</p>
+                      ) : null}
+                      {Array.isArray(m.files) && m.files.length > 0 ? (
+                        <div className="ai-chat-file-chips">
+                          {m.files.map((f, i) => (
+                            <span key={`${f.name}-${i}`} className="ai-chat-file-chip">
+                              📎 {f.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              ))}
+              {thinkingVisible ? (
+                <div className="ai-chat-thinking" aria-live="polite">
+                  <span className="ai-chat-thinking-dots" aria-hidden />
+                  <span>Derinlemesine düşünüyorum…</span>
+                </div>
+              ) : null}
+              {streamingText ? (
+                <div className="ai-chat-bubble ai-chat-bubble--assistant ai-chat-bubble--streaming">
+                  <WordyAssistantLabel />
+                  <div className="ai-chat-md">
+                    <ReactMarkdown>{streamingText}</ReactMarkdown>
+                  </div>
+                </div>
+              ) : null}
+              {busy ? (
+                <button type="button" className="ai-chat-stop-fab" onClick={stopGeneration}>
+                  Durdur
+                </button>
+              ) : null}
+              <div ref={bottomRef} />
+            </div>
+
+            <div className="ai-chat-compose">
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="ai-chat-file-input"
+                accept=".txt,.md,.csv,.json,.log,text/plain,text/csv,application/json"
+                multiple
+                onChange={onPickFiles}
+              />
+              {pendingFiles.length > 0 ? (
+                <div className="ai-chat-pending-files">
+                  {pendingFiles.map((f) => (
+                    <span key={f.id} className="ai-chat-pending-chip">
+                      {f.name}
+                      <button type="button" aria-label="Kaldır" onClick={() => removePendingFile(f.id)}>
+                        ×
+                      </button>
+                    </span>
                   ))}
                 </div>
+              ) : null}
+              <div className="ai-chat-compose-inner">
+                <button
+                  type="button"
+                  className="ai-chat-attach-btn"
+                  disabled={busy || pendingFiles.length >= MAX_PENDING_FILES}
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Metin dosyası ekle"
+                >
+                  +
+                </button>
+                <textarea
+                  className="ai-chat-input ai-chat-input--grow"
+                  rows={3}
+                  placeholder="Mesajını yaz… (Enter gönderir, Shift+Enter satır). Soldan dosya ekleyebilirsin."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={onKeyDown}
+                  disabled={busy}
+                  maxLength={6000}
+                />
+                <button type="button" className="ai-btn-primary ai-chat-send-btn" onClick={send} disabled={busy || (!input.trim() && pendingFiles.length === 0)}>
+                  {busy ? "…" : "Gönder"}
+                </button>
               </div>
-            )}
-            {messages.map((m) => (
-              <div key={m.id || `${m.role}-${m.createdAt}`} className={`ai-chat-bubble ai-chat-bubble--${m.role}`}>
-                <span className="ai-chat-bubble-label">{m.role === "user" ? "Sen" : "Asistan"}</span>
-                {m.role === "assistant" ? (
-                  <div className="ai-chat-md">
-                    <ReactMarkdown>{m.content || ""}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <p className="ai-chat-plain">{m.content}</p>
-                )}
+              <div className="ai-chat-compose-meta">
+                <span className="ai-char-count">{input.length} / 6000</span>
+                <span className="ai-char-count">En fazla {MAX_PENDING_FILES} dosya · UTF-8 metin</span>
               </div>
-            ))}
-            {thinkingVisible ? (
-              <div className="ai-chat-thinking" aria-live="polite">
-                <span className="ai-chat-thinking-dots" aria-hidden />
-                <span>Derinlemesine düşünüyorum…</span>
-              </div>
-            ) : null}
-            {streamingText ? (
-              <div className="ai-chat-bubble ai-chat-bubble--assistant ai-chat-bubble--streaming">
-                <span className="ai-chat-bubble-label">Asistan</span>
-                <div className="ai-chat-md">
-                  <ReactMarkdown>{streamingText}</ReactMarkdown>
-                </div>
-              </div>
-            ) : null}
-            <div ref={bottomRef} />
-          </div>
-
-          <div className="ai-chat-compose">
-            <textarea
-              className="ai-chat-input"
-              rows={3}
-              placeholder="Mesajını yaz… (Enter gönderir, Shift+Enter satır)"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-              disabled={busy}
-              maxLength={6000}
-            />
-            <div className="ai-chat-compose-actions">
-              <span className="ai-char-count">{input.length} / 6000</span>
-              <button type="button" className="ai-btn-primary" onClick={send} disabled={busy || !input.trim()}>
-                {busy ? "Gönderiliyor…" : "Gönder"}
-              </button>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
