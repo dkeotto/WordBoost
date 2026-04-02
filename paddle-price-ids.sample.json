@@ -2,7 +2,7 @@
   "aiPlus": {
     "priceId": "pri_01kn4z7vftyhr0re4r8a73tajd",
     "label": "WordBoost AI+",
-    "displayPrice": "Tek seferlik — örn. ₺XXX (Paddle / iletişim)",
+    "displayPrice": "₺349 tek seferlik (örnek — canlı fiyatı buraya yaz)",
     "description": "Get instant AI-powered English support anytime. Practice your English with a smart AI that helps you understand, correct, and improve your sentences in real-time. One-time purchase, lifetime access.",
     "features": [
       "AI chat for English practice",
@@ -15,7 +15,7 @@
   "premium": {
     "priceId": "pri_01kn4z6hpt9xqngpej06z9crjh",
     "label": "WordBoost Premium",
-    "displayPrice": "Aylık / yıllık — örn. ₺XXX (Paddle / iletişim)",
+    "displayPrice": "₺129/ay · yıllık ₺1.290 (örnek — canlı fiyatı buraya yaz)",
     "description": "Unlock the full WordBoost experience. Get everything you need to learn English faster, including AI support, unlimited access, and a distraction-free experience. Best value for serious learners.",
     "features": [
       "Includes ALL AI+ features",
@@ -29,7 +29,7 @@
   "classroom": {
     "priceId": "pri_01kn4z8z2epaab1zkdb7ar9ee5",
     "label": "WordBoost Classroom",
-    "displayPrice": "Lisans başına / okul paketi — teklif için iletişim",
+    "displayPrice": "Okul: öğrenci başına ~₺39/ay · toplu lisans teklifi için iletişim",
     "description": "The ultimate tool for teachers and schools. Easily manage your classroom, assign vocabulary tasks, and track every student's progress from a single dashboard.",
     "features": [
       "Teacher control panel",

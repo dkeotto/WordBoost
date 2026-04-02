@@ -89,7 +89,7 @@ function blurTextForFreeUser(text) {
   return `${head}\n\n[Premium önizleme dışı]\n${tail}`;
 }
 
-export default function AiWritingView({ user, onGoPremium }) {
+export default function AiWritingView({ user, onGoPremium, onGoChat }) {
   const token = user?.token || "";
   const isPremium = Boolean(
     user?.isPremium ||
@@ -307,6 +307,13 @@ export default function AiWritingView({ user, onGoPremium }) {
     <div className="ai-writing">
       <div className="ai-header">
         <h2>AI Yazım Modu</h2>
+        {typeof onGoChat === "function" ? (
+          <div className="ai-chat-mode-switch">
+            <button type="button" className="ai-chat-link-btn" onClick={onGoChat}>
+              💬 AI Sohbet moduna geç
+            </button>
+          </div>
+        ) : null}
         <p className="ai-sub">
           {isPremium ? (
             <span className="ai-badge ai-badge--pro">Premium</span>

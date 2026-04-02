@@ -1,3 +1,15 @@
+/** Premium abonelik veya AI+ (sınırsız AI / sohbet) — backend hasUnlimitedAiMode ile aynı mantık */
+export function hasUnlimitedAiClient(user) {
+  if (!user) return false;
+  if (user.isPremium === true) return true;
+  try {
+    if (user.premiumUntil && new Date(user.premiumUntil).getTime() > Date.now()) return true;
+  } catch {
+    /* ignore */
+  }
+  return user?.entitlements?.aiPlus === true;
+}
+
 /** İstemci tarafında premium (abonelik) görünürlüğü — /api/me veya profil yanıtlarıyla uyumlu */
 export function isUserPremium(user) {
   if (!user) return false;

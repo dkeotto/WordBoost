@@ -9,6 +9,7 @@ import DashboardView from "./components/DashboardView";
 import SynonymsView from "./components/SynonymsView";
 import PhrasalVerbsView from "./components/PhrasalVerbsView";
 import AiWritingView from "./components/AiWritingView";
+import AiChatView from "./components/AiChatView";
 import ConsentBanner from "./components/ConsentBanner";
 import ClassroomView from "./components/ClassroomView";
 import PricingModal from "./components/PricingModal";
@@ -2577,6 +2578,14 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
           onGoPremium={() => {
             setShowPricing(true);
           }}
+          onGoChat={() => setCurrentView("ai-chat")}
+        />
+      )}
+      {currentView === "ai-chat" && (
+        <AiChatView
+          user={user}
+          onGoPremium={() => setShowPricing(true)}
+          onGoWriting={() => setCurrentView("ai-writing")}
         />
       )}
       {currentView === 'classroom' && <ClassroomView user={user} />}

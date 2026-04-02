@@ -54,6 +54,24 @@ export default function AdminPanel({ setCurrentView }) {
   const [editSaving, setEditSaving] = useState(false);
   const [premiumSaving, setPremiumSaving] = useState(false);
 
+  const [classrooms, setClassrooms] = useState([]);
+  const [classroomsLoading, setClassroomsLoading] = useState(false);
+  const [teachersPick, setTeachersPick] = useState([]);
+  const [classFilterQ, setClassFilterQ] = useState("");
+  const [classForm, setClassForm] = useState({
+    name: "",
+    teacherId: "",
+    description: "",
+    schoolName: "",
+    gradeLabel: "",
+    orgGroup: "",
+    tagsText: "",
+    adminNote: "",
+  });
+  const [classSaving, setClassSaving] = useState(false);
+  const [editClassroom, setEditClassroom] = useState(null);
+  const [editClassForm, setEditClassForm] = useState({});
+
   const h = useMemo(
     () => ({
       "Content-Type": "application/json",
@@ -185,6 +203,137 @@ export default function AdminPanel({ setCurrentView }) {
     if (!isAuthed || !token) return;
     loadUsers();
   }, [isAuthed, token, loadUsers]);
+
+  const loadClassrooms = useCallback(async () => {
+    if (!token) return;
+    setClassroomsLoading(true);
+    try {
+      const qs = new URLSearchParams();
+      if (classFilterQ.trim()) qs.set("q", classFilterQ.trim());
+      const qstr = qs.toString();
+      const r = await fetch(`/api/admin/classrooms${qstr ? `?${qstr}` : ""}`, { headers: h });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      setClassrooms(d.items || []);
+    } catch (e) {
+      setErr(e.message || "Sınıflar yüklenemedi");
+    } finally {
+      setClassroomsLoading(false);
+    }
+  }, [token, h, classFilterQ]);
+
+  useEffect(() => {
+    if (!isAuthed || !token) return;
+    fetch(`/api/admin/users?role=staff&limit=200&sort=username&order=asc`, { headers: h })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.items)) setTeachersPick(d.items);
+      })
+      .catch(() => {});
+  }, [isAuthed, token, h]);
+
+  useEffect(() => {
+    if (!isAuthed || !token) return;
+    loadClassrooms();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ilk yükleme; filtre için "Yenile" kullan
+  }, [isAuthed, token]);
+
+  const createClassroom = async (e) => {
+    e.preventDefault();
+    if (!classForm.name.trim() || !classForm.teacherId) {
+      setErr("Sınıf adı ve sorumlu öğretmen seç.");
+      return;
+    }
+    setClassSaving(true);
+    setErr("");
+    try {
+      const tags = classForm.tagsText
+        .split(/[,;]/)
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const res = await fetch("/api/admin/classrooms", {
+        method: "POST",
+        headers: h,
+        body: JSON.stringify({
+          name: classForm.name.trim(),
+          teacherId: classForm.teacherId,
+          description: classForm.description.trim(),
+          schoolName: classForm.schoolName.trim(),
+          gradeLabel: classForm.gradeLabel.trim(),
+          orgGroup: classForm.orgGroup.trim(),
+          tags,
+          adminNote: classForm.adminNote.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Oluşturulamadı");
+      setMsg(`Sınıf oluşturuldu: ${data.classroom?.name} · kod ${data.classroom?.code}`);
+      setClassForm({
+        name: "",
+        teacherId: "",
+        description: "",
+        schoolName: "",
+        gradeLabel: "",
+        orgGroup: "",
+        tagsText: "",
+        adminNote: "",
+      });
+      loadClassrooms();
+    } catch (err) {
+      setErr(err.message || "Sınıf oluşturulamadı");
+    } finally {
+      setClassSaving(false);
+    }
+  };
+
+  const openEditClass = (c) => {
+    setEditClassroom(c);
+    setEditClassForm({
+      name: c.name || "",
+      teacherId: c.teacherId?._id || c.teacherId || "",
+      description: c.description || "",
+      schoolName: c.schoolName || "",
+      gradeLabel: c.gradeLabel || "",
+      orgGroup: c.orgGroup || "",
+      tagsText: Array.isArray(c.tags) ? c.tags.join(", ") : "",
+      adminNote: c.adminNote || "",
+    });
+  };
+
+  const saveEditClass = async () => {
+    if (!editClassroom) return;
+    setClassSaving(true);
+    setErr("");
+    try {
+      const tags = String(editClassForm.tagsText || "")
+        .split(/[,;]/)
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const res = await fetch(`/api/admin/classrooms/${editClassroom._id}`, {
+        method: "PATCH",
+        headers: h,
+        body: JSON.stringify({
+          name: editClassForm.name,
+          teacherId: editClassForm.teacherId,
+          description: editClassForm.description,
+          schoolName: editClassForm.schoolName,
+          gradeLabel: editClassForm.gradeLabel,
+          orgGroup: editClassForm.orgGroup,
+          tags,
+          adminNote: editClassForm.adminNote,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Kaydedilemedi");
+      setMsg("Sınıf güncellendi.");
+      setEditClassroom(null);
+      loadClassrooms();
+    } catch (err) {
+      setErr(err.message || "Kayıt başarısız");
+    } finally {
+      setClassSaving(false);
+    }
+  };
 
   const login = async (e) => {
     e.preventDefault();
@@ -919,6 +1068,265 @@ export default function AdminPanel({ setCurrentView }) {
               </button>
               <button type="button" onClick={saveEdit} disabled={editSaving}>
                 {editSaving ? "Kaydediliyor…" : "İstatistik kaydet"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAuthed && (
+        <section className="admin-section admin-section--classrooms">
+          <h3>Kurumsal sınıf yönetimi</h3>
+          <p className="admin-small">
+            Sınıf oluştur, <strong>sorumlu öğretmen ata</strong>, okul / şube / grup etiketleriyle düzenle. Öğrenciler yine sınıf kodu ile katılır;
+            öğretmen Classroom ekranından yönetir.
+          </p>
+
+          <form className="admin-class-form" onSubmit={createClassroom}>
+            <div className="admin-class-form__grid">
+              <label>
+                Sınıf adı *
+                <input
+                  className="admin-input-wide"
+                  value={classForm.name}
+                  onChange={(e) => setClassForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="Örn: 12-D İleri İngilizce"
+                  required
+                />
+              </label>
+              <label>
+                Sorumlu öğretmen / admin *
+                <select
+                  className="admin-select admin-select--fluid"
+                  value={classForm.teacherId}
+                  onChange={(e) => setClassForm((f) => ({ ...f, teacherId: e.target.value }))}
+                  required
+                >
+                  <option value="">Seç…</option>
+                  {teachersPick.map((t) => (
+                    <option key={String(t._id)} value={String(t._id)}>
+                      @{t.username} {t.nickname ? `(${t.nickname})` : ""} · {t.role}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Okul / kurum
+                <input
+                  className="admin-input-wide"
+                  value={classForm.schoolName}
+                  onChange={(e) => setClassForm((f) => ({ ...f, schoolName: e.target.value }))}
+                  placeholder="Örn: Ankara Fen Lisesi"
+                />
+              </label>
+              <label>
+                Şube / seviye etiketi
+                <input
+                  className="admin-input-wide"
+                  value={classForm.gradeLabel}
+                  onChange={(e) => setClassForm((f) => ({ ...f, gradeLabel: e.target.value }))}
+                  placeholder="Örn: 12-D · hazırlık"
+                />
+              </label>
+              <label>
+                Organizasyon grubu (filtreleme)
+                <input
+                  className="admin-input-wide"
+                  value={classForm.orgGroup}
+                  onChange={(e) => setClassForm((f) => ({ ...f, orgGroup: e.target.value }))}
+                  placeholder="Örn: ANK-2025 · kampüs kodu"
+                />
+              </label>
+              <label className="admin-class-form__full">
+                Etiketler (virgülle)
+                <input
+                  className="admin-input-wide"
+                  value={classForm.tagsText}
+                  onChange={(e) => setClassForm((f) => ({ ...f, tagsText: e.target.value }))}
+                  placeholder="ydt, akşam, yoğun"
+                />
+              </label>
+              <label className="admin-class-form__full">
+                Açıklama (öğretmene görünür alan — ileride uygulamada gösterilebilir)
+                <textarea
+                  className="admin-textarea"
+                  rows={2}
+                  value={classForm.description}
+                  onChange={(e) => setClassForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Kısa sınıf tanımı"
+                />
+              </label>
+              <label className="admin-class-form__full">
+                Yönetici notu (yalnızca panel)
+                <textarea
+                  className="admin-textarea"
+                  rows={2}
+                  value={classForm.adminNote}
+                  onChange={(e) => setClassForm((f) => ({ ...f, adminNote: e.target.value }))}
+                  placeholder="Dahili not"
+                />
+              </label>
+            </div>
+            <button type="submit" disabled={classSaving}>
+              {classSaving ? "Oluşturuluyor…" : "Sınıf oluştur ve kod üret"}
+            </button>
+          </form>
+
+          <div className="admin-class-toolbar">
+            <input
+              className="admin-input-wide"
+              placeholder="Sınıf adı, kod, okul veya grup ara…"
+              value={classFilterQ}
+              onChange={(e) => setClassFilterQ(e.target.value)}
+            />
+            <button type="button" onClick={() => loadClassrooms()} disabled={classroomsLoading}>
+              {classroomsLoading ? "…" : "Listeyi yenile"}
+            </button>
+          </div>
+
+          <div className="admin-table-wrap">
+            <table className="admin-table admin-class-table">
+              <thead>
+                <tr>
+                  <th>Sınıf</th>
+                  <th>Kod</th>
+                  <th>Öğretmen</th>
+                  <th>Okul</th>
+                  <th>Şube</th>
+                  <th>Grup</th>
+                  <th>Öğrenci</th>
+                  <th>Güncelleme</th>
+                  <th>İşlem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {classrooms.map((c) => (
+                  <tr key={String(c._id)}>
+                    <td>
+                      <strong>{c.name}</strong>
+                      {c.tags?.length ? (
+                        <div className="admin-class-tags">
+                          {c.tags.map((tg) => (
+                            <span key={tg} className="admin-mini-tag">
+                              {tg}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="admin-td-mono">{c.code}</td>
+                    <td>
+                      {c.teacherId?.username ? `@${c.teacherId.username}` : "—"}
+                      <div className="admin-small admin-class-sub">{c.teacherId?.email || ""}</div>
+                    </td>
+                    <td>{c.schoolName || "—"}</td>
+                    <td>{c.gradeLabel || "—"}</td>
+                    <td>{c.orgGroup || "—"}</td>
+                    <td>{c.memberCount ?? 0}</td>
+                    <td className="admin-td-nowrap">
+                      {c.updatedAt ? new Date(c.updatedAt).toLocaleString("tr-TR") : "—"}
+                    </td>
+                    <td>
+                      <button type="button" className="admin-table-btn" onClick={() => openEditClass(c)}>
+                        Düzenle
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {classrooms.length === 0 && !classroomsLoading && (
+              <p className="admin-small">Henüz sınıf yok veya filtreye uyan kayıt yok.</p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {editClassroom && (
+        <div className="admin-modal-overlay" onClick={() => !classSaving && setEditClassroom(null)}>
+          <div className="admin-modal admin-modal--wide" onClick={(e) => e.stopPropagation()}>
+            <h3>Sınıf düzenle</h3>
+            <p className="admin-small">Kod: {editClassroom.code}</p>
+            <div className="admin-class-form__grid">
+              <label>
+                Ad
+                <input
+                  className="admin-input-wide"
+                  value={editClassForm.name}
+                  onChange={(e) => setEditClassForm((f) => ({ ...f, name: e.target.value }))}
+                />
+              </label>
+              <label>
+                Sorumlu
+                <select
+                  className="admin-select admin-select--fluid"
+                  value={editClassForm.teacherId}
+                  onChange={(e) => setEditClassForm((f) => ({ ...f, teacherId: e.target.value }))}
+                >
+                  {teachersPick.map((t) => (
+                    <option key={String(t._id)} value={String(t._id)}>
+                      @{t.username} ({t.role})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Okul
+                <input
+                  className="admin-input-wide"
+                  value={editClassForm.schoolName}
+                  onChange={(e) => setEditClassForm((f) => ({ ...f, schoolName: e.target.value }))}
+                />
+              </label>
+              <label>
+                Şube / seviye
+                <input
+                  className="admin-input-wide"
+                  value={editClassForm.gradeLabel}
+                  onChange={(e) => setEditClassForm((f) => ({ ...f, gradeLabel: e.target.value }))}
+                />
+              </label>
+              <label>
+                Org. grubu
+                <input
+                  className="admin-input-wide"
+                  value={editClassForm.orgGroup}
+                  onChange={(e) => setEditClassForm((f) => ({ ...f, orgGroup: e.target.value }))}
+                />
+              </label>
+              <label className="admin-class-form__full">
+                Etiketler
+                <input
+                  className="admin-input-wide"
+                  value={editClassForm.tagsText}
+                  onChange={(e) => setEditClassForm((f) => ({ ...f, tagsText: e.target.value }))}
+                />
+              </label>
+              <label className="admin-class-form__full">
+                Açıklama
+                <textarea
+                  className="admin-textarea"
+                  rows={2}
+                  value={editClassForm.description}
+                  onChange={(e) => setEditClassForm((f) => ({ ...f, description: e.target.value }))}
+                />
+              </label>
+              <label className="admin-class-form__full">
+                Yönetici notu
+                <textarea
+                  className="admin-textarea"
+                  rows={2}
+                  value={editClassForm.adminNote}
+                  onChange={(e) => setEditClassForm((f) => ({ ...f, adminNote: e.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-modal-secondary" onClick={() => setEditClassroom(null)} disabled={classSaving}>
+                Kapat
+              </button>
+              <button type="button" className="admin-modal-primary" onClick={saveEditClass} disabled={classSaving}>
+                {classSaving ? "Kaydediliyor…" : "Kaydet"}
               </button>
             </div>
           </div>

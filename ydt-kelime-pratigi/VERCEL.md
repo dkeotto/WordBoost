@@ -39,7 +39,7 @@ Tüm repoyu Vercel kökü seçtiysen üst dizindeki `vercel.json` devreye girer:
 
 ### AI yazma (SSE / stream) 404 veya `not_found_error` (model)
 
-- **İstemci:** `VITE_SOCKET_URL` **veya** `VITE_BACKEND_URL` = Railway Express kökü (`https://xxx.up.railway.app`), **sonunda `/` yok**. Build’e gömülür; tanımladıktan sonra **yeniden deploy** gerekir. Böylece `/api/ai/*/stream` istekleri Vercel proxy’sini atlayıp doğrudan Railway’e gider.
+- **İstemci:** `VITE_SOCKET_URL` **veya** `VITE_BACKEND_URL` = Railway Express kökü (`https://xxx.up.railway.app`), **sonunda `/` yok**. Build’e gömülür; tanımladıktan sonra **yeniden deploy** gerekir. Böylece `/api/ai/write/stream`, `/api/ai/rewrite/stream`, `/api/ai/chat/stream` gibi SSE istekleri Vercel proxy’sini atlayıp doğrudan Railway’e gider.
 - **Railway (backend):** **Groq:** `GROQ_API_KEY` (ve isteğe bağlı `GROQ_MODEL`, varsayılan `llama-3.3-70b-versatile`). `AI_PROVIDER=groq` ile zorunlu Groq; boş bırakıp yalnızca `GROQ_API_KEY` doldurursan varsayılan sağlayıcı Groq olur. **Anthropic:** `AI_PROVIDER=anthropic` veya Groq anahtarı yokken `ANTHROPIC_API_KEY` + tarihli `ANTHROPIC_MODEL` (örn. `claude-3-5-sonnet-20241022`). [Groq modeller](https://console.groq.com/docs/models), [Anthropic modeller](https://docs.anthropic.com/en/docs/about-claude/models).
 
 ### Google ile giriş (OAuth)

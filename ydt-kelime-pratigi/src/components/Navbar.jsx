@@ -164,7 +164,15 @@ const Navbar = ({
           className={`nav-link ${currentView === 'ai-writing' ? 'active' : ''}`}
           onClick={() => handleNavClick('ai-writing')}
         >
-          🤖 AI
+          ✍️ AI Yazım
+        </button>
+      </li>
+      <li className="nav-item">
+        <button
+          className={`nav-link ${currentView === 'ai-chat' ? 'active' : ''}`}
+          onClick={() => handleNavClick('ai-chat')}
+        >
+          💬 AI Sohbet
         </button>
       </li>
 

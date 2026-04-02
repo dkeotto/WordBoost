@@ -217,6 +217,75 @@ function buildWritingPrompt({ type, tone, length, language, audience, context, i
   return { system, messages };
 }
 
+function clipChatText(s, max) {
+  const t = String(s || "");
+  if (t.length <= max) return t;
+  return `${t.slice(0, Math.max(0, max - 12))}\n…(kısaltıldı)`;
+}
+
+function anthropicContentToText(resp) {
+  return (resp?.content || [])
+    .map((c) => (c && c.type === "text" ? c.text : ""))
+    .join("\n")
+    .trim();
+}
+
+function buildChatSystemPrompt(memorySummary, userDisplayName, userDoc) {
+  const name = String(userDisplayName || "öğrenci").trim();
+  const mem = String(memorySummary || "").trim();
+  const memBlock =
+    mem.length > 0
+      ? `## Uzun süreli profil özeti (öncelikli — tutarlılık için kullan)\n${clipChatText(mem, 3200)}`
+      : "## Uzun süreli profil özeti\nHenüz oluşmadı; birkaç tur sonra otomatik dolar. İlk mesajlarda nazikçe hedef ve seviye sor.";
+
+  const streak = Number(userDoc?.streak ?? 0);
+  const known = Number(userDoc?.stats?.known ?? 0);
+  const studied = Number(userDoc?.stats?.studied ?? 0);
+  const fingerprint =
+    streak + known + studied > 0
+      ? [
+          "",
+          "## WordBoost uygulama verisi (yumuşak ipucu — kullanıcı söylemedikçe kesin seviye ilan etme)",
+          `- Günlük seri: yaklaşık ${streak} gün`,
+          `- Bildikleri kelime (yaklaşık): ${known}`,
+          `- Oturum / çalışma sayısı (yaklaşık): ${studied}`,
+          "",
+        ].join("\n")
+      : "";
+
+  return [
+    `Sen WordBoost içinde çalışan, ücretli üyelere açık **üst düzey İngilizce koçu** ve dil öğretimi uzmanısın. Genel sohbet botlarından (ChatGPT varsayılan tonu, Claude’un genel asistan modu) **bilerek** ayrılıyorsun: daha net, daha öğretici, daha az “şablon neşe”, daha çok sonuç.`,
+    "",
+    "### Kimlik ve ton",
+    `- Hitap: kullanıcı adını veya tercih ettiği ismi kullan (varsayılan: "${name}").`,
+    "- Sıcak ama profesyonel; gereksiz övgü, “Harika soru!”, “Tabii ki yardımcı olayım!” gibi boş nezaket yok.",
+    "- Özgüvenli ve sakin; cevapların **yoğun bilgi** taşısın, su katma.",
+    "- Kullanıcı Türkçe yazıyorsa açıklamaları çoğunlukla Türkçe ver; İngilizce örnek cümleleri net göster.",
+    "- Kullanıcı tam İngilizce pratik istiyorsa diyalog ve düzeltmeleri İngilizce sürdür, kısa notları TR bırakabilirsin.",
+    "",
+    "### Pedagoji (ChatGPT’den daha iyi olmanın anahtarı)",
+    "- **i+1**: Bir tık üstü zorluk; anlaşılır ama geliştirici.",
+    "- Dil hatası: yalnızca “yanlış” deme — **neden**, **kalıp**, **doğru örnek**, bazen **mini alıştırma** (1–2 cümle).",
+    "- Kelime öğretirken: tanım + **1 doğal örnek cümle** + yaygın yanlış (varsa).",
+    "- YDT / sınav / iş İngilizcesi isteniyorsa kayıt ve üslubu hedefe kilitle (günlük konuşma diline kayma).",
+    "- Karmaşık sorularda önce zihninde adımları netleştir; çıktıda **kısa başlıklar** veya numaralı yapı kullan (okunabilirlik).",
+    "",
+    "### Üslup ve format",
+    "- Markdown: anlamlı yerde **kalın**, kısa listeler, gerekirse tablo; abartısız.",
+    "- Uzun yanıtlarda girişte 1 cümleyle **ne yapacağını** söyle; sonra detay.",
+    "- Kod / alıntı / e-posta düzenleme istenirse düzgün bloklar kullan.",
+    "",
+    "### Sınırlar",
+    "- Tıbbi, hukuki, yatırım vb. alanlarda kesin hüküm verme; gerekirse “bu konuda uzman” uyarısı.",
+    "- Zararlı, sınav hilesi veya akademik sahtekârlık isteklerini reddet.",
+    "",
+    "### Tutarlılık",
+    "- Aşağıdaki **profil özeti** ile çelişme; yeni bilgi geldikçe önceki varsayımları güncelle ve tutarlı kal.",
+    fingerprint,
+    memBlock,
+  ].join("\n");
+}
+
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 12,
@@ -562,6 +631,75 @@ const AiLogSchema = new mongoose.Schema(
 
 const AiLog = mongoose.model("AiLog", AiLogSchema);
 
+const AiChatThreadSchema = new mongoose.Schema(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+    messages: [
+      {
+        role: { type: String, enum: ["user", "assistant"], required: true },
+        content: { type: String, default: "" },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    memorySummary: { type: String, default: "" },
+    lastSummarizedMsgCount: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
+
+const AiChatThread = mongoose.model("AiChatThread", AiChatThreadSchema);
+
+async function maybeUpdateChatMemorySummary(threadId) {
+  try {
+    const thread = await AiChatThread.findById(threadId);
+    if (!thread || !Array.isArray(thread.messages)) return;
+    const newSince = thread.messages.length - (thread.lastSummarizedMsgCount || 0);
+    if (newSince < CHAT_SUMMARY_MIN_NEW) return;
+    const model = getAiModel(aiProviderName);
+    const recent = thread.messages
+      .slice(-40)
+      .map((m) => `${m.role}: ${clipChatText(m.content, 1200)}`)
+      .join("\n\n");
+    const prev = String(thread.memorySummary || "").trim() || "(henüz yok)";
+    const system =
+      "Sen bir öğrenme profili mimarısın. Görev: önceki özeti ve yeni diyalogdan TEK bir güncel profil metni üret (Türkçe). " +
+      "Çıktıyı şu başlıklarla yapılandır (başlıkları aynen kullan):\n" +
+      "## Seviye ve hedef\n## Güçlü / zayıf alanlar\n## Tercihler (dil, ton, format)\n## Açık konular ve notlar\n" +
+      "Somut tut (isimler, sınav türü, iş alanı); tekrar etme; toplam ~400 kelimeyi geçme. Eski özetteki doğru bilgiyi koru, yeni bilgiyle çelişkiyi gider.";
+    const resp = await aiProvider.createMessage({
+      model,
+      max_tokens: 950,
+      temperature: 0.28,
+      system,
+      messages: [
+        {
+          role: "user",
+          content: `Önceki özet:\n${clipChatText(prev, 2400)}\n\n---\nSon diyalog:\n${recent}\n\n---\nGüncellenmiş profil özeti (başlıklı):`,
+        },
+      ],
+    });
+    const text = anthropicContentToText(resp);
+    if (!text) return;
+    thread.memorySummary = clipChatText(text, 5200);
+    thread.lastSummarizedMsgCount = thread.messages.length;
+    await thread.save();
+  } catch (e) {
+    console.warn("[ai-chat] memory summary skip:", e?.message || e);
+  }
+}
+
+const CHAT_MAX_STORED_MESSAGES = 100;
+const CHAT_CONTEXT_MESSAGES = 40;
+const CHAT_SUMMARY_MIN_NEW = 12;
+const CHAT_USER_MESSAGE_MAX = 6000;
+const CHAT_ASSISTANT_STORE_MAX = 16000;
+
+function chatApiMessageSlice(thread) {
+  let ctx = (thread.messages || []).slice(-CHAT_CONTEXT_MESSAGES);
+  while (ctx.length && ctx[0].role !== "user") ctx = ctx.slice(1);
+  return ctx.map((m) => ({ role: m.role, content: m.content }));
+}
+
 const ProgressEventSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -585,9 +723,19 @@ const ClassroomSchema = new mongoose.Schema(
     name: { type: String, required: true },
     teacherId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     code: { type: String, unique: true, required: true },
+    description: { type: String, default: "" },
+    schoolName: { type: String, default: "" },
+    gradeLabel: { type: String, default: "" },
+    orgGroup: { type: String, default: "" },
+    tags: { type: [String], default: [] },
+    adminNote: { type: String, default: "" },
+    createdByAdmin: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
+
+ClassroomSchema.index({ teacherId: 1, updatedAt: -1 });
+ClassroomSchema.index({ orgGroup: 1 });
 
 const ClassMembershipSchema = new mongoose.Schema(
   {
@@ -2795,6 +2943,178 @@ app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
   }
 });
 
+// --- AI Sohbet (Premium veya AI+; thread + bellek özeti) ---
+app.get("/api/ai/chat", aiLimiter, async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    if (!hasUnlimitedAiMode(user)) {
+      return res.status(403).json({
+        error: "ai_chat_premium_required",
+        message: "AI Sohbet yalnızca Premium veya AI+ üyelikle kullanılabilir.",
+      });
+    }
+    const thread = await AiChatThread.findOne({ userId: user._id }).lean();
+    const messages = (thread?.messages || []).map((m) => ({
+      id: m._id,
+      role: m.role,
+      content: m.content,
+      createdAt: m.createdAt,
+    }));
+    res.json({ ok: true, messages });
+  } catch (e) {
+    res.status(401).json({ error: "Auth error" });
+  }
+});
+
+app.delete("/api/ai/chat", aiLimiter, async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    if (!hasUnlimitedAiMode(user)) {
+      return res.status(403).json({ error: "ai_chat_premium_required" });
+    }
+    await AiChatThread.findOneAndDelete({ userId: user._id });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(401).json({ error: "Auth error" });
+  }
+});
+
+app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
+  let aborted = false;
+  req.on("close", () => {
+    aborted = true;
+  });
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    if (!hasUnlimitedAiMode(user)) {
+      return res.status(403).json({
+        error: "ai_chat_premium_required",
+        message: "AI Sohbet yalnızca Premium veya AI+ üyelikle kullanılabilir.",
+      });
+    }
+
+    const rawMsg = String(req.body?.message || "").trim();
+    if (!rawMsg) return res.status(400).json({ error: "message gerekli" });
+    if (rawMsg.length > CHAT_USER_MESSAGE_MAX) {
+      return res.status(400).json({ error: "message_too_long", max: CHAT_USER_MESSAGE_MAX });
+    }
+
+    let thread = await AiChatThread.findOne({ userId: user._id });
+    if (!thread) {
+      thread = await AiChatThread.create({ userId: user._id, messages: [] });
+    }
+
+    thread.messages.push({ role: "user", content: rawMsg, createdAt: new Date() });
+    if (thread.messages.length > CHAT_MAX_STORED_MESSAGES) {
+      thread.messages = thread.messages.slice(-CHAT_MAX_STORED_MESSAGES);
+    }
+    await thread.save();
+
+    const apiMessages = chatApiMessageSlice(thread);
+    const display =
+      (user.nickname && String(user.nickname).trim()) ||
+      (user.username && String(user.username).trim()) ||
+      "öğrenci";
+    const system = buildChatSystemPrompt(thread.memorySummary, display, user);
+    const model = getAiModel(aiProviderName);
+
+    setSseHeaders(res);
+    sseWrite(res, "meta", { ok: true, mode: "chat" });
+
+    const startedAt = Date.now();
+    const stream = await aiProvider.createMessageStream({
+      model,
+      max_tokens: 4096,
+      temperature: 0.82,
+      system,
+      messages: apiMessages,
+    });
+
+    let out = "";
+    let usage = null;
+
+    for await (const event of stream) {
+      if (aborted) break;
+      if (event?.type === "content_block_delta" && event.delta?.type === "text_delta") {
+        const chunk = String(event.delta.text || "");
+        if (chunk) {
+          out += chunk;
+          sseWrite(res, "text", { text: chunk });
+        }
+      }
+      if (event?.type === "message_delta" && event.usage) {
+        usage = event.usage;
+      }
+      if (event?.type === "message_stop" && event.message?.usage) {
+        usage = event.message.usage;
+      }
+    }
+
+    if (!aborted) {
+      const storedAssistant = clipChatText(out, CHAT_ASSISTANT_STORE_MAX);
+      const t2 = await AiChatThread.findOne({ userId: user._id });
+      if (t2) {
+        t2.messages.push({ role: "assistant", content: storedAssistant, createdAt: new Date() });
+        if (t2.messages.length > CHAT_MAX_STORED_MESSAGES) {
+          t2.messages = t2.messages.slice(-CHAT_MAX_STORED_MESSAGES);
+        }
+        await t2.save();
+        setImmediate(() => {
+          maybeUpdateChatMemorySummary(t2._id).catch(() => {});
+        });
+      }
+
+      applyDailyAiUsage(user, 1);
+      await user.save();
+
+      const elapsedMs = Date.now() - startedAt;
+      try {
+        await AiLog.create({
+          userId: user._id,
+          mode: "chat_stream",
+          provider: aiProviderName,
+          model,
+          requestMeta: { premium: true },
+          promptMasked: guardAiPromptLogging(JSON.stringify({ systemPreview: system.slice(0, 400), userMsgLen: rawMsg.length })),
+          outputMasked: guardAiPromptLogging(storedAssistant),
+          usage,
+          elapsedMs,
+        });
+      } catch (_) {}
+
+      sseWrite(res, "done", {
+        text: out,
+        usage,
+        dayKey: user.aiUsage?.dayKey || todayKey(),
+        usedToday: user.aiUsage?.count || 0,
+        limitPerDay: null,
+      });
+      res.end();
+    } else {
+      res.end();
+    }
+  } catch (e) {
+    const f = formatAiError(e, aiProviderName);
+    try {
+      if (!res.headersSent) return res.status(f.http).json({ error: f.message, code: f.code });
+      sseWrite(res, "error", { error: f.message, code: f.code });
+      res.end();
+    } catch (_) {}
+  }
+});
+
 app.get('/api/admin/summary', requireAdmin, async (req, res) => {
   try {
     const [userCount, wordCount, statCount] = await Promise.all([
@@ -2907,6 +3227,12 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
     if (req.query.premium === 'aiplus') {
       conditions.push({ 'entitlements.aiPlus': true });
     }
+    if (req.query.role === "teacher" || req.query.role === "student" || req.query.role === "admin") {
+      conditions.push({ role: req.query.role });
+    }
+    if (req.query.role === "staff") {
+      conditions.push({ role: { $in: ["teacher", "admin"] } });
+    }
 
     const filter = conditions.length === 0 ? {} : { $and: conditions };
 
@@ -2956,6 +3282,144 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
     });
   } catch (e) {
     pushAdminError(e.message, { path: 'admin/users' });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/admin/classrooms", requireAdmin, async (req, res) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    const orgGroup = String(req.query.orgGroup || "").trim();
+    const conditions = [];
+    if (q) {
+      const rx = escapeRegex(q);
+      conditions.push({
+        $or: [
+          { name: { $regex: rx, $options: "i" } },
+          { code: { $regex: rx, $options: "i" } },
+          { schoolName: { $regex: rx, $options: "i" } },
+          { gradeLabel: { $regex: rx, $options: "i" } },
+          { orgGroup: { $regex: rx, $options: "i" } },
+        ],
+      });
+    }
+    if (orgGroup) conditions.push({ orgGroup });
+    const filter = conditions.length === 0 ? {} : { $and: conditions };
+
+    const list = await Classroom.find(filter)
+      .sort({ updatedAt: -1 })
+      .populate("teacherId", "username nickname email role")
+      .limit(200)
+      .lean();
+
+    const ids = list.map((c) => c._id);
+    let countMap = {};
+    if (ids.length) {
+      const agg = await ClassMembership.aggregate([
+        { $match: { classId: { $in: ids } } },
+        { $group: { _id: "$classId", n: { $sum: 1 } } },
+      ]);
+      countMap = Object.fromEntries(agg.map((x) => [String(x._id), x.n]));
+    }
+
+    const items = list.map((c) => ({
+      ...c,
+      memberCount: countMap[String(c._id)] || 0,
+    }));
+
+    res.json({ ok: true, items });
+  } catch (e) {
+    pushAdminError(e.message, { path: "admin/classrooms" });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/admin/classrooms", requireAdmin, async (req, res) => {
+  try {
+    const name = String(req.body?.name || "").trim();
+    const teacherIdRaw = req.body?.teacherId;
+    if (!name || name.length < 2) return res.status(400).json({ error: "name gerekli (min 2 karakter)" });
+    if (!teacherIdRaw) return res.status(400).json({ error: "teacherId gerekli" });
+
+    const teacher = await User.findById(teacherIdRaw);
+    if (!teacher) return res.status(404).json({ error: "teacher_not_found" });
+    if (teacher.role !== "teacher" && teacher.role !== "admin") {
+      return res.status(400).json({ error: "user_must_be_teacher_or_admin" });
+    }
+
+    let code = generateClassCode();
+    for (let i = 0; i < 10; i += 1) {
+      const exists = await Classroom.findOne({ code });
+      if (!exists) break;
+      code = generateClassCode();
+    }
+
+    const tags = Array.isArray(req.body?.tags)
+      ? req.body.tags.map((t) => String(t || "").trim()).filter(Boolean).slice(0, 24)
+      : String(req.body?.tagsText || "")
+          .split(/[,;]/)
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .slice(0, 24);
+
+    const doc = await Classroom.create({
+      name,
+      teacherId: teacher._id,
+      code,
+      description: String(req.body?.description || "").trim(),
+      schoolName: String(req.body?.schoolName || "").trim(),
+      gradeLabel: String(req.body?.gradeLabel || "").trim(),
+      orgGroup: String(req.body?.orgGroup || "").trim(),
+      tags,
+      adminNote: String(req.body?.adminNote || "").trim(),
+      createdByAdmin: true,
+    });
+
+    const populated = await Classroom.findById(doc._id).populate("teacherId", "username nickname email role").lean();
+    const memN = await ClassMembership.countDocuments({ classId: doc._id });
+    res.json({ ok: true, classroom: { ...populated, memberCount: memN } });
+  } catch (e) {
+    pushAdminError(e.message, { path: "admin/classrooms POST" });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.patch("/api/admin/classrooms/:id", requireAdmin, async (req, res) => {
+  try {
+    const classroom = await Classroom.findById(req.params.id);
+    if (!classroom) return res.status(404).json({ error: "class_not_found" });
+
+    if (req.body.name != null) {
+      const n = String(req.body.name || "").trim();
+      if (n.length >= 2) classroom.name = n;
+    }
+    if (req.body.description !== undefined) classroom.description = String(req.body.description || "").trim();
+    if (req.body.schoolName !== undefined) classroom.schoolName = String(req.body.schoolName || "").trim();
+    if (req.body.gradeLabel !== undefined) classroom.gradeLabel = String(req.body.gradeLabel || "").trim();
+    if (req.body.orgGroup !== undefined) classroom.orgGroup = String(req.body.orgGroup || "").trim();
+    if (req.body.adminNote !== undefined) classroom.adminNote = String(req.body.adminNote || "").trim();
+
+    if (req.body.tags != null) {
+      classroom.tags = Array.isArray(req.body.tags)
+        ? req.body.tags.map((t) => String(t || "").trim()).filter(Boolean).slice(0, 24)
+        : [];
+    }
+
+    if (req.body.teacherId) {
+      const t = await User.findById(req.body.teacherId);
+      if (!t) return res.status(404).json({ error: "teacher_not_found" });
+      if (t.role !== "teacher" && t.role !== "admin") {
+        return res.status(400).json({ error: "user_must_be_teacher_or_admin" });
+      }
+      classroom.teacherId = t._id;
+    }
+
+    await classroom.save();
+    const populated = await Classroom.findById(classroom._id).populate("teacherId", "username nickname email role").lean();
+    const memN = await ClassMembership.countDocuments({ classId: classroom._id });
+    res.json({ ok: true, classroom: { ...populated, memberCount: memN } });
+  } catch (e) {
+    pushAdminError(e.message, { path: "admin/classrooms PATCH" });
     res.status(500).json({ error: e.message });
   }
 });
