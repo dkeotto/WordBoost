@@ -177,7 +177,20 @@ function buildWritingPrompt({ type, tone, length, language, audience, context, i
       ? "Sosyal medya caption'ı gibi; kısa, vurucu, doğal."
       : t === "product"
       ? "Ürün açıklaması gibi; fayda odaklı, ikna edici ama abartısız."
+      : t === "summary"
+      ? "Özet: ana fikirleri net ve sıkı tut; gerekirse madde işaretli liste kullan."
+      : t === "ydt_practice"
+      ? "YDT / İngilizce yazılı sınav pratiği: B2–C1 düzeyinde, akademik veya yarı akademik özgün paragraf. Günlük konuşma dili değil, sınav diline uy."
+      : t === "dialogue"
+      ? "İki veya daha fazla kişi arasında doğal diyalog; kısa replikler, akıcı geçişler."
+      : t === "vocab_story"
+      ? "Verilen kelime veya konu etrafında öğretici kısa hikâye veya metin; bağlam içinde kullanım örnekleri ver."
       : "Blog yazısı gibi; başlıklar ve okunabilir akış.";
+
+  const langHint =
+    lang === "mixed"
+      ? "Karışık (TR+EN): kullanıcı isteğine göre Türkçe ve İngilizceyi dengeli, doğal geçişlerle kullan."
+      : `Çıktı dili: ${lang}.`;
 
   const system =
     "Sen üst düzey bir yazı asistanısın. Çıktı çok insani, doğal ve bağlama uygun olmalı.\n" +
@@ -186,8 +199,8 @@ function buildWritingPrompt({ type, tone, length, language, audience, context, i
     "- Gerektiğinde küçük doğal kusurlar/insani dokunuşlar ekle (abartmadan).\n" +
     "- Kullanıcının bağlamına göre özgün detaylar üret, şablon gibi yazma.\n" +
     "- Gereksiz tekrar ve doldurma cümleleri yazma.\n" +
-    "- Dil: " +
-    lang;
+    "- " +
+    langHint;
 
   const messages = [
     {
@@ -1509,7 +1522,9 @@ app.get('/api/profile', async (req, res) => {
       stats: user.stats,
       streak: user.streak,
       badges: user.badges,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      premiumUntil: user.premiumUntil || null,
+      isPremium: isPremiumUser(user)
     });
 
   } catch (err) {
@@ -1608,10 +1623,21 @@ app.get('/api/users/search', async (req, res) => {
         { nickname: { $regex: q, $options: 'i' } }
       ]
     })
-    .select("username nickname avatar stats streak badges")
+    .select("username nickname avatar stats streak badges premiumUntil")
     .limit(10);
 
-    res.json(users);
+    res.json(
+      users.map((u) => ({
+        _id: u._id,
+        username: u.username,
+        nickname: u.nickname,
+        avatar: u.avatar,
+        stats: u.stats,
+        streak: u.streak,
+        badges: u.badges,
+        isPremium: isPremiumUser(u)
+      }))
+    );
   } catch (err) {
     res.status(500).json({ error: "Search error" });
   }
@@ -1620,11 +1646,16 @@ app.get('/api/users/search', async (req, res) => {
 app.get('/api/users/:username', async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username })
-      .select("username nickname avatar bio stats streak badges createdAt");
+      .select("username nickname avatar bio stats streak badges createdAt premiumUntil");
     
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    res.json(user);
+    const o = user.toObject();
+    const { premiumUntil: _omitUntil, ...publicUser } = o;
+    res.json({
+      ...publicUser,
+      isPremium: isPremiumUser(user)
+    });
   } catch (err) {
     res.status(500).json({ error: "Profile fetch error" });
   }
@@ -1640,10 +1671,21 @@ app.get('/api/leaderboard', async (req, res) => {
     })
       .sort({ "streak": -1, "stats.known": -1 }) // ?nce seri, sonra puan
       .limit(50)
-      .select("username nickname avatar stats badges streak");
+      .select("username nickname avatar stats badges streak premiumUntil");
 
     // Bo? kullan?c?lar? filtrele (ek g?venlik)
-    const filteredUsers = users.filter(u => u.username && u.username.trim().length > 0);
+    const filteredUsers = users
+      .filter((u) => u.username && u.username.trim().length > 0)
+      .map((u) => ({
+        _id: u._id,
+        username: u.username,
+        nickname: u.nickname,
+        avatar: u.avatar,
+        stats: u.stats,
+        badges: u.badges,
+        streak: u.streak,
+        isPremium: isPremiumUser(u)
+      }));
 
     res.json(filteredUsers);
   } catch (err) {
@@ -2015,9 +2057,14 @@ app.get('/api/billing/status', async (req, res) => {
     const token = req.headers.authorization;
     if (!token) return res.status(401).json({ error: "Token gerekli" });
     const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
-    const user = await User.findById(decoded.id).select("premiumUntil");
+    const user = await User.findById(decoded.id).select("premiumUntil entitlements");
     if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
-    res.json({ ok: true, premiumUntil: user.premiumUntil || null, isPremium: isPremiumUser(user) });
+    res.json({
+      ok: true,
+      premiumUntil: user.premiumUntil || null,
+      isPremium: isPremiumUser(user),
+      hasAiPlus: Boolean(user.entitlements?.aiPlus)
+    });
   } catch (e) {
     res.status(401).json({ error: "Auth error" });
   }

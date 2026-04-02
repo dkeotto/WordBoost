@@ -17,21 +17,11 @@ export default function PlanContactPanel({ className = "" }) {
         Ödeme linki dışında kurumsal teklif, fatura (e-Fatura), okul / sınıf lisansı veya toplu hesap
         oluşturma ihtiyaçların için bizimle iletişime geçebilirsin.
       </p>
-      {email ? (
-        <p className="pricing-contact-email">
-          <a
-            href={`mailto:${email}?subject=${encodeURIComponent("WordBoost satın alım / teklif")}`}
-          >
-            {email}
-          </a>
-        </p>
-      ) : import.meta.env.DEV ? (
-        <p className="pricing-contact-muted">
-          Yerelde göstermek için <code>VITE_SALES_EMAIL</code> tanımla (ör. .env).
-        </p>
-      ) : (
-        <p className="pricing-contact-muted">WordBoost ekibiyle iletişime geçerek teklif alabilirsin.</p>
-      )}
+      <p className="pricing-contact-email">
+        <a href={`mailto:${email}?subject=${encodeURIComponent("WordBoost satın alım / teklif")}`}>
+          {email}
+        </a>
+      </p>
     </section>
   );
 }

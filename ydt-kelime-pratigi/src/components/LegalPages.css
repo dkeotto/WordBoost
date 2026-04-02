@@ -106,6 +106,68 @@
   gap: 1.25rem;
 }
 
+.pricing-packages-email {
+  margin: 1rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.88);
+  text-align: center;
+}
+
+.pricing-packages-email a {
+  color: #ffcc80;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pricing-packages-email a:hover {
+  text-decoration: underline;
+}
+
+.pricing-account-status {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.pricing-account-status--premium {
+  border-color: rgba(255, 159, 28, 0.45);
+  background: linear-gradient(135deg, rgba(255, 159, 28, 0.12), rgba(0, 0, 0, 0.25));
+}
+
+.pricing-account-status__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main, #fff);
+}
+
+.pricing-account-status__line {
+  margin: 0.25rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pricing-account-status__line strong {
+  color: #ffcc80;
+  font-weight: 700;
+}
+
+.pricing-account-status__muted {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.88rem;
+}
+
+.pricing-account-status--aiplus {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e0dccf;
+}
+
 @media (min-width: 640px) {
   .pricing-grid {
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

@@ -3,19 +3,23 @@ import "./LegalPages.css";
 import { isBillingManual } from "../utils/billingMode";
 import { readResponseJson } from "../utils/httpJson";
 import { apiUrl } from "../utils/apiUrl";
-import { mergePlansWithFallback, plansForManualMode } from "../utils/planPresentation";
+import {
+  getSalesEmail,
+  mergePlansWithFallback,
+  plansForManualMode,
+  resolveDisplayPriceForPlan,
+} from "../utils/planPresentation";
 import PlanContactPanel from "./PlanContactPanel";
+import { formatPremiumUntilTr, isUserPremium } from "../utils/premiumDisplay";
 
 function PlanCard({ plan, user, onGoPremium, showCta }) {
   return (
     <article className="pricing-card pricing-card--detailed">
       <div className="pricing-card-head">
         <h2>{plan.label}</h2>
-        {plan.displayPrice ? (
-          <p className="pricing-price-line" role="status">
-            {plan.displayPrice}
-          </p>
-        ) : null}
+        <p className="pricing-price-line" role="status">
+          {resolveDisplayPriceForPlan(plan)}
+        </p>
       </div>
       {plan.description ? <p className="pricing-desc">{plan.description}</p> : null}
       {Array.isArray(plan.features) && plan.features.length > 0 ? (
@@ -41,8 +45,32 @@ function PlanCard({ plan, user, onGoPremium, showCta }) {
  */
 export default function PricingPage({ user, onBack, onGoPremium }) {
   const manual = useMemo(() => isBillingManual(), []);
+  const salesEmail = useMemo(() => getSalesEmail(), []);
   const [plans, setPlans] = useState([]);
   const [err, setErr] = useState("");
+  const [billingStatus, setBillingStatus] = useState(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user?.token) {
+      setBillingStatus(null);
+      return;
+    }
+    setBillingLoading(true);
+    fetch(apiUrl("/api/billing/status"), { headers: { Authorization: user.token } })
+      .then(async (r) => readResponseJson(r))
+      .then((d) => {
+        if (d?.ok) {
+          setBillingStatus({
+            isPremium: Boolean(d.isPremium),
+            premiumUntil: d.premiumUntil || null,
+            hasAiPlus: Boolean(d.hasAiPlus),
+          });
+        } else setBillingStatus(null);
+      })
+      .catch(() => setBillingStatus(null))
+      .finally(() => setBillingLoading(false));
+  }, [user?.token]);
 
   useEffect(() => {
     if (manual) return;
@@ -63,11 +91,53 @@ export default function PricingPage({ user, onBack, onGoPremium }) {
 
   const showPaddleCta = !manual;
 
+  const premiumLive =
+    billingStatus != null ? billingStatus.isPremium : isUserPremium(user);
+  const premiumUntilLive =
+    billingStatus != null ? billingStatus.premiumUntil : user?.premiumUntil || null;
+  const aiPlusLive =
+    billingStatus != null ? billingStatus.hasAiPlus : Boolean(user?.entitlements?.aiPlus);
+
   return (
     <div className="legal-page legal-page--pricing">
       <button type="button" className="legal-back" onClick={onBack}>
         ← Uygulamaya dön
       </button>
+
+      {user?.token ? (
+        <section
+          className={`pricing-account-status ${premiumLive ? "pricing-account-status--premium" : "pricing-account-status--free"}`}
+          aria-label="Hesap üyelik durumu"
+        >
+          {billingLoading && billingStatus == null ? (
+            <p className="pricing-account-status__line">Üyelik bilgisi yükleniyor…</p>
+          ) : (
+            <>
+              <p className="pricing-account-status__title">
+                {premiumLive ? "Premium üyeliğin aktif" : "Ücretsiz hesap"}
+              </p>
+              {premiumLive && premiumUntilLive ? (
+                <p className="pricing-account-status__line">
+                  Bitiş: <strong>{formatPremiumUntilTr(premiumUntilLive)}</strong>
+                </p>
+              ) : null}
+              {premiumLive && !premiumUntilLive ? (
+                <p className="pricing-account-status__line">Süresiz veya yönetici atamalı premium.</p>
+              ) : null}
+              {!premiumLive ? (
+                <p className="pricing-account-status__line pricing-account-status__muted">
+                  Aşağıdaki paketlerden birini seçerek veya iletişimden yükseltebilirsin.
+                </p>
+              ) : null}
+              {aiPlusLive ? (
+                <p className="pricing-account-status__line pricing-account-status--aiplus">
+                  <strong>AI+</strong> (tek seferlik) erişimin açık.
+                </p>
+              ) : null}
+            </>
+          )}
+        </section>
+      ) : null}
 
       <header className="legal-header">
         <h1>Planlar ve fiyatlandırma</h1>
@@ -113,6 +183,15 @@ export default function PricingPage({ user, onBack, onGoPremium }) {
           />
         ))}
       </div>
+
+      <p className="pricing-packages-email">
+        Paketler veya fiyatlar hakkında:{" "}
+        <a
+          href={`mailto:${salesEmail}?subject=${encodeURIComponent("WordBoost — paket / fiyat sorusu")}`}
+        >
+          {salesEmail}
+        </a>
+      </p>
 
       {!manual && plans.length === 0 && err && (
         <div className="pricing-fallback">

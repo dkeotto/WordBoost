@@ -19,6 +19,7 @@ import PrivacyPage from "./components/PrivacyPage";
 import { sanitizeWordList } from "./utils/wordQuality";
 import { readResponseJson } from "./utils/httpJson";
 import { apiUrl } from "./utils/apiUrl";
+import { formatPremiumUntilTr, isUserPremium } from "./utils/premiumDisplay";
 import { buildSynonymQuestionPool, buildPhrasalQuestionPool } from "./utils/questionGenerators";
 import { io } from "socket.io-client";
 import "./App.css";
@@ -642,34 +643,48 @@ const ProfileView = ({ user, setUser, logout }) => {
           
           <div className="profile-info">
             <div className="profile-header-top">
-              {isEditing ? (
-                <div style={{display: 'flex', flexDirection: 'column', gap: '10px', width: '100%'}}>
-                   <div style={{display:'flex', gap:'10px', flexWrap:'wrap'}}>
-                     <div style={{flex:1}}>
-                       <label style={{fontSize: '0.8rem', color: '#888'}}>Takma Ad</label>
-                       <input 
-                        value={editForm.nickname} 
-                        onChange={e => setEditForm({...editForm, nickname: e.target.value})}
-                        placeholder="Takma Ad"
-                        style={{width: '100%'}}
-                      />
-                     </div>
-                     <div style={{flex:1}}>
-                       <label style={{fontSize: '0.8rem', color: '#888'}}>Kullanıcı Adı (@)</label>
-                       <input 
-                        value={editForm.username} 
-                        onChange={e => setEditForm({...editForm, username: e.target.value})}
-                        placeholder="Kullanıcı Adı"
-                        style={{width: '100%'}}
-                      />
-                     </div>
-                   </div>
-                </div>
-              ) : (
-                <h2>{user.nickname} <span className="username">(@{user.username})</span></h2>
-              )}
+              <div className="profile-header-main">
+                {isEditing ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: "0.8rem", color: "#888" }}>Takma Ad</label>
+                        <input
+                          value={editForm.nickname}
+                          onChange={(e) => setEditForm({ ...editForm, nickname: e.target.value })}
+                          placeholder="Takma Ad"
+                          style={{ width: "100%" }}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: "0.8rem", color: "#888" }}>Kullanıcı Adı (@)</label>
+                        <input
+                          value={editForm.username}
+                          onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                          placeholder="Kullanıcı Adı"
+                          style={{ width: "100%" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h2>
+                      {user.nickname} <span className="username">(@{user.username})</span>
+                    </h2>
+                    {isUserPremium(user) ? (
+                      <div className="profile-premium-row">
+                        <span className="profile-premium-badge" title="WordBoost Premium üyeliği aktif">
+                          Premium
+                        </span>
+                        <span className="profile-premium-label">WordBoost Premium üyesi</span>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
 
-              <div style={{display: 'flex', alignItems: 'center', marginLeft: 'auto'}}>
+              <div style={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
                 {isEditing && (
                   <button className="delete-btn" onClick={handleDeleteAccount} title="Hesabı Sil">
                     🗑️
@@ -692,7 +707,15 @@ const ProfileView = ({ user, setUser, logout }) => {
                 />
               </div>
             ) : (
-              <p className="bio">{user.bio || "Henüz biyografi eklenmemiş."}</p>
+              <>
+                <p className="bio">{user.bio || "Henüz biyografi eklenmemiş."}</p>
+                {isUserPremium(user) && user.premiumUntil ? (
+                  <p className="profile-premium-expiry">
+                    Üyelik bitişi:{" "}
+                    <strong>{formatPremiumUntilTr(user.premiumUntil)}</strong>
+                  </p>
+                ) : null}
+              </>
             )}
           </div>
         </div>
@@ -802,9 +825,23 @@ const PublicProfileView = ({ selectedUser, setCurrentView }) => {
           </div>
           
           <div className="profile-info">
-            <h2>{selectedUser.nickname} <span className="username">(@{selectedUser.username})</span></h2>
+            <div className="profile-header-main">
+              <div className="profile-public-title-row">
+                <h2>
+                  {selectedUser.nickname} <span className="username">(@{selectedUser.username})</span>
+                </h2>
+                {selectedUser.isPremium ? (
+                  <span className="profile-premium-badge" title="WordBoost Premium üyesi">
+                    Premium
+                  </span>
+                ) : null}
+              </div>
+              {selectedUser.isPremium ? (
+                <p className="profile-premium-label profile-premium-label--public">WordBoost Premium üyesi</p>
+              ) : null}
+            </div>
             <p className="bio">{selectedUser.bio || "Henüz biyografi eklenmemiş."}</p>
-            <p className="join-date">Katılım: {new Date(selectedUser.createdAt).toLocaleDateString('tr-TR')}</p>
+            <p className="join-date">Katılım: {new Date(selectedUser.createdAt).toLocaleDateString("tr-TR")}</p>
           </div>
         </div>
 
@@ -1030,7 +1067,12 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
               {searchResults.map(u => (
                 <div key={u._id} className="search-result-item" onClick={() => openProfile(u.username)}>
                   <img src={u.avatar} alt="av" className="mini-avatar" />
-                  <span>{u.nickname || u.username}</span>
+                  <span className="search-result-name">{u.nickname || u.username}</span>
+                  {u.isPremium ? (
+                    <span className="search-result-premium" title="Premium üye">
+                      PRO
+                    </span>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -1072,6 +1114,11 @@ const LeaderboardView = ({ user, setCurrentView, setSelectedUser }) => {
                 <span className="nick" title={u.nickname || u.username}>
                   {(u.nickname && u.nickname.trim().length > 0) ? u.nickname : u.username}
                 </span>
+                {u.isPremium ? (
+                  <span className="lb-premium-tag" title="Premium üye">
+                    PRO
+                  </span>
+                ) : null}
               </div>
               <span className="streak" style={{display: 'inline-block'}}>🔥 {u.streak || 0}</span>
               <span className="score" style={{display: 'inline-block'}}>⭐ {u.stats?.known || 0}</span>

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { isBillingManual } from "../utils/billingMode";
 import { readResponseJson } from "../utils/httpJson";
 import { apiUrl } from "../utils/apiUrl";
-import { mergePlansWithFallback, plansForManualMode } from "../utils/planPresentation";
+import { mergePlansWithFallback, plansForManualMode, resolveDisplayPriceForPlan } from "../utils/planPresentation";
 import PlanContactPanel from "./PlanContactPanel";
 import "./LegalPages.css";
 
@@ -186,7 +186,7 @@ export default function PricingModal({ user, onClose }) {
                     {p.tier === "classroom" ? <span className="pricing-tag pricing-tag--team">Okul / sınıf</span> : null}
                     {p.tier === "premium" ? <span className="pricing-ribbon-badge">En popüler</span> : null}
                     <div className="pricing-title">{p.label || p.tier}</div>
-                    {p.displayPrice ? <div className="pricing-price-tag">{p.displayPrice}</div> : null}
+                    <div className="pricing-price-tag">{resolveDisplayPriceForPlan(p)}</div>
                     {p.description ? <div className="pricing-desc">{p.description}</div> : null}
                     {Array.isArray(p.features) && p.features.length > 0 ? (
                       <ul className="pricing-features">
@@ -209,7 +209,7 @@ export default function PricingModal({ user, onClose }) {
                     {p.tier === "classroom" ? <span className="pricing-tag pricing-tag--team">Okul / sınıf</span> : null}
                     {p.tier === "premium" ? <span className="pricing-ribbon-badge">En popüler</span> : null}
                     <div className="pricing-title">{p.label || p.tier}</div>
-                    {p.displayPrice ? <div className="pricing-price-tag">{p.displayPrice}</div> : null}
+                    <div className="pricing-price-tag">{resolveDisplayPriceForPlan(p)}</div>
                     {p.description ? <div className="pricing-desc">{p.description}</div> : null}
                     {Array.isArray(p.features) && p.features.length > 0 ? (
                       <ul className="pricing-features">
