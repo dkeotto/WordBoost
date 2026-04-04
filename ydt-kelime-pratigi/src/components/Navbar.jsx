@@ -11,6 +11,8 @@ const Navbar = ({
   user, 
   onLogoutClick, 
   onLoginClick,
+  onOpenSiteInfo = () => {},
+  siteInfoTab = "features",
   isInRoom,
   wordsCount,
   wrongWordsCount,
@@ -131,7 +133,17 @@ const Navbar = ({
     'classroom',
     'room-menu',
     'room',
+    'site-info',
+    'terms',
+    'privacy',
   ].includes(currentView);
+
+  const handleSiteInfo = (tab) => {
+    if (typeof onOpenSiteInfo === "function") onOpenSiteInfo(tab);
+    setIsMenuOpen(false);
+    setIsListsOpen(false);
+    setIsMoreOpen(false);
+  };
 
   const navMenuLinks = (
     <>
@@ -236,6 +248,41 @@ const Navbar = ({
             onClick={() => handleNavClick(isInRoom ? 'room' : 'room-menu')}
           >
             👥 Oda {isInRoom ? '(Aktif)' : ''}
+          </button>
+
+          <div className="nav-dropdown-divider" role="separator" aria-hidden />
+
+          <button
+            type="button"
+            className={`nav-link ${currentView === "site-info" && siteInfoTab === "features" ? "active" : ""}`}
+            onClick={() => handleSiteInfo("features")}
+          >
+            ✨ Özellikler
+          </button>
+          <button
+            type="button"
+            className={`nav-link ${currentView === "site-info" && siteInfoTab === "about" ? "active" : ""}`}
+            onClick={() => handleSiteInfo("about")}
+          >
+            ℹ️ Hakkında
+          </button>
+          <button
+            type="button"
+            className={`nav-link ${
+              currentView === "privacy" || (currentView === "site-info" && siteInfoTab === "privacy") ? "active" : ""
+            }`}
+            onClick={() => handleSiteInfo("privacy")}
+          >
+            🔒 Gizlilik
+          </button>
+          <button
+            type="button"
+            className={`nav-link ${
+              currentView === "terms" || (currentView === "site-info" && siteInfoTab === "terms") ? "active" : ""
+            }`}
+            onClick={() => handleSiteInfo("terms")}
+          >
+            📜 Şartlar
           </button>
         </div>
       </li>

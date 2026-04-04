@@ -17,6 +17,7 @@ import StartupScreen from "./components/StartupScreen";
 import PricingPage from "./components/PricingPage";
 import TermsPage from "./components/TermsPage";
 import PrivacyPage from "./components/PrivacyPage";
+import SiteInfoPage from "./components/SiteInfoPage";
 import { sanitizeWordList } from "./utils/wordQuality";
 import { readResponseJson } from "./utils/httpJson";
 import { apiUrl } from "./utils/apiUrl";
@@ -29,12 +30,20 @@ import "./App.css";
 /** Production’da API Vercel proxy ile aynı origin; Socket.io ise Railway’e doğrudan (VITE_SOCKET_URL). */
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
 
+function readSiteInfoTabFromUrl() {
+  if (typeof window === "undefined") return "features";
+  const h = window.location.hash.replace(/^#/, "").toLowerCase();
+  if (["features", "about", "privacy", "terms"].includes(h)) return h;
+  return "features";
+}
+
 function readInitialViewFromUrl() {
   if (typeof window === "undefined") return "practice";
   const p = window.location.pathname.replace(/\/$/, "") || "/";
   if (p === "/pricing") return "pricing";
   if (p === "/terms") return "terms";
   if (p === "/privacy") return "privacy";
+  if (p === "/bilgi" || p === "/info") return "site-info";
   const h = window.location.hash.replace("#", "").toLowerCase();
   if (h === "admin") return "admin";
   return "practice";
@@ -1666,7 +1675,10 @@ function App() {
   const [showPricing, setShowPricing] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [newBadgeNotification, setNewBadgeNotification] = useState(null); // { badges: [{ id }] }
-  const [currentView, setCurrentView] = useState(readInitialViewFromUrl);
+  const [currentView, setCurrentView] = useState(() => readInitialViewFromUrl());
+  const [siteInfoTab, setSiteInfoTab] = useState(() =>
+    readInitialViewFromUrl() === "site-info" ? readSiteInfoTabFromUrl() : "features"
+  );
   const [words, setWords] = useState([]);
   const [loadingWords, setLoadingWords] = useState(true);
   const splashStartRef = useRef(Date.now());
@@ -1936,13 +1948,28 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const onPop = () => setCurrentView(readInitialViewFromUrl());
+    const onPop = () => {
+      const v = readInitialViewFromUrl();
+      setCurrentView(v);
+      if (v === "site-info") setSiteInfoTab(readSiteInfoTabFromUrl());
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   useEffect(() => {
+    const onHash = () => {
+      if (readInitialViewFromUrl() === "site-info") {
+        setSiteInfoTab(readSiteInfoTabFromUrl());
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  useEffect(() => {
     const legal = { pricing: "/pricing", terms: "/terms", privacy: "/privacy" };
+    if (currentView === "site-info") return;
     if (legal[currentView]) {
       if (window.location.pathname !== legal[currentView]) {
         window.history.pushState({ view: currentView }, "", legal[currentView]);
@@ -2444,6 +2471,13 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
           user={user}
           onLogoutClick={() => setShowLogoutConfirm(true)}
           onLoginClick={() => setShowLogin(true)}
+          siteInfoTab={siteInfoTab}
+          onOpenSiteInfo={(tab) => {
+            const t = ["features", "about", "privacy", "terms"].includes(tab) ? tab : "features";
+            setSiteInfoTab(t);
+            setCurrentView("site-info");
+            window.history.pushState({}, "", `/bilgi#${t}`);
+          }}
           isInRoom={isInRoom}
           wordsCount={words.length}
           wrongWordsCount={wrongWordsCount}
@@ -2526,6 +2560,20 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
       )}
       {currentView === 'privacy' && (
         <PrivacyPage
+          onBack={() => {
+            setCurrentView("practice");
+            window.history.replaceState({}, "", "/");
+          }}
+        />
+      )}
+      {currentView === "site-info" && (
+        <SiteInfoPage
+          tab={siteInfoTab}
+          onTabChange={(t) => {
+            const x = ["features", "about", "privacy", "terms"].includes(t) ? t : "features";
+            setSiteInfoTab(x);
+            window.history.replaceState({}, "", `/bilgi#${x}`);
+          }}
           onBack={() => {
             setCurrentView("practice");
             window.history.replaceState({}, "", "/");

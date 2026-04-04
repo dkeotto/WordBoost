@@ -243,8 +243,16 @@
 
 .nav-more .dropdown-content {
   min-width: 220px;
-  max-height: min(70vh, 420px);
+  max-height: min(75vh, 520px);
   overflow-y: auto;
+}
+
+.nav-dropdown-divider {
+  height: 1px;
+  margin: 8px 4px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  flex-shrink: 0;
 }
 
 .title-content {
