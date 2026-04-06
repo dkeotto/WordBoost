@@ -7,6 +7,19 @@ function isRetryableRateLimit(err) {
   return msg.includes("rate_limit") || msg.includes("too many requests");
 }
 
+/** İlk uç başarısız olunca diğer uca geç: 429, geçersiz anahtar (401/403), sunucu hatası (5xx). */
+function shouldTryNextProvider(err) {
+  if (isRetryableRateLimit(err)) return true;
+  const s = err?.status ?? err?.statusCode;
+  if (s === 401 || s === 403) return true;
+  if (typeof s === "number" && s >= 500 && s < 600) return true;
+  const raw = String(err?.message || "");
+  const low = raw.toLowerCase();
+  if (low.includes("invalid_api_key") || low.includes("invalid api key")) return true;
+  if (/^401\b/.test(raw.trim())) return true;
+  return false;
+}
+
 /**
  * @param {{ id: string, client: { createMessage: Function, createMessageStream: Function }, model: string }[]} legs - tam iki eleman [groq, gateway]
  * @param {{ primary: 'groq' | 'ai_gateway' }} opts
@@ -45,6 +58,10 @@ function createFailoverAiProvider(legs, opts = {}) {
         lastErr = e;
         if (isRetryableRateLimit(e)) {
           metrics.recordRateLimit(leg.id, e);
+          continue;
+        }
+        if (shouldTryNextProvider(e)) {
+          metrics.recordError(leg.id, e);
           continue;
         }
         metrics.recordError(leg.id, e);
@@ -86,6 +103,10 @@ function createFailoverAiProvider(legs, opts = {}) {
           metrics.recordRateLimit(leg.id, e);
           continue;
         }
+        if (shouldTryNextProvider(e)) {
+          metrics.recordError(leg.id, e);
+          continue;
+        }
         metrics.recordError(leg.id, e);
         throw e;
       }
@@ -97,4 +118,4 @@ function createFailoverAiProvider(legs, opts = {}) {
   return { createMessage, createMessageStream };
 }
 
-module.exports = { createFailoverAiProvider, isRetryableRateLimit };
+module.exports = { createFailoverAiProvider, isRetryableRateLimit, shouldTryNextProvider };
