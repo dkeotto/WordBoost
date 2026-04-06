@@ -13,14 +13,22 @@ function toOpenAiMessages(system, messages) {
   return out;
 }
 
-function createGroqProvider({ apiKey }) {
+/**
+ * Groq API veya OpenAI uyumlu uç (ör. Vercel AI Gateway: baseURL + apiKey).
+ */
+function createOpenAiChatProvider({ apiKey, baseURL, missingKeyMessage }) {
   const key = String(apiKey || "").trim();
-  const client = key ? new Groq({ apiKey: key }) : null;
+  const opts = key ? { apiKey: key } : {};
+  if (baseURL && String(baseURL).trim()) {
+    opts.baseURL = String(baseURL).trim().replace(/\/$/, "");
+  }
+  const client = key ? new Groq(opts) : null;
+  const missingMsg = String(missingKeyMessage || "API anahtarı eksik");
 
   function assertReady() {
     if (!client) {
-      const err = new Error("AI yapılandırılmadı (GROQ_API_KEY eksik)");
-      err.code = "GROQ_API_KEY_MISSING";
+      const err = new Error(missingMsg);
+      err.code = "OPENAI_COMPAT_KEY_MISSING";
       throw err;
     }
   }
@@ -32,19 +40,24 @@ function createGroqProvider({ apiKey }) {
       model,
       messages: toOpenAiMessages(system, messages),
       max_tokens: max_tokens ?? 1024,
-      temperature: temperature ?? 0.7
+      temperature: temperature ?? 0.7,
     });
     const text = String(completion.choices?.[0]?.message?.content ?? "").trim();
     const u = completion.usage;
-    return {
+    const out = {
       content: [{ type: "text", text }],
       usage: u
         ? {
             input_tokens: u.prompt_tokens,
-            output_tokens: u.completion_tokens
+            output_tokens: u.completion_tokens,
           }
-        : null
+        : null,
     };
+    const respHeaders = completion?.response?.headers;
+    if (respHeaders && typeof respHeaders.get === "function") {
+      out._wbResponseHeaders = respHeaders;
+    }
+    return out;
   }
 
   async function createMessageStream(params) {
@@ -55,7 +68,7 @@ function createGroqProvider({ apiKey }) {
       messages: toOpenAiMessages(system, messages),
       max_tokens: max_tokens ?? 1024,
       temperature: temperature ?? 0.7,
-      stream: true
+      stream: true,
     });
 
     async function* gen() {
@@ -64,7 +77,7 @@ function createGroqProvider({ apiKey }) {
         if (content) {
           yield {
             type: "content_block_delta",
-            delta: { type: "text_delta", text: String(content) }
+            delta: { type: "text_delta", text: String(content) },
           };
         }
       }
@@ -76,4 +89,12 @@ function createGroqProvider({ apiKey }) {
   return { createMessage, createMessageStream };
 }
 
-module.exports = { createGroqProvider };
+function createGroqProvider({ apiKey }) {
+  return createOpenAiChatProvider({
+    apiKey,
+    baseURL: undefined,
+    missingKeyMessage: "AI yapılandırılmadı (GROQ_API_KEY eksik)",
+  });
+}
+
+module.exports = { createGroqProvider, createOpenAiChatProvider };

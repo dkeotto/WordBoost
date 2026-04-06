@@ -20,7 +20,13 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const os = require('os');
 const rateLimit = require('express-rate-limit');
-const { createAiRuntime, getAiModel, formatAiError, normalizeAnthropicApiKey } = require("./src/modules/ai/createAiProvider");
+const {
+  createAiRuntime,
+  getAiModel,
+  formatAiError,
+  normalizeAnthropicApiKey,
+  getAiAdminSnapshot,
+} = require("./src/modules/ai/createAiProvider");
 
 const { getAuthTokenFromHeader } = require("./src/lib/authToken");
 const { isPremiumUser, hasUnlimitedAiMode } = require("./src/lib/premium");
@@ -137,16 +143,29 @@ const { provider: aiProvider, name: aiProviderName } = createAiRuntime();
 if (!process.env.RAILWAY_PUBLIC_DOMAIN && !process.env.RENDER_EXTERNAL_URL) {
   const ak = normalizeAnthropicApiKey(process.env.ANTHROPIC_API_KEY);
   const gk = String(process.env.GROQ_API_KEY || "").trim();
-  console.log(
-    `[AI] provider=${aiProviderName} model=${getAiModel(aiProviderName)}` +
-      (aiProviderName === "groq"
-        ? gk
-          ? ` (GROQ_API_KEY ${gk.length} karakter)`
-          : " UYARI: GROQ_API_KEY boş"
-        : ak
-          ? ` (ANTHROPIC_API_KEY ${ak.length} karakter)`
-          : " UYARI: ANTHROPIC_API_KEY boş")
-  );
+  const gw = String(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_AI_GATEWAY_API_KEY || "").trim();
+  if (aiProviderName === "failover") {
+    console.log(
+      `[AI] provider=failover (Groq ↔ AI Gateway) primary=${process.env.AI_FAILOVER_PRIMARY || "groq"} ` +
+        `groq_model=${getAiModel("groq")} gateway_model=${getAiModel("ai_gateway")} ` +
+        `(GROQ ${gk.length} kar., gateway ${gw.length} kar.)`
+    );
+  } else {
+    console.log(
+      `[AI] provider=${aiProviderName} model=${getAiModel(aiProviderName)}` +
+        (aiProviderName === "groq"
+          ? gk
+            ? ` (GROQ_API_KEY ${gk.length} karakter)`
+            : " UYARI: GROQ_API_KEY boş"
+          : aiProviderName === "ai_gateway"
+            ? gw
+              ? ` (AI_GATEWAY_API_KEY ${gw.length} karakter)`
+              : " UYARI: AI_GATEWAY_API_KEY boş"
+            : ak
+              ? ` (ANTHROPIC_API_KEY ${ak.length} karakter)`
+              : " UYARI: ANTHROPIC_API_KEY boş")
+    );
+  }
 }
 
 function buildWritingPrompt({ type, tone, length, language, audience, context, inputText }) {
@@ -228,6 +247,24 @@ function anthropicContentToText(resp) {
     .map((c) => (c && c.type === "text" ? c.text : ""))
     .join("\n")
     .trim();
+}
+
+/** Failover: createMessage yanıtından wbLog ayıklar (istemciye gitmez). */
+function splitAiMessageResponse(resp) {
+  const wbLog = resp && typeof resp === "object" ? resp.wbLog : null;
+  if (!resp || typeof resp !== "object") return { body: resp, wbLog: null };
+  const body = { ...resp };
+  delete body.wbLog;
+  delete body._wbResponseHeaders;
+  return { body, wbLog };
+}
+
+/** Failover: createMessageStream bazen { wbStreamMeta, [Symbol.asyncIterator] } döner. */
+function normalizeAiStreamResult(raw) {
+  if (raw && typeof raw === "object" && raw.wbStreamMeta && typeof raw[Symbol.asyncIterator] === "function") {
+    return { iterable: raw, metaRef: raw.wbStreamMeta };
+  }
+  return { iterable: raw, metaRef: null };
 }
 
 function buildChatSystemPrompt(memorySummary, userDisplayName, userDoc) {
@@ -678,7 +715,7 @@ async function maybeUpdateChatMemorySummary(threadId) {
       "Çıktıyı şu başlıklarla yapılandır (başlıkları aynen kullan):\n" +
       "## Seviye ve hedef\n## Güçlü / zayıf alanlar\n## Tercihler (dil, ton, format)\n## Açık konular ve notlar\n" +
       "Somut tut (isimler, sınav türü, iş alanı); tekrar etme; toplam ~400 kelimeyi geçme. Eski özetteki doğru bilgiyi koru, yeni bilgiyle çelişkiyi gider.";
-    const resp = await aiProvider.createMessage({
+    const rawResp = await aiProvider.createMessage({
       model,
       max_tokens: 950,
       temperature: 0.28,
@@ -690,6 +727,7 @@ async function maybeUpdateChatMemorySummary(threadId) {
         },
       ],
     });
+    const { body: resp } = splitAiMessageResponse(rawResp);
     const text = anthropicContentToText(resp);
     if (!text) return;
     thread.memorySummary = clipChatText(text, 5200);
@@ -2641,13 +2679,16 @@ app.post('/api/ai/write', aiLimiter, async (req, res) => {
     const model = getAiModel(aiProviderName);
 
     const startedAt = Date.now();
-    const resp = await aiProvider.createMessage({
+    const rawResp = await aiProvider.createMessage({
       model,
       max_tokens: 900,
       temperature: 0.85,
       system,
       messages
     });
+    const { body: resp, wbLog } = splitAiMessageResponse(rawResp);
+    const logProvider = wbLog?.provider || aiProviderName;
+    const logModel = wbLog?.model || model;
 
     const text = (resp?.content || [])
       .map((c) => (c && c.type === "text" ? c.text : ""))
@@ -2663,8 +2704,8 @@ app.post('/api/ai/write', aiLimiter, async (req, res) => {
       await AiLog.create({
         userId: user._id,
         mode: "write",
-        provider: aiProviderName,
-        model,
+        provider: logProvider,
+        model: logModel,
         requestMeta: { type, tone, length, language, audience, context, premium },
         promptMasked: guardAiPromptLogging(JSON.stringify({ system, messages })),
         outputMasked: guardAiPromptLogging(text),
@@ -2730,13 +2771,16 @@ app.post('/api/ai/rewrite', aiLimiter, async (req, res) => {
       "- Gereksiz tekrar yapma.\n" +
       "- Dil: " +
       lang;
-    const resp = await aiProvider.createMessage({
+    const rawResp = await aiProvider.createMessage({
       model,
       max_tokens: 900,
       temperature: 0.9,
       system: rewriteSystem,
       messages: [{ role: "user", content: `${directive}\n\nMetin:\n${input}` }]
     });
+    const { body: resp, wbLog } = splitAiMessageResponse(rawResp);
+    const logProvider = wbLog?.provider || aiProviderName;
+    const logModel = wbLog?.model || model;
 
     const text = (resp?.content || [])
       .map((c) => (c && c.type === "text" ? c.text : ""))
@@ -2751,8 +2795,8 @@ app.post('/api/ai/rewrite', aiLimiter, async (req, res) => {
       await AiLog.create({
         userId: user._id,
         mode: "rewrite",
-        provider: aiProviderName,
-        model,
+        provider: logProvider,
+        model: logModel,
         requestMeta: { mode: m, tone: tn, language: lang, premium },
         promptMasked: guardAiPromptLogging(`${directive}\n\n${input}`),
         outputMasked: guardAiPromptLogging(text),
@@ -2823,13 +2867,16 @@ app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
     sseWrite(res, "meta", { ok: true, mode: "write", isPremium: premium });
 
     const startedAt = Date.now();
-    const stream = await aiProvider.createMessageStream({
+    const streamRaw = await aiProvider.createMessageStream({
       model,
       max_tokens: 900,
       temperature: 0.85,
       system,
       messages
     });
+    const { iterable: stream, metaRef: writeStreamMeta } = normalizeAiStreamResult(streamRaw);
+    const logProvider = writeStreamMeta?.provider || aiProviderName;
+    const logModel = writeStreamMeta?.model || model;
 
     let out = "";
     let usage = null;
@@ -2859,8 +2906,8 @@ app.post('/api/ai/write/stream', aiLimiter, async (req, res) => {
         await AiLog.create({
           userId: user._id,
           mode: "write_stream",
-          provider: aiProviderName,
-          model,
+          provider: logProvider,
+          model: logModel,
           requestMeta: { type, tone, length, language, audience, context, premium },
           promptMasked: guardAiPromptLogging(JSON.stringify({ system, messages })),
           outputMasked: guardAiPromptLogging(out),
@@ -2941,13 +2988,16 @@ app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
       lang;
 
     const startedAt = Date.now();
-    const stream = await aiProvider.createMessageStream({
+    const streamRaw = await aiProvider.createMessageStream({
       model,
       max_tokens: 900,
       temperature: 0.9,
       system: rewriteSystem,
       messages: [{ role: "user", content: `${directive}\n\nMetin:\n${input}` }]
     });
+    const { iterable: stream, metaRef: rewriteStreamMeta } = normalizeAiStreamResult(streamRaw);
+    const logProvider = rewriteStreamMeta?.provider || aiProviderName;
+    const logModel = rewriteStreamMeta?.model || model;
 
     let out = "";
     let usage = null;
@@ -2977,8 +3027,8 @@ app.post('/api/ai/rewrite/stream', aiLimiter, async (req, res) => {
         await AiLog.create({
           userId: user._id,
           mode: "rewrite_stream",
-          provider: aiProviderName,
-          model,
+          provider: logProvider,
+          model: logModel,
           requestMeta: { mode: m, tone: tn, language: lang, premium },
           promptMasked: guardAiPromptLogging(`${directive}\n\n${input}`),
           outputMasked: guardAiPromptLogging(out),
@@ -3240,13 +3290,16 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
     });
 
     const startedAt = Date.now();
-    const stream = await aiProvider.createMessageStream({
+    const streamRaw = await aiProvider.createMessageStream({
       model,
       max_tokens: 4096,
       temperature: 0.82,
       system,
       messages: apiMessages,
     });
+    const { iterable: stream, metaRef: chatStreamMeta } = normalizeAiStreamResult(streamRaw);
+    const logProvider = chatStreamMeta?.provider || aiProviderName;
+    const logModel = chatStreamMeta?.model || model;
 
     let out = "";
     let usage = null;
@@ -3291,8 +3344,8 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
         await AiLog.create({
           userId: user._id,
           mode: "chat_stream",
-          provider: aiProviderName,
-          model,
+          provider: logProvider,
+          model: logModel,
           requestMeta: { premium: true, threadId: String(thread._id), attachmentCount: attachments.length },
           promptMasked: guardAiPromptLogging(
             JSON.stringify({
@@ -3326,6 +3379,15 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
       sseWrite(res, "error", { error: f.message, code: f.code });
       res.end();
     } catch (_) {}
+  }
+});
+
+app.get("/api/admin/ai-providers", requireAdmin, (req, res) => {
+  try {
+    res.json(getAiAdminSnapshot());
+  } catch (e) {
+    pushAdminError(e.message, { path: "admin/ai-providers" });
+    res.status(500).json({ error: e.message });
   }
 });
 

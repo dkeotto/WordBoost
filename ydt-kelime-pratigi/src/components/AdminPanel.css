@@ -871,3 +871,84 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.admin-section--ai-providers {
+  border-color: rgba(138, 180, 255, 0.28);
+}
+
+.admin-ai-last-req {
+  margin-top: 0.35rem;
+}
+
+.admin-ai-legs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 1rem;
+  margin-top: 0.85rem;
+}
+
+.admin-ai-leg {
+  border-radius: 14px;
+  padding: 1rem 1.05rem;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-ai-leg--ok {
+  border-color: rgba(100, 200, 140, 0.45);
+  box-shadow: 0 0 0 1px rgba(100, 200, 140, 0.12);
+}
+
+.admin-ai-leg--limit {
+  border-color: rgba(255, 190, 90, 0.55);
+  box-shadow: 0 0 0 1px rgba(255, 190, 90, 0.12);
+}
+
+.admin-ai-leg--err {
+  border-color: rgba(255, 120, 120, 0.45);
+}
+
+.admin-ai-leg--idle {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.admin-ai-leg__title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 0.45rem;
+  color: #e8f0ff;
+}
+
+.admin-ai-leg__model {
+  font-size: 0.82rem;
+  margin-bottom: 0.5rem;
+  color: #c8d4e8;
+}
+
+.admin-ai-leg__model code {
+  font-size: 0.78rem;
+  color: #ffd699;
+}
+
+.admin-ai-leg__row {
+  font-size: 0.84rem;
+  margin: 0.25rem 0;
+  color: #dde6f5;
+}
+
+.admin-ai-leg__muted {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 0.35rem;
+}
+
+.admin-ai-leg__err {
+  margin-top: 0.55rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(180, 60, 60, 0.2);
+  border: 1px solid rgba(255, 120, 120, 0.25);
+  font-size: 0.76rem;
+  color: #ffc9c9;
+  word-break: break-word;
+}

@@ -1,5 +1,10 @@
 const { createAnthropicProvider } = require("./providers/anthropicProvider");
-const { createGroqProvider } = require("./providers/groqProvider");
+const { createGroqProvider, createOpenAiChatProvider } = require("./providers/groqProvider");
+const { createAiGatewayFetchProvider } = require("./providers/aiGatewayFetchProvider");
+const { createFailoverAiProvider } = require("./failoverAiProvider");
+const metrics = require("./aiProviderMetrics");
+
+const DEFAULT_GATEWAY_BASE = "https://ai-gateway.vercel.sh/v1";
 
 function normalizeAnthropicApiKey(raw) {
   let s = String(raw || "").trim();
@@ -10,43 +15,125 @@ function normalizeAnthropicApiKey(raw) {
   return s;
 }
 
+function getGatewayKey() {
+  return String(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_AI_GATEWAY_API_KEY || "").trim();
+}
+
+function getGatewayModel() {
+  return String(process.env.AI_GATEWAY_MODEL || process.env.VERCEL_AI_GATEWAY_MODEL || "openai/gpt-4o-mini").trim();
+}
+
+function getGatewayBase() {
+  const u = String(process.env.AI_GATEWAY_BASE_URL || process.env.VERCEL_AI_GATEWAY_BASE_URL || DEFAULT_GATEWAY_BASE).trim();
+  return u.replace(/\/$/, "");
+}
+
+function failoverDisabled() {
+  const v = String(process.env.AI_FAILOVER || "").toLowerCase();
+  return v === "0" || v === "false" || v === "off";
+}
+
+function getFailoverPrimary() {
+  const p = String(process.env.AI_FAILOVER_PRIMARY || "groq").toLowerCase();
+  return p === "gateway" || p === "ai_gateway" || p === "vercel" ? "ai_gateway" : "groq";
+}
+
 /**
- * AI_PROVIDER=groq | anthropic
- * Belirtilmezse: GROQ_API_KEY varsa Groq, yoksa Anthropic.
+ * AI_PROVIDER=groq | anthropic | ai_gateway
+ * İki anahtar (GROQ + AI_GATEWAY) ve AI_FAILOVER kapalı değilse otomatik yedekleme.
  */
 function createAiRuntime() {
   const groqKey = String(process.env.GROQ_API_KEY || "").trim();
   const anthropicKey = normalizeAnthropicApiKey(process.env.ANTHROPIC_API_KEY);
+  const gatewayKey = getGatewayKey();
   const mode = String(process.env.AI_PROVIDER || "").toLowerCase();
 
   if (mode === "anthropic") {
+    metrics.initAiMetricsMeta({ legIds: ["anthropic"], failoverPrimary: "groq", runtimeName: "anthropic" });
     return {
       provider: createAnthropicProvider({ apiKey: anthropicKey }),
-      name: "anthropic"
+      name: "anthropic",
     };
   }
+
+  const useFailover = Boolean(groqKey && gatewayKey && !failoverDisabled());
+  if (useFailover) {
+    const primary = getFailoverPrimary();
+    const groqLeg = {
+      id: "groq",
+      client: createOpenAiChatProvider({
+        apiKey: groqKey,
+        missingKeyMessage: "GROQ_API_KEY eksik",
+      }),
+      model: String(process.env.GROQ_MODEL || "llama-3.3-70b-versatile"),
+    };
+    const gwLeg = {
+      id: "ai_gateway",
+      client: createAiGatewayFetchProvider({
+        apiKey: gatewayKey,
+        baseURL: getGatewayBase(),
+      }),
+      model: getGatewayModel(),
+    };
+    const provider = createFailoverAiProvider([groqLeg, gwLeg], { primary });
+    metrics.initAiMetricsMeta({ legIds: ["groq", "ai_gateway"], failoverPrimary: primary, runtimeName: "failover" });
+    return { provider, name: "failover" };
+  }
+
   if (mode === "groq") {
+    metrics.initAiMetricsMeta({ legIds: ["groq"], failoverPrimary: "groq", runtimeName: "groq" });
     return {
       provider: createGroqProvider({ apiKey: groqKey }),
-      name: "groq"
+      name: "groq",
+    };
+  }
+
+  if (mode === "ai_gateway" || mode === "gateway") {
+    metrics.initAiMetricsMeta({ legIds: ["ai_gateway"], failoverPrimary: "ai_gateway", runtimeName: "ai_gateway" });
+    return {
+      provider: createAiGatewayFetchProvider({
+        apiKey: gatewayKey,
+        baseURL: getGatewayBase(),
+      }),
+      name: "ai_gateway",
     };
   }
 
   if (groqKey) {
+    metrics.initAiMetricsMeta({ legIds: ["groq"], failoverPrimary: "groq", runtimeName: "groq" });
     return {
       provider: createGroqProvider({ apiKey: groqKey }),
-      name: "groq"
+      name: "groq",
     };
   }
+
+  if (gatewayKey) {
+    metrics.initAiMetricsMeta({ legIds: ["ai_gateway"], failoverPrimary: "ai_gateway", runtimeName: "ai_gateway" });
+    return {
+      provider: createAiGatewayFetchProvider({
+        apiKey: gatewayKey,
+        baseURL: getGatewayBase(),
+      }),
+      name: "ai_gateway",
+    };
+  }
+
+  metrics.initAiMetricsMeta({ legIds: ["anthropic"], failoverPrimary: "groq", runtimeName: "anthropic" });
   return {
     provider: createAnthropicProvider({ apiKey: anthropicKey }),
-    name: "anthropic"
+    name: "anthropic",
   };
 }
 
 function getAiModel(providerName) {
   if (providerName === "groq") {
     return String(process.env.GROQ_MODEL || "llama-3.3-70b-versatile");
+  }
+  if (providerName === "ai_gateway") {
+    return getGatewayModel();
+  }
+  if (providerName === "failover") {
+    return getFailoverPrimary() === "ai_gateway" ? getGatewayModel() : String(process.env.GROQ_MODEL || "llama-3.3-70b-versatile");
   }
   return String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022");
 }
@@ -57,21 +144,41 @@ const GROQ_AUTH_HELP =
 const GROQ_RATE_HELP =
   "Groq ücretsiz katman hız limiti aşıldı. Bir süre sonra tekrar dene veya console.groq.com üzerinden limit/plan kontrol et.";
 
+const GATEWAY_AUTH_HELP =
+  "Vercel AI Gateway anahtarı geçersiz. Vercel Dashboard → AI Gateway → API Keys; Railway’de AI_GATEWAY_API_KEY güncelle.";
+
+const GATEWAY_RATE_HELP =
+  "AI Gateway hız veya kota limiti. Vercel AI Gateway kullanımını kontrol et; yedek olarak Groq tanımlıysa otomatik denenir.";
+
+const FAILOVER_EXHAUSTED =
+  "Şu an hem Groq hem AI Gateway hız limitine takılmış görünüyor. Bir süre sonra tekrar dene veya plan/limitleri kontrol et.";
+
 function formatAiError(err, providerName) {
   const msg = String(err?.message || "");
+  const status = err?.status ?? err?.statusCode;
 
-  if (providerName === "groq") {
-    const status = err?.status ?? err?.statusCode;
-    if (status === 401 || status === 403 || msg.includes("Invalid API Key") || msg.includes("invalid_api_key")) {
-      return { http: 502, code: "groq_auth_invalid", message: GROQ_AUTH_HELP };
+  if (providerName === "failover") {
+    if (status === 429 || msg.toLowerCase().includes("rate_limit") || msg.toLowerCase().includes("too many requests")) {
+      return { http: 429, code: "ai_failover_rate_limit", message: FAILOVER_EXHAUSTED };
     }
-    if (status === 429 || msg.includes("rate_limit")) {
-      return { http: 429, code: "groq_rate_limit", message: GROQ_RATE_HELP };
+    if (status === 401 || status === 403) {
+      return { http: 502, code: "ai_failover_auth", message: "AI anahtarlarından biri geçersiz olabilir. Groq ve AI Gateway anahtarlarını kontrol et." };
     }
     return { http: status && status >= 400 && status < 600 ? status : 500, code: "ai_error", message: msg || "AI hatası" };
   }
 
-  const status = err?.status ?? err?.statusCode;
+  if (providerName === "groq" || providerName === "ai_gateway") {
+    const authHelp = providerName === "groq" ? GROQ_AUTH_HELP : GATEWAY_AUTH_HELP;
+    const rateHelp = providerName === "groq" ? GROQ_RATE_HELP : GATEWAY_RATE_HELP;
+    if (status === 401 || status === 403 || msg.includes("Invalid API Key") || msg.includes("invalid_api_key")) {
+      return { http: 502, code: `${providerName}_auth_invalid`, message: authHelp };
+    }
+    if (status === 429 || msg.includes("rate_limit")) {
+      return { http: 429, code: `${providerName}_rate_limit`, message: rateHelp };
+    }
+    return { http: status && status >= 400 && status < 600 ? status : 500, code: "ai_error", message: msg || "AI hatası" };
+  }
+
   const nestedErr = err?.error?.error;
   const nestedMsg =
     typeof nestedErr === "object" && nestedErr && typeof nestedErr.message === "string"
@@ -101,9 +208,18 @@ function formatAiError(err, providerName) {
   return { http: 500, code: "ai_error", message: msg || "AI hatası" };
 }
 
+function getAiAdminSnapshot() {
+  return metrics.getAiAdminSnapshot({
+    groq: String(process.env.GROQ_MODEL || "llama-3.3-70b-versatile"),
+    ai_gateway: getGatewayModel(),
+    anthropic: String(process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022"),
+  });
+}
+
 module.exports = {
   createAiRuntime,
   getAiModel,
   formatAiError,
-  normalizeAnthropicApiKey
+  normalizeAnthropicApiKey,
+  getAiAdminSnapshot,
 };

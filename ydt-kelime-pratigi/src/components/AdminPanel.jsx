@@ -3,6 +3,21 @@ import "./AdminPanel.css";
 
 const STORAGE_TOKEN_KEY = "wb_admin_token";
 
+function aiLegLabel(id) {
+  if (id === "groq") return "Groq";
+  if (id === "ai_gateway") return "AI Gateway (Vercel)";
+  if (id === "anthropic") return "Anthropic";
+  return String(id || "—");
+}
+
+function aiRuntimeLabel(name) {
+  if (name === "failover") return "Otomatik yedekleme (Groq ↔ Gateway)";
+  if (name === "groq") return "Yalnız Groq";
+  if (name === "ai_gateway") return "Yalnız AI Gateway";
+  if (name === "anthropic") return "Anthropic Claude";
+  return name || "—";
+}
+
 export default function AdminPanel({ setCurrentView }) {
   const [token, setToken] = useState(() => sessionStorage.getItem(STORAGE_TOKEN_KEY) || "");
   const [username, setUsername] = useState(() => localStorage.getItem("wb_admin_user") || "");
@@ -13,6 +28,7 @@ export default function AdminPanel({ setCurrentView }) {
   const [levels, setLevels] = useState(null);
   const [activity, setActivity] = useState(null);
   const [wordQuality, setWordQuality] = useState(null);
+  const [aiProviders, setAiProviders] = useState(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
@@ -127,12 +143,13 @@ export default function AdminPanel({ setCurrentView }) {
     setErr("");
     try {
       sessionStorage.setItem(STORAGE_TOKEN_KEY, token);
-      const [s, d, lv, act, wq] = await Promise.all([
+      const [s, d, lv, act, wq, aiP] = await Promise.all([
         fetch("/api/admin/summary", { headers: h }).then((r) => r.json()),
         fetch("/api/admin/word-difficulty?limit=50&sort=unknown", { headers: h }).then((r) => r.json()),
         fetch("/api/admin/levels", { headers: h }).then((r) => r.json()),
         fetch("/api/admin/activity?days=7&limit=50", { headers: h }).then((r) => r.json()),
-        fetch("/api/admin/word-quality?limit=20", { headers: h }).then((r) => r.json())
+        fetch("/api/admin/word-quality?limit=20", { headers: h }).then((r) => r.json()),
+        fetch("/api/admin/ai-providers", { headers: h }).then((r) => r.json())
       ]);
       if (s.error) {
         setErr(s.error);
@@ -152,6 +169,8 @@ export default function AdminPanel({ setCurrentView }) {
       else setActivity(act);
       if (wq.error) setWordQuality(null);
       else setWordQuality(wq);
+      if (!aiP.error) setAiProviders(aiP);
+      else setAiProviders(null);
     } catch (e) {
       setErr(e.message || "İstek başarısız");
     } finally {
@@ -171,9 +190,10 @@ export default function AdminPanel({ setCurrentView }) {
       fetch("/api/admin/word-difficulty?limit=50&sort=unknown", { headers: h }).then((r) => r.json()),
       fetch("/api/admin/levels", { headers: h }).then((r) => r.json()),
       fetch("/api/admin/activity?days=7&limit=50", { headers: h }).then((r) => r.json()),
-      fetch("/api/admin/word-quality?limit=20", { headers: h }).then((r) => r.json())
+      fetch("/api/admin/word-quality?limit=20", { headers: h }).then((r) => r.json()),
+      fetch("/api/admin/ai-providers", { headers: h }).then((r) => r.json())
     ])
-      .then(([s, d, lv, act, wq]) => {
+      .then(([s, d, lv, act, wq, aiP]) => {
         if (s.error) {
           setErr(s.error);
           setIsAuthed(false);
@@ -185,6 +205,7 @@ export default function AdminPanel({ setCurrentView }) {
         if (!lv.error) setLevels(lv);
         if (!act.error) setActivity(act);
         if (!wq.error) setWordQuality(wq);
+        if (!aiP.error) setAiProviders(aiP);
       })
       .catch((e) => setErr(e.message || "İstek başarısız"))
       .finally(() => setLoading(false));
@@ -203,6 +224,24 @@ export default function AdminPanel({ setCurrentView }) {
     if (!isAuthed || !token) return;
     loadUsers();
   }, [isAuthed, token, loadUsers]);
+
+  useEffect(() => {
+    if (!isAuthed || !token) return;
+    const tick = async () => {
+      try {
+        const r = await fetch("/api/admin/ai-providers", {
+          headers: { "Content-Type": "application/json", "X-Admin-Token": token }
+        });
+        const d = await r.json();
+        if (!d.error) setAiProviders(d);
+      } catch {
+        /* sessiz */
+      }
+    };
+    tick();
+    const id = setInterval(tick, 6000);
+    return () => clearInterval(id);
+  }, [isAuthed, token]);
 
   const loadClassrooms = useCallback(async () => {
     if (!token) return;
@@ -604,6 +643,75 @@ export default function AdminPanel({ setCurrentView }) {
               </pre>
             </div>
           )}
+        </section>
+      )}
+
+      {isAuthed && aiProviders && (
+        <section className="admin-section admin-section--ai-providers">
+          <h3>AI sağlayıcıları</h3>
+          <p className="admin-small">
+            Çalışma modu: <strong>{aiRuntimeLabel(aiProviders.runtimeName)}</strong>
+            {aiProviders.failoverEnabled ? (
+              <>
+                {" "}
+                · Öncelik: <strong>{aiLegLabel(aiProviders.failoverPrimary)}</strong> (429 sonrası diğeri denenir)
+              </>
+            ) : null}
+            . Metrikler gerçek trafikten güncellenir; yaklaşık 6 sn&apos;de bir yenilenir.
+          </p>
+          {aiProviders.lastRequest && (
+            <p className="admin-small admin-ai-last-req">
+              Son AI isteği: <strong>{aiLegLabel(aiProviders.lastRequest.provider)}</strong>
+              {aiProviders.lastRequest.rateLimited ? " (hız limiti)" : ""}
+              {aiProviders.lastRequest.at
+                ? ` · ${new Date(aiProviders.lastRequest.at).toLocaleString("tr-TR")}`
+                : ""}
+            </p>
+          )}
+          <div className="admin-ai-legs">
+            {(aiProviders.legs || []).map((leg) => (
+              <div
+                key={leg.id}
+                className={`admin-ai-leg admin-ai-leg--${leg.status === "rate_limit" ? "limit" : leg.status === "hata" ? "err" : leg.status === "ok" ? "ok" : "idle"}`}
+              >
+                <div className="admin-ai-leg__title">{aiLegLabel(leg.id)}</div>
+                <div className="admin-ai-leg__model">
+                  Model: <code>{leg.model || "—"}</code>
+                </div>
+                <div className="admin-ai-leg__row">
+                  Durum:{" "}
+                  <strong>
+                    {leg.status === "rate_limit"
+                      ? `Hız limiti (~${Math.max(1, Math.ceil(leg.rateLimitedRemainingMs / 1000))} sn)`
+                      : leg.status === "ok"
+                        ? "Son olay: başarılı"
+                        : leg.status === "hata"
+                          ? "Son olay: hata"
+                          : "Henüz trafik yok"}
+                  </strong>
+                </div>
+                {leg.limitRemaining != null && leg.limitRemaining !== "" && (
+                  <div className="admin-ai-leg__row admin-ai-leg__muted">
+                    Son yanıttaki kota (varsa): kalan <code>{leg.limitRemaining}</code>
+                    {leg.limitReset ? ` · reset: ${leg.limitReset}` : ""}
+                  </div>
+                )}
+                <div className="admin-ai-leg__row admin-ai-leg__muted">
+                  Başarılı çağrı (sayacı): {leg.requestsOk ?? 0}
+                </div>
+                {leg.lastSuccessAt && (
+                  <div className="admin-ai-leg__muted">
+                    Son başarı: {new Date(leg.lastSuccessAt).toLocaleString("tr-TR")}
+                  </div>
+                )}
+                {leg.lastErrorAt && leg.lastErrorMessage && (
+                  <div className="admin-ai-leg__err">
+                    Son hata ({new Date(leg.lastErrorAt).toLocaleString("tr-TR")}): {leg.lastErrorMessage}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
