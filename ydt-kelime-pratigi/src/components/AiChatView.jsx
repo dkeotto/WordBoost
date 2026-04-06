@@ -3,6 +3,8 @@ import ReactMarkdown from "react-markdown";
 import { apiUrl } from "../utils/apiUrl";
 import { readResponseJson } from "../utils/httpJson";
 import { hasUnlimitedAiClient } from "../utils/premiumDisplay";
+import { extractPdfTextFromArrayBuffer } from "../utils/pdfExtract";
+import { makePdfBytesFromText } from "../utils/pdfMake";
 
 const CHAT_STARTERS = [
   {
@@ -69,6 +71,9 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [pendingFiles, setPendingFiles] = useState([]);
+  const [pendingImages, setPendingImages] = useState([]);
+  const [visionBusy, setVisionBusy] = useState(false);
+  const [imageGenBusy, setImageGenBusy] = useState(false);
 
   const [loadingThreads, setLoadingThreads] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -82,6 +87,20 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
   const bottomRef = useRef(null);
   const thinkingTimerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const imgInputRef = useRef(null);
+
+  const downloadPdf = useCallback(async (title, body) => {
+    const bytes = await makePdfBytesFromText(title, body);
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(title || "wordy").toString().slice(0, 80).replace(/[^\w\s-]/g, "").trim() || "wordy"}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 8000);
+  }, []);
 
   const fetchThreadList = useCallback(async () => {
     if (!token || !canChat) return [];
@@ -451,6 +470,63 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
     const take = Math.min(fl.length, MAX_PENDING_FILES - pendingFiles.length);
     for (let i = 0; i < take; i++) {
       const file = fl[i];
+      const mt = String(file.type || "").toLowerCase();
+
+      if (mt.startsWith("image/")) {
+        const imgTake = Math.min(fl.length, MAX_PENDING_FILES - pendingImages.length);
+        if (pendingImages.length >= MAX_PENDING_FILES) continue;
+        if (i >= imgTake) continue;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = String(reader.result || "");
+          if (!dataUrl.startsWith("data:image/")) return;
+          setPendingImages((prev) => {
+            if (prev.length >= MAX_PENDING_FILES) return prev;
+            return [
+              ...prev,
+              {
+                id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                name: file.name || "gorsel",
+                mimeType: mt || "image/png",
+                dataUrl,
+                size: file.size,
+              },
+            ];
+          });
+        };
+        reader.readAsDataURL(file);
+        continue;
+      }
+
+      if (mt === "application/pdf") {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const buf = reader.result;
+            if (!(buf instanceof ArrayBuffer)) return;
+            let text = await extractPdfTextFromArrayBuffer(buf, { maxPages: 20 });
+            if (text.length > MAX_FILE_CHARS) text = `${text.slice(0, MAX_FILE_CHARS)}\n…(PDF metni kısaltıldı)`;
+            setPendingFiles((prev) => {
+              if (prev.length >= MAX_PENDING_FILES) return prev;
+              return [
+                ...prev,
+                {
+                  id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                  name: `${file.name || "pdf"} (metin)`,
+                  mimeType: "text/plain",
+                  text,
+                  size: text.length,
+                },
+              ];
+            });
+          } catch (errPdf) {
+            setErr(errPdf?.message || "PDF okunamadı");
+          }
+        };
+        reader.readAsArrayBuffer(file);
+        continue;
+      }
+
       const reader = new FileReader();
       reader.onload = () => {
         let text = String(reader.result || "");
@@ -478,6 +554,73 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
 
   const removePendingFile = (id) => {
     setPendingFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const removePendingImage = (id) => {
+    setPendingImages((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const runVisionOnPending = async () => {
+    if (!token || !canChat || visionBusy || pendingImages.length === 0) return;
+    setVisionBusy(true);
+    setErr("");
+    try {
+      const img = pendingImages[0];
+      const r = await fetch(apiUrl("/api/ai/vision/describe"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: token },
+        body: JSON.stringify({ imageDataUrl: img.dataUrl }),
+      });
+      const d = await readResponseJson(r);
+      if (!r.ok) throw new Error(d?.message || d?.error || `HTTP ${r.status}`);
+      const text = String(d?.text || "").trim();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `tool-vision-${Date.now()}`,
+          role: "assistant",
+          content: text || "Görsel okundu ama çıktı boş döndü.",
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      setPendingImages([]);
+    } catch (e) {
+      setErr(e?.message || "Görsel okunamadı");
+    } finally {
+      setVisionBusy(false);
+    }
+  };
+
+  const generateImage = async () => {
+    if (!token || !canChat || imageGenBusy) return;
+    const prompt = window.prompt("Nasıl bir görsel üretelim? (İngilizce veya Türkçe yazabilirsin)", "Minimal, modern bir çalışma masası, sıcak ışık, yüksek kalite");
+    if (!prompt) return;
+    setImageGenBusy(true);
+    setErr("");
+    try {
+      const r = await fetch(apiUrl("/api/ai/image/generate"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: token },
+        body: JSON.stringify({ prompt, size: "1024x1024" }),
+      });
+      const d = await readResponseJson(r);
+      if (!r.ok) throw new Error(d?.message || d?.error || `HTTP ${r.status}`);
+      const dataUrl = String(d?.imageDataUrl || "");
+      if (!dataUrl.startsWith("data:image/")) throw new Error("Görsel üretilemedi (boş çıktı).");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `tool-imagegen-${Date.now()}`,
+          role: "assistant",
+          content: `**Görsel üretildi**\n\n![Üretilen görsel](${dataUrl})\n\nİstersen bu görsel üzerinden soru da hazırlayabilirim.`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    } catch (e) {
+      setErr(e?.message || "Görsel üretilemedi");
+    } finally {
+      setImageGenBusy(false);
+    }
   };
 
   return (
@@ -677,6 +820,16 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
                   )}
                   {m.role === "assistant" ? (
                     <div className="ai-chat-md">
+                      <div className="ai-chat-bubble-tools">
+                        <button
+                          type="button"
+                          className="ai-chat-mini-btn"
+                          onClick={() => downloadPdf(threadTitle || "AI sohbet", m.content || "")}
+                          title="Bu yanıtı PDF indir"
+                        >
+                          PDF
+                        </button>
+                      </div>
                       <ReactMarkdown>{m.content || ""}</ReactMarkdown>
                     </div>
                   ) : (
@@ -724,7 +877,7 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
                 ref={fileInputRef}
                 type="file"
                 className="ai-chat-file-input"
-                accept=".txt,.md,.csv,.json,.log,text/plain,text/csv,application/json"
+                accept=".txt,.md,.csv,.json,.log,.pdf,image/*,text/plain,text/csv,application/json,application/pdf"
                 multiple
                 onChange={onPickFiles}
               />
@@ -740,13 +893,34 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
                   ))}
                 </div>
               ) : null}
+              {pendingImages.length > 0 ? (
+                <div className="ai-chat-pending-files">
+                  {pendingImages.map((f) => (
+                    <span key={f.id} className="ai-chat-pending-chip ai-chat-pending-chip--img">
+                      🖼 {f.name}
+                      <button type="button" aria-label="Kaldır" onClick={() => removePendingImage(f.id)}>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  <button
+                    type="button"
+                    className="ai-chat-mini-action"
+                    onClick={runVisionOnPending}
+                    disabled={busy || visionBusy}
+                    title="Seçili görseli oku"
+                  >
+                    {visionBusy ? "Okunuyor…" : "Görsel oku"}
+                  </button>
+                </div>
+              ) : null}
               <div className="ai-chat-compose-inner">
                 <button
                   type="button"
                   className="ai-chat-attach-btn"
-                  disabled={busy || pendingFiles.length >= MAX_PENDING_FILES}
+                  disabled={busy || pendingFiles.length + pendingImages.length >= MAX_PENDING_FILES}
                   onClick={() => fileInputRef.current?.click()}
-                  title="Metin dosyası ekle"
+                  title="Dosya ekle (metin, PDF, görsel)"
                 >
                   +
                 </button>
@@ -758,15 +932,23 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={onKeyDown}
                   disabled={busy}
-                  maxLength={6000}
                 />
                 <button type="button" className="ai-btn-primary ai-chat-send-btn" onClick={send} disabled={busy || (!input.trim() && pendingFiles.length === 0)}>
                   {busy ? "…" : "Gönder"}
                 </button>
               </div>
               <div className="ai-chat-compose-meta">
-                <span className="ai-char-count">{input.length} / 6000</span>
-                <span className="ai-char-count">En fazla {MAX_PENDING_FILES} dosya · UTF-8 metin</span>
+                <span className="ai-char-count">Karakter sınırı yok · Enter gönderir</span>
+                <span className="ai-char-count">En fazla {MAX_PENDING_FILES} ek · PDF metni otomatik çıkarılır</span>
+                <button
+                  type="button"
+                  className="ai-chat-mini-action"
+                  onClick={generateImage}
+                  disabled={busy || imageGenBusy}
+                  title="AI ile görsel üret"
+                >
+                  {imageGenBusy ? "Üretiliyor…" : "Görsel üret"}
+                </button>
               </div>
             </div>
           </>

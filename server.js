@@ -741,7 +741,9 @@ async function maybeUpdateChatMemorySummary(threadId) {
 const CHAT_MAX_STORED_MESSAGES = 100;
 const CHAT_CONTEXT_MESSAGES = 40;
 const CHAT_SUMMARY_MIN_NEW = 12;
-const CHAT_USER_MESSAGE_MAX = 6000;
+// Kullanıcı "karakter sınırı olmasın" istediği için bu sınır pratikte yükseltildi.
+// Yine de tamamen limitsiz tutmak abuse riskini artırır; bu değer UI'da limit yokken backend'i korur.
+const CHAT_USER_MESSAGE_MAX = 50000;
 const CHAT_ASSISTANT_STORE_MAX = 16000;
 const CHAT_ATTACHMENTS_MAX = 5;
 const CHAT_ATTACHMENT_TEXT_MAX = 32000;
@@ -3382,6 +3384,138 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
   }
 });
 
+// --- AI Tools: Vision (görsel okuma) + Image generation (görsel üretme) ---
+function getAiGatewayKeyForTools() {
+  return String(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_AI_GATEWAY_API_KEY || "").trim();
+}
+
+function getAiGatewayBaseForTools() {
+  const raw = String(process.env.AI_GATEWAY_BASE_URL || process.env.VERCEL_AI_GATEWAY_BASE_URL || "https://ai-gateway.vercel.sh/v1").trim();
+  return raw.replace(/\/$/, "");
+}
+
+function getAiVisionModelForTools() {
+  // AI Gateway model is usually "openai/gpt-4o-mini" which supports vision when message content is multimodal.
+  return String(process.env.AI_VISION_MODEL || process.env.AI_GATEWAY_MODEL || process.env.VERCEL_AI_GATEWAY_MODEL || "openai/gpt-4o-mini").trim();
+}
+
+function getAiImageModelForTools() {
+  // Vercel AI Gateway typically supports OpenAI Images API; default chosen to match OpenAI Images.
+  return String(process.env.AI_IMAGE_MODEL || "gpt-image-1").trim();
+}
+
+function isProbablyDataUrlImage(s) {
+  const v = String(s || "").trim();
+  return /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(v);
+}
+
+app.post("/api/ai/vision/describe", aiLimiter, async (req, res) => {
+  try {
+    const user = await loadAiChatUser(req, res);
+    if (!user) return;
+
+    const key = getAiGatewayKeyForTools();
+    if (!key) return res.status(503).json({ error: "ai_gateway_required", message: "Görsel okuma için AI Gateway (AI_GATEWAY_API_KEY) gerekli." });
+
+    const imageDataUrl = String(req.body?.imageDataUrl || "").trim();
+    if (!isProbablyDataUrlImage(imageDataUrl)) {
+      return res.status(400).json({ error: "invalid_image", message: "Geçersiz görsel. PNG/JPG/WEBP/GIF data URL bekleniyor." });
+    }
+
+    const prompt = String(req.body?.prompt || "").trim();
+    const userPrompt = prompt || "Bu görselde ne var? Metin varsa çıkar ve özetle. Sonra YDT odaklı kısa açıklama ve 3 soru üret.";
+
+    const base = getAiGatewayBaseForTools();
+    const model = getAiVisionModelForTools();
+
+    const r = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: "Kısa, net ve hatasız Türkçe yaz. Gereksiz uzatma. Markdown kullanabilirsin." },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: userPrompt },
+              { type: "image_url", image_url: { url: imageDataUrl } },
+            ],
+          },
+        ],
+        temperature: 0.35,
+        max_tokens: 1200,
+      }),
+    });
+
+    const textBody = await r.text();
+    let json = {};
+    try {
+      json = textBody ? JSON.parse(textBody) : {};
+    } catch {
+      json = { error: { message: textBody.slice(0, 200) } };
+    }
+    if (!r.ok) {
+      const msg = String(json?.error?.message || json?.message || "vision_error");
+      return res.status(r.status).json({ error: msg });
+    }
+    const outText = String(json?.choices?.[0]?.message?.content || "").trim();
+    return res.json({ ok: true, text: outText });
+  } catch (e) {
+    const msg = String(e?.message || "vision_failed");
+    res.status(500).json({ error: msg });
+  }
+});
+
+app.post("/api/ai/image/generate", aiLimiter, async (req, res) => {
+  try {
+    const user = await loadAiChatUser(req, res);
+    if (!user) return;
+
+    const key = getAiGatewayKeyForTools();
+    if (!key) return res.status(503).json({ error: "ai_gateway_required", message: "Görsel üretmek için AI Gateway (AI_GATEWAY_API_KEY) gerekli." });
+
+    const prompt = String(req.body?.prompt || "").trim();
+    if (!prompt) return res.status(400).json({ error: "prompt_required" });
+
+    const size = String(req.body?.size || "1024x1024").trim();
+    const okSize = ["512x512", "1024x1024", "1024x1536", "1536x1024"].includes(size) ? size : "1024x1024";
+
+    const base = getAiGatewayBaseForTools();
+    const model = getAiImageModelForTools();
+
+    const r = await fetch(`${base}/images/generations`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        prompt,
+        size: okSize,
+        response_format: "b64_json",
+      }),
+    });
+
+    const textBody = await r.text();
+    let json = {};
+    try {
+      json = textBody ? JSON.parse(textBody) : {};
+    } catch {
+      json = { error: { message: textBody.slice(0, 200) } };
+    }
+    if (!r.ok) {
+      const msg = String(json?.error?.message || json?.message || "image_gen_error");
+      return res.status(r.status).json({ error: msg });
+    }
+    const b64 = String(json?.data?.[0]?.b64_json || "").trim();
+    if (!b64) return res.status(502).json({ error: "image_empty" });
+    // PNG varsayımı (OpenAI Images genelde png döndürür)
+    return res.json({ ok: true, imageDataUrl: `data:image/png;base64,${b64}` });
+  } catch (e) {
+    const msg = String(e?.message || "image_gen_failed");
+    res.status(500).json({ error: msg });
+  }
+});
+
 app.get("/api/admin/ai-providers", requireAdmin, (req, res) => {
   try {
     res.json(getAiAdminSnapshot());
@@ -4106,6 +4240,104 @@ app.post('/api/admin/words/import', requireAdmin, async (req, res) => {
     }
     res.json({ ok: true, inserted, skipped, errorCount: errors.length, errors: errors.slice(0, 20) });
   } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- Admin: Kelime yönetimi (listele / güncelle / sil) ---
+app.get("/api/admin/words", requireAdmin, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(5, parseInt(req.query.limit, 10) || 25));
+    const q = String(req.query.q || "").trim();
+    const level = String(req.query.level || "").trim().toUpperCase();
+    const sortField = ["createdAt", "updatedAt", "term", "level"].includes(String(req.query.sort || "updatedAt"))
+      ? String(req.query.sort || "updatedAt")
+      : "updatedAt";
+    const order = req.query.order === "asc" ? 1 : -1;
+
+    const conditions = [];
+    if (q) {
+      const rx = escapeRegex(q);
+      conditions.push({
+        $or: [
+          { term: { $regex: rx, $options: "i" } },
+          { meaning: { $regex: rx, $options: "i" } },
+          { hint: { $regex: rx, $options: "i" } },
+          { example: { $regex: rx, $options: "i" } },
+        ],
+      });
+    }
+    if (["A1", "A2", "B1", "B2", "C1", "C2"].includes(level)) {
+      conditions.push({ level });
+    }
+    const filter = conditions.length ? { $and: conditions } : {};
+
+    const skip = (page - 1) * limit;
+    const [total, items] = await Promise.all([
+      Word.countDocuments(filter),
+      Word.find(filter)
+        .sort({ [sortField]: order })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    res.json({
+      ok: true,
+      items,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit) || 1,
+    });
+  } catch (e) {
+    pushAdminError(e.message, { path: "admin/words" });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.patch("/api/admin/words/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ error: "invalid_word_id" });
+
+    const term = req.body?.term != null ? String(req.body.term).trim() : undefined;
+    const meaning = req.body?.meaning != null ? String(req.body.meaning).trim() : undefined;
+    const hint = req.body?.hint != null ? String(req.body.hint).trim() : undefined;
+    const example = req.body?.example != null ? String(req.body.example).trim() : undefined;
+    const levelRaw = req.body?.level != null ? String(req.body.level).trim().toUpperCase() : undefined;
+    const level = ["A1", "A2", "B1", "B2", "C1", "C2"].includes(levelRaw) ? levelRaw : undefined;
+
+    const patch = {};
+    if (term !== undefined) patch.term = term;
+    if (meaning !== undefined) patch.meaning = meaning;
+    if (hint !== undefined) patch.hint = hint;
+    if (example !== undefined) patch.example = example;
+    if (level !== undefined) patch.level = level;
+
+    if (Object.keys(patch).length === 0) return res.status(400).json({ error: "no_changes" });
+    if (patch.term !== undefined && !patch.term) return res.status(400).json({ error: "term_required" });
+    if (patch.meaning !== undefined && !patch.meaning) return res.status(400).json({ error: "meaning_required" });
+
+    const doc = await Word.findByIdAndUpdate(id, { $set: patch }, { new: true }).lean();
+    if (!doc) return res.status(404).json({ error: "word_not_found" });
+    res.json({ ok: true, word: doc });
+  } catch (e) {
+    pushAdminError(e.message, { path: "admin/words/:id" });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete("/api/admin/words/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ error: "invalid_word_id" });
+    const r = await Word.deleteOne({ _id: id });
+    if (!r.deletedCount) return res.status(404).json({ error: "word_not_found" });
+    res.json({ ok: true });
+  } catch (e) {
+    pushAdminError(e.message, { path: "admin/words/:id:delete" });
     res.status(500).json({ error: e.message });
   }
 });

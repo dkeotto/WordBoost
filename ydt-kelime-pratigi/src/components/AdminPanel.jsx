@@ -42,6 +42,19 @@ export default function AdminPanel({ setCurrentView }) {
   });
   const [csvText, setCsvText] = useState("");
 
+  const [wordsList, setWordsList] = useState([]);
+  const [wordsTotal, setWordsTotal] = useState(0);
+  const [wordsPage, setWordsPage] = useState(1);
+  const [wordsPages, setWordsPages] = useState(1);
+  const [wordsLimit, setWordsLimit] = useState(25);
+  const [wordQInput, setWordQInput] = useState("");
+  const [wordQ, setWordQ] = useState("");
+  const [wordLevelFilter, setWordLevelFilter] = useState("");
+  const [wordsLoading, setWordsLoading] = useState(false);
+  const [editWord, setEditWord] = useState(null);
+  const [editWordForm, setEditWordForm] = useState({ term: "", meaning: "", hint: "", example: "", level: "B1" });
+  const [editWordSaving, setEditWordSaving] = useState(false);
+
   const [usersMeta, setUsersMeta] = useState(null);
   const [usersList, setUsersList] = useState([]);
   const [usersTotal, setUsersTotal] = useState(0);
@@ -217,13 +230,120 @@ export default function AdminPanel({ setCurrentView }) {
   }, [userQInput]);
 
   useEffect(() => {
+    const t = setTimeout(() => setWordQ(wordQInput.trim()), 400);
+    return () => clearTimeout(t);
+  }, [wordQInput]);
+
+  useEffect(() => {
     setUsersPage(1);
   }, [userQ, userFilterVerified, userFilterOauth, userFilterPremium, userLimit, userSort, userOrder]);
+
+  useEffect(() => {
+    setWordsPage(1);
+  }, [wordQ, wordLevelFilter, wordsLimit]);
 
   useEffect(() => {
     if (!isAuthed || !token) return;
     loadUsers();
   }, [isAuthed, token, loadUsers]);
+
+  const buildWordsQuery = useCallback(() => {
+    const p = new URLSearchParams();
+    p.set("page", String(wordsPage));
+    p.set("limit", String(wordsLimit));
+    p.set("sort", "updatedAt");
+    p.set("order", "desc");
+    if (wordQ.trim()) p.set("q", wordQ.trim());
+    if (wordLevelFilter) p.set("level", wordLevelFilter);
+    return p.toString();
+  }, [wordsPage, wordsLimit, wordQ, wordLevelFilter]);
+
+  const loadWords = useCallback(async () => {
+    if (!token) return;
+    setWordsLoading(true);
+    try {
+      const r = await fetch(`/api/admin/words?${buildWordsQuery()}`, { headers: h });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Kelimeler yüklenemedi");
+      setWordsList(Array.isArray(d.items) ? d.items : []);
+      setWordsTotal(d.total ?? 0);
+      setWordsPages(d.pages ?? 1);
+    } catch (e) {
+      setErr(e.message || "Kelimeler yüklenemedi");
+    } finally {
+      setWordsLoading(false);
+    }
+  }, [token, h, buildWordsQuery]);
+
+  useEffect(() => {
+    if (!isAuthed || !token) return;
+    loadWords();
+  }, [isAuthed, token, loadWords]);
+
+  const openEditWord = (w) => {
+    setErr("");
+    setMsg("");
+    setEditWord(w);
+    setEditWordForm({
+      term: w?.term || "",
+      meaning: w?.meaning || "",
+      hint: w?.hint || "",
+      example: w?.example || "",
+      level: w?.level || "B1",
+    });
+  };
+
+  const closeEditWord = () => {
+    setEditWord(null);
+    setEditWordSaving(false);
+  };
+
+  const saveEditWord = async () => {
+    if (!editWord?._id) return;
+    setEditWordSaving(true);
+    setErr("");
+    setMsg("");
+    try {
+      const res = await fetch(`/api/admin/words/${editWord._id}`, {
+        method: "PATCH",
+        headers: h,
+        body: JSON.stringify({
+          term: editWordForm.term,
+          meaning: editWordForm.meaning,
+          hint: editWordForm.hint,
+          example: editWordForm.example,
+          level: editWordForm.level,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Kelime güncellenemedi");
+      setMsg("Kelime güncellendi.");
+      closeEditWord();
+      loadWords();
+      loadAll();
+    } catch (e) {
+      setErr(e.message || "Kelime güncellenemedi");
+    } finally {
+      setEditWordSaving(false);
+    }
+  };
+
+  const deleteWord = async (w) => {
+    if (!w?._id) return;
+    if (!window.confirm(`Silinsin mi?\n\n${w.term} — ${w.meaning}`)) return;
+    setErr("");
+    setMsg("");
+    try {
+      const res = await fetch(`/api/admin/words/${w._id}`, { method: "DELETE", headers: h });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Silinemedi");
+      setMsg("Kelime silindi.");
+      loadWords();
+      loadAll();
+    } catch (e) {
+      setErr(e.message || "Silinemedi");
+    }
+  };
 
   useEffect(() => {
     if (!isAuthed || !token) return;
@@ -654,7 +774,8 @@ export default function AdminPanel({ setCurrentView }) {
             {aiProviders.failoverEnabled ? (
               <>
                 {" "}
-                · Öncelik: <strong>{aiLegLabel(aiProviders.failoverPrimary)}</strong> (429 sonrası diğeri denenir)
+                · Öncelik: <strong>{aiLegLabel(aiProviders.failoverPrimary)}</strong> (limit 429, geçersiz anahtar 401/403
+                veya sunucu 5xx olursa diğer uç denenir)
               </>
             ) : null}
             . Metrikler gerçek trafikten güncellenir; yaklaşık 6 sn&apos;de bir yenilenir.
@@ -1681,6 +1802,147 @@ export default function AdminPanel({ setCurrentView }) {
           <button type="submit">CSV yükle</button>
         </form>
       </section>}
+
+      {isAuthed && (
+        <section className="admin-section">
+          <h3>Kelime yönetimi</h3>
+          <p className="admin-small">Kelimeleri ara, filtrele, düzenle veya sil.</p>
+
+          <div className="admin-users-toolbar">
+            <input
+              className="admin-input-wide"
+              placeholder="Kelime veya anlam ara…"
+              value={wordQInput}
+              onChange={(e) => setWordQInput(e.target.value)}
+            />
+            <select
+              className="admin-select"
+              value={wordLevelFilter}
+              onChange={(e) => setWordLevelFilter(e.target.value)}
+              aria-label="Seviye filtresi"
+            >
+              <option value="">Tüm seviyeler</option>
+              {["A1", "A2", "B1", "B2", "C1", "C2"].map((lv) => (
+                <option key={lv} value={lv}>
+                  {lv}
+                </option>
+              ))}
+            </select>
+            <select
+              className="admin-select"
+              value={wordsLimit}
+              onChange={(e) => setWordsLimit(Number(e.target.value))}
+              aria-label="Sayfa başına"
+            >
+              {[10, 25, 50, 100].map((n) => (
+                <option key={n} value={n}>
+                  {n} / sayfa
+                </option>
+              ))}
+            </select>
+            <button type="button" onClick={() => loadWords()} disabled={wordsLoading}>
+              {wordsLoading ? "…" : "Yenile"}
+            </button>
+          </div>
+
+          <p className="admin-small">
+            Toplam {wordsTotal} kayıt · sayfa {wordsPage} / {wordsPages}
+            {wordsLoading ? " · yükleniyor…" : ""}
+          </p>
+
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Term</th>
+                  <th>Meaning</th>
+                  <th>Level</th>
+                  <th>Güncellendi</th>
+                  <th>İşlem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {wordsList.map((w) => (
+                  <tr key={String(w._id)}>
+                    <td><strong>{w.term}</strong></td>
+                    <td>{w.meaning}</td>
+                    <td className="admin-td-nowrap">{w.level || "—"}</td>
+                    <td className="admin-td-nowrap">
+                      {w.updatedAt ? new Date(w.updatedAt).toLocaleString("tr-TR") : "—"}
+                    </td>
+                    <td className="admin-td-nowrap">
+                      <button type="button" onClick={() => openEditWord(w)}>Düzenle</button>{" "}
+                      <button type="button" className="admin-logout-btn" onClick={() => deleteWord(w)}>Sil</button>
+                    </td>
+                  </tr>
+                ))}
+                {wordsList.length === 0 && !wordsLoading && (
+                  <tr>
+                    <td colSpan={5}>Kayıt yok veya filtreye uyan kelime bulunamadı.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="admin-pagination">
+            <button type="button" disabled={wordsPage <= 1 || wordsLoading} onClick={() => setWordsPage((p) => Math.max(1, p - 1))}>
+              ← Önceki
+            </button>
+            <span>{wordsPage} / {wordsPages}</span>
+            <button type="button" disabled={wordsPage >= wordsPages || wordsLoading} onClick={() => setWordsPage((p) => p + 1)}>
+              Sonraki →
+            </button>
+          </div>
+        </section>
+      )}
+
+      {isAuthed && editWord && (
+        <div className="admin-modal-overlay" role="dialog" aria-modal="true">
+          <div className="admin-modal admin-modal--wide">
+            <div className="admin-modal-header">
+              <h3>Kelime düzenle</h3>
+              <button type="button" className="admin-modal-close" onClick={closeEditWord} aria-label="Kapat">
+                ✕
+              </button>
+            </div>
+            <div className="admin-modal-grid">
+              <label>
+                Term
+                <input value={editWordForm.term} onChange={(e) => setEditWordForm((f) => ({ ...f, term: e.target.value }))} />
+              </label>
+              <label>
+                Meaning
+                <input value={editWordForm.meaning} onChange={(e) => setEditWordForm((f) => ({ ...f, meaning: e.target.value }))} />
+              </label>
+              <label className="admin-modal-wide">
+                Hint
+                <input value={editWordForm.hint} onChange={(e) => setEditWordForm((f) => ({ ...f, hint: e.target.value }))} />
+              </label>
+              <label className="admin-modal-wide">
+                Example
+                <input value={editWordForm.example} onChange={(e) => setEditWordForm((f) => ({ ...f, example: e.target.value }))} />
+              </label>
+              <label>
+                Level
+                <select value={editWordForm.level} onChange={(e) => setEditWordForm((f) => ({ ...f, level: e.target.value }))}>
+                  {["A1", "A2", "B1", "B2", "C1", "C2"].map((lv) => (
+                    <option key={lv} value={lv}>{lv}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-modal-secondary" onClick={closeEditWord} disabled={editWordSaving}>
+                Vazgeç
+              </button>
+              <button type="button" className="admin-modal-primary" onClick={saveEditWord} disabled={editWordSaving}>
+                {editWordSaving ? "Kaydediliyor…" : "Kaydet"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
