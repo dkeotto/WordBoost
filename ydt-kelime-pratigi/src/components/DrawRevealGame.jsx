@@ -3,19 +3,19 @@ import confetti from 'canvas-confetti';
 import { apiUrl } from '../utils/apiUrl';
 
 const FAMOUS_PAINTINGS = [
-  { id: 1, title: "Mona Lisa", artist: "Leonardo da Vinci", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/687px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg" },
-  { id: 2, title: "The Starry Night", artist: "Vincent van Gogh", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg" },
-  { id: 3, title: "Girl with a Pearl Earring", artist: "Johannes Vermeer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/1665_Girl_with_a_Pearl_Earring.jpg/800px-1665_Girl_with_a_Pearl_Earring.jpg" },
-  { id: 4, title: "The Persistence of Memory", artist: "Salvador Dalí", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/The_Persistence_of_Memory_by_Salvador_Dali.jpg/800px-The_Persistence_of_Memory_by_Salvador_Dali.jpg" },
-  { id: 5, title: "The Birth of Venus", artist: "Sandro Botticelli", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project.jpg/1280px-Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project.jpg" },
-  { id: 6, title: "The Scream", artist: "Edvard Munch", url: "https://upload.wikimedia.org/wikipedia/commons/f/f4/The_Scream.jpg" },
-  { id: 7, title: "The Night Watch", artist: "Rembrandt van Rijn", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/The_Night_Watch_-_HD.jpg/1280px-The_Night_Watch_-_HD.jpg" },
-  { id: 8, title: "The Kiss", artist: "Gustav Klimt", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Art_Project.jpg/800px-The_Kiss_-_Gustav_Klimt_-_Google_Art_Project.jpg" },
-  { id: 9, title: "American Gothic", artist: "Grant Wood", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Grant_Wood_-_American_Gothic_-_Google_Art_Project.jpg/800px-Grant_Wood_-_American_Gothic_-_Google_Art_Project.jpg" },
-  { id: 10, title: "The Last Supper", artist: "Leonardo da Vinci", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Ultima_Cena_-_Restored_-_Lightened.jpg/1280px-Ultima_Cena_-_Restored_-_Lightened.jpg" }
+  { id: 1, title: "Mona Lisa", artist: "Leonardo da Vinci", url: "https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg" },
+  { id: 2, title: "The Starry Night", artist: "Vincent van Gogh", url: "https://upload.wikimedia.org/wikipedia/commons/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg" },
+  { id: 3, title: "Girl with a Pearl Earring", artist: "Johannes Vermeer", url: "https://upload.wikimedia.org/wikipedia/commons/0/0f/1665_Girl_with_a_Pearl_Earring.jpg" },
+  { id: 4, title: "The Scream", artist: "Edvard Munch", url: "https://upload.wikimedia.org/wikipedia/commons/f/f4/The_Scream.jpg" },
+  { id: 5, title: "The Birth of Venus", artist: "Sandro Botticelli", url: "https://upload.wikimedia.org/wikipedia/commons/0/0b/Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project.jpg" },
+  { id: 6, title: "The Night Watch", artist: "Rembrandt van Rijn", url: "https://upload.wikimedia.org/wikipedia/commons/5/5a/The_Night_Watch_-_HD.jpg" },
+  { id: 7, title: "The Kiss", artist: "Gustav Klimt", url: "https://upload.wikimedia.org/wikipedia/commons/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Art_Project.jpg" },
+  { id: 8, title: "American Gothic", artist: "Grant Wood", url: "https://upload.wikimedia.org/wikipedia/commons/c/cc/Grant_Wood_-_American_Gothic_-_Google_Art_Project.jpg" },
+  { id: 9, title: "The Last Supper", artist: "Leonardo da Vinci", url: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Ultima_Cena_-_Restored_-_Lightened.jpg" },
+  { id: 10, title: "Great Wave off Kanagawa", artist: "Hokusai", url: "https://upload.wikimedia.org/wikipedia/commons/0/0a/The_Great_Wave_off_Kanagawa.jpg" }
 ];
 
-const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [], toggleFavorite }) => {
+const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [], toggleFavorite, playSound }) => {
   const [currentPainting, setCurrentPainting] = useState(null);
   const [revealedTiles, setRevealedTiles] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -70,6 +70,7 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
     const isCorrect = selectedWord.term === currentQuestion.term;
     
     if (isCorrect) {
+      if (playSound) playSound('correct');
       setFeedback({ type: 'correct', message: 'Doğru!' });
       setScore(prev => prev + 10);
       
@@ -89,6 +90,7 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
         }, 1000);
       }
     } else {
+      if (playSound) playSound('wrong');
       setFeedback({ type: 'wrong', message: `Yanlış! Doğru cevap: ${currentQuestion.meaning}` });
     }
 

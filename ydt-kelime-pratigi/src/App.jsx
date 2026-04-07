@@ -2679,6 +2679,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
             }));
           }} 
           speakWord={speakWord} 
+          playSound={playSound}
         />
       )}
       {currentView === 'room-menu' && <RoomMenuView username={username} createRoom={createRoom} joinRoom={joinRoom} loading={loading} error={error} />}
