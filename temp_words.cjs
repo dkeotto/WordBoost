@@ -8,7 +8,7 @@ const wordsData = [
   },
   {
     "term": "abandoned",
-    "meaning": "Terk edil",
+    "meaning": "Terk edilmiş",
     "hint": "left empty or no longer used",
     "example": "The abandoned house was full of cobwebs.",
     "level": "B1"
@@ -43,7 +43,7 @@ const wordsData = [
   },
   {
     "term": "abject",
-    "meaning": "Aşağılık, sefilmek",
+    "meaning": "Aşağılık, sefil",
     "hint": "experienced to the maximum degree",
     "example": "They lived in abject poverty.",
     "level": "C1"
@@ -141,7 +141,7 @@ const wordsData = [
   },
   {
     "term": "abroad",
-    "meaning": "Yurt dışımak",
+    "meaning": "Yurt dışı",
     "hint": "in or to a foreign country",
     "example": "She's studying abroad in France.",
     "level": "A2"
@@ -155,7 +155,7 @@ const wordsData = [
   },
   {
     "term": "abrupt",
-    "meaning": "Ani",
+    "meaning": "A",
     "hint": "sudden and unexpected",
     "example": "The meeting came to an abrupt end.",
     "level": "B2"
@@ -225,7 +225,7 @@ const wordsData = [
   },
   {
     "term": "abstruse",
-    "meaning": "Anlaşılması zormak",
+    "meaning": "Anlaşılması zor",
     "hint": "difficult to understand",
     "example": "The professor's lecture was too abstruse for most students.",
     "level": "C1"
@@ -330,7 +330,7 @@ const wordsData = [
   },
   {
     "term": "accepted",
-    "meaning": "Kabul edil",
+    "meaning": "Kabul edilmiş",
     "hint": "consider or hold as true",
     "example": "It is a generally accepted fact.",
     "level": "B1"
@@ -344,7 +344,7 @@ const wordsData = [
   },
   {
     "term": "accessible",
-    "meaning": "Erişilebilir, mevcutmak",
+    "meaning": "Erişilebilir, mevcut",
     "hint": "easy to reach",
     "example": "The building is accessible to wheelchair users.",
     "level": "B1"
@@ -533,7 +533,7 @@ const wordsData = [
   },
   {
     "term": "accurate",
-    "meaning": "Doğru, netmek",
+    "meaning": "Doğru, net",
     "hint": "conforming exactly or almost exactly to fact or to a standard or performing with total accuracy",
     "example": "an accurate reproduction",
     "level": "B1"
@@ -561,7 +561,7 @@ const wordsData = [
   },
   {
     "term": "accused",
-    "meaning": "Suçla",
+    "meaning": "Suçladı",
     "hint": "a defendant in a criminal proceeding",
     "example": "The term 'accused' plays a significant role in various contexts.",
     "level": "C1"
@@ -666,7 +666,7 @@ const wordsData = [
   },
   {
     "term": "across",
-    "meaning": "Karşısında, Karşıya",
+    "meaning": "Karşısında / karşıya",
     "hint": "to the opposite side",
     "example": "The cat ran across the road.",
     "level": "A1"
@@ -778,7 +778,7 @@ const wordsData = [
   },
   {
     "term": "acumen",
-    "meaning": "Zeka, keskinlikmek",
+    "meaning": "Zeka, keskinlik",
     "hint": "the ability to make good judgments",
     "example": "Her business acumen led to great success.",
     "level": "C1"
@@ -806,7 +806,7 @@ const wordsData = [
   },
   {
     "term": "adamant",
-    "meaning": "Kararlı, sertmek",
+    "meaning": "Kararlı, sert",
     "hint": "refusing to be persuaded",
     "example": "He was adamant that he was right.",
     "level": "C1"
@@ -932,7 +932,7 @@ const wordsData = [
   },
   {
     "term": "adjunct",
-    "meaning": "Ek, yardımcımak",
+    "meaning": "Ek, yardımcı",
     "hint": "a thing added to something else",
     "example": "The new wing is an adjunct to the main building.",
     "level": "C1"
@@ -1009,14 +1009,14 @@ const wordsData = [
   },
   {
     "term": "admit",
-    "meaning": "İtiraf etmek",
+    "meaning": "İtirafmak",
     "hint": "declare to be true or admit the existence or reality or truth of",
     "example": "He admitted his errors",
     "level": "B2"
   },
   {
     "term": "admitted",
-    "meaning": "İtiraf etmek",
+    "meaning": "İtirafmak",
     "hint": "declare to be true or admit the existence or reality or truth of",
     "example": "He admitted his errors",
     "level": "B2"
@@ -1100,7 +1100,7 @@ const wordsData = [
   },
   {
     "term": "advanced",
-    "meaning": "Geliş",
+    "meaning": "Gelişmiş",
     "hint": "move forward, also in the metaphorical sense",
     "example": "Time marches on",
     "level": "B1"
@@ -1121,7 +1121,7 @@ const wordsData = [
   },
   {
     "term": "adverse",
-    "meaning": "İstenmeyen, Kötü",
+    "meaning": "İstenmeyen kötü",
     "hint": "harmful or unfavorable",
     "example": "The drug had adverse side effects.",
     "level": "B1"
@@ -1219,7 +1219,7 @@ const wordsData = [
   },
   {
     "term": "affected",
-    "meaning": "Etkile",
+    "meaning": "Etkiledi",
     "hint": "have an effect upon",
     "example": "Will the new rules affect me?",
     "level": "B1"
@@ -1289,7 +1289,7 @@ const wordsData = [
   },
   {
     "term": "afraid",
-    "meaning": "Korkmuş",
+    "meaning": "Korkuyor",
     "hint": "filled with fear or apprehension",
     "example": "afraid even to turn his head",
     "level": "B1"
@@ -1366,7 +1366,7 @@ const wordsData = [
   },
   {
     "term": "aged",
-    "meaning": "Yaşlan",
+    "meaning": "Yaşlanmış",
     "hint": "people who are old collectively",
     "example": "special arrangements were available for the aged",
     "level": "B1"
@@ -1429,7 +1429,7 @@ const wordsData = [
   },
   {
     "term": "aggravate",
-    "meaning": "Kötüleştir",
+    "meaning": "Kötüleştirmek",
     "hint": "make worse or more serious",
     "example": "Pollution can aggravate respiratory problems.",
     "level": "C1"
@@ -1457,7 +1457,7 @@ const wordsData = [
   },
   {
     "term": "aghast",
-    "meaning": "Dehşete düş",
+    "meaning": "Dehşete düşmüş",
     "hint": "filled with horror",
     "example": "She was aghast at the terrible news.",
     "level": "C1"
@@ -1499,7 +1499,7 @@ const wordsData = [
   },
   {
     "term": "agreed",
-    "meaning": "Kararlaştırıl",
+    "meaning": "Kararlaştırılmış",
     "hint": "be in accord; be in agreement",
     "example": "We agreed on the terms of the settlement",
     "level": "B2"
@@ -1639,7 +1639,7 @@ const wordsData = [
   },
   {
     "term": "alexithymia",
-    "meaning": "Duyguları ifade edemememek",
+    "meaning": "Duyguları ifade edememe",
     "hint": "inability to express emotions",
     "example": "Alexithymia can affect relationships.",
     "level": "C2"
@@ -1688,7 +1688,7 @@ const wordsData = [
   },
   {
     "term": "all",
-    "meaning": "Hepsi, tümmek",
+    "meaning": "Hepsi, tüm",
     "hint": "quantifier; used with either mass or count nouns to indicate the whole number or amount of or every one of a class",
     "example": "we sat up all night",
     "level": "B1"
@@ -1716,7 +1716,7 @@ const wordsData = [
   },
   {
     "term": "allegedly",
-    "meaning": "Iddiaya göremek",
+    "meaning": "Iddiaya göre",
     "hint": "according to what is claimed",
     "example": "He allegedly committed fraud.",
     "level": "B2"
@@ -1786,14 +1786,14 @@ const wordsData = [
   },
   {
     "term": "allowing",
-    "meaning": "Izin vermemek",
+    "meaning": "Izin verme",
     "hint": "make it possible through a specific action or lack of action for something to happen",
     "example": "This permits the water to rush in",
     "level": "B1"
   },
   {
     "term": "allows",
-    "meaning": "Izin verirmek",
+    "meaning": "Izin verir",
     "hint": "make it possible through a specific action or lack of action for something to happen",
     "example": "This permits the water to rush in",
     "level": "B2"
@@ -1856,7 +1856,7 @@ const wordsData = [
   },
   {
     "term": "already",
-    "meaning": "Çoktan, zatenmek",
+    "meaning": "Çoktan, zaten",
     "hint": "prior to a specified or implied time",
     "example": "she has already graduated",
     "level": "B1"
@@ -2178,7 +2178,7 @@ const wordsData = [
   },
   {
     "term": "anachronism",
-    "meaning": "Zamanı geçmiş şeymek",
+    "meaning": "Zamanı geçmiş şey",
     "hint": "a thing belonging to a period other than that portrayed",
     "example": "The film was full of anachronisms.",
     "level": "C2"
@@ -2423,7 +2423,7 @@ const wordsData = [
   },
   {
     "term": "annoyed",
-    "meaning": "Rahatsız ol",
+    "meaning": "Rahatsız olmuş",
     "hint": "slightly angry",
     "example": "She was annoyed by the noise.",
     "level": "B1"
@@ -2584,7 +2584,7 @@ const wordsData = [
   },
   {
     "term": "antipathy",
-    "meaning": "Antipa",
+    "meaning": "Antipati",
     "hint": "a deep-seated feeling of dislike",
     "example": "She felt an antipathy toward him.",
     "level": "C1"
@@ -2661,14 +2661,14 @@ const wordsData = [
   },
   {
     "term": "anyway",
-    "meaning": "Neyse, her neysemek",
+    "meaning": "Neyse, her neyse",
     "hint": "used to indicate that a statement explains or supports a previous statement",
     "example": "Anyhow, he is dead now",
     "level": "B1"
   },
   {
     "term": "anywhere",
-    "meaning": "Herhangi bir yermek",
+    "meaning": "Herhangi bir yer",
     "hint": "at or in or to any place",
     "example": "you can find this food anywhere",
     "level": "C1"
@@ -2808,7 +2808,7 @@ const wordsData = [
   },
   {
     "term": "appeared",
-    "meaning": "Belirdi, görün",
+    "meaning": "Belirdi, göründü",
     "hint": "give a certain impression or have a certain outward aspect",
     "example": "She seems to be sleeping",
     "level": "B2"
@@ -2864,7 +2864,7 @@ const wordsData = [
   },
   {
     "term": "application",
-    "meaning": "Uygulama, başvurumak",
+    "meaning": "Uygulama, başvuru",
     "hint": "the act of bringing something to bear; using it for a particular purpose",
     "example": "he advocated the application of statistics to the problem",
     "level": "B2"
@@ -2899,14 +2899,14 @@ const wordsData = [
   },
   {
     "term": "appointed",
-    "meaning": "Atan",
+    "meaning": "Atanmış",
     "hint": "create and charge with a task or function",
     "example": "nominate a committee",
     "level": "C1"
   },
   {
     "term": "appointment",
-    "meaning": "Atama, randevumak",
+    "meaning": "Atama, randevu",
     "hint": "the act of putting a person into a non-elective position",
     "example": "the appointment had to be approved by the whole committee",
     "level": "B1"
@@ -3004,7 +3004,7 @@ const wordsData = [
   },
   {
     "term": "approved",
-    "meaning": "Onaylan",
+    "meaning": "Onaylandı",
     "hint": "give sanction to",
     "example": "I approve of his educational policies",
     "level": "B1"
@@ -3270,7 +3270,7 @@ const wordsData = [
   },
   {
     "term": "arrived",
-    "meaning": "Geldi, var",
+    "meaning": "Geldi, vardı",
     "hint": "reach a destination; arrive by movement or progress",
     "example": "She arrived home at 7 o'clock",
     "level": "B1"
@@ -3445,7 +3445,7 @@ const wordsData = [
   },
   {
     "term": "aside",
-    "meaning": "Bir yana, bir kenaramak",
+    "meaning": "Bir yana, bir kenara",
     "hint": "a line spoken by an actor to the audience but not intended for others on the stage",
     "example": "The term 'aside' plays a significant role in various contexts.",
     "level": "B1"
@@ -3564,7 +3564,7 @@ const wordsData = [
   },
   {
     "term": "assembly",
-    "meaning": "Montaj, meclismek",
+    "meaning": "Montaj, meclis",
     "hint": "a group of machine parts that fit together to form a self-contained unit",
     "example": "The term 'assembly' plays a significant role in various contexts.",
     "level": "B1"
@@ -3648,7 +3648,7 @@ const wordsData = [
   },
   {
     "term": "assist",
-    "meaning": "Yardım etmek",
+    "meaning": "Yardım et",
     "hint": "the activity of contributing to the fulfillment of a need or furtherance of an effort or purpose",
     "example": "he gave me an assist with the housework",
     "level": "B2"
@@ -3662,7 +3662,7 @@ const wordsData = [
   },
   {
     "term": "assistant",
-    "meaning": "Asistan, yardımcımak",
+    "meaning": "Asistan, yardımcı",
     "hint": "a person who contributes to the fulfillment of a need or furtherance of an effort or purpose",
     "example": "my invaluable assistant",
     "level": "B2"
@@ -3739,7 +3739,7 @@ const wordsData = [
   },
   {
     "term": "at",
-    "meaning": "De, damak",
+    "meaning": "De, da",
     "hint": "used to show where something is",
     "example": "I'll meet you at the station.",
     "level": "A1"
@@ -3844,7 +3844,7 @@ const wordsData = [
   },
   {
     "term": "attacked",
-    "meaning": "Saldır",
+    "meaning": "Saldırdı",
     "hint": "launch an attack or assault on; begin hostilities or start warfare with",
     "example": "Hitler attacked Poland on September 1, 1939 and started World War II",
     "level": "C1"
@@ -3900,7 +3900,7 @@ const wordsData = [
   },
   {
     "term": "attended",
-    "meaning": "Katıl",
+    "meaning": "Katıldı",
     "hint": "be present at (meetings, church services, university), etc.",
     "example": "She attends class regularly",
     "level": "B1"
@@ -4040,14 +4040,14 @@ const wordsData = [
   },
   {
     "term": "auspicious",
-    "meaning": "Uygun, iyimek",
+    "meaning": "Uygun, iyi",
     "hint": "conducive to success",
     "example": "It was an auspicious beginning.",
     "level": "C1"
   },
   {
     "term": "austere",
-    "meaning": "Sade, ka",
+    "meaning": "Sade, katı",
     "hint": "severe or strict in manner",
     "example": "The room was austere and bare.",
     "level": "C1"
@@ -4383,7 +4383,7 @@ const wordsData = [
   },
   {
     "term": "back",
-    "meaning": "Arka, Geri",
+    "meaning": "Arka / geri",
     "hint": "the posterior part of a human (or animal) body from the neck to the end of the spine",
     "example": "Please step back from the edge.",
     "level": "A1"
@@ -4404,7 +4404,7 @@ const wordsData = [
   },
   {
     "term": "background",
-    "meaning": "Arka plan, geç",
+    "meaning": "Arka plan, geçmiş",
     "hint": "a person's social heritage: previous experience or training",
     "example": "he is a lawyer with a sports background",
     "level": "B1"
@@ -4453,7 +4453,7 @@ const wordsData = [
   },
   {
     "term": "badly",
-    "meaning": "Kötü bir şekilde, fena haldemek",
+    "meaning": "Kötü bir şekilde, fena halde",
     "hint": "to a severe or serious degree",
     "example": "fingers so badly frozen they had to be amputated",
     "level": "B1"
@@ -4649,7 +4649,7 @@ const wordsData = [
   },
   {
     "term": "banned",
-    "meaning": "Yasaklan",
+    "meaning": "Yasaklandı",
     "hint": "forbid the public distribution of ( a movie or a newspaper)",
     "example": "The term 'banned' plays a significant role in various contexts.",
     "level": "C1"
@@ -4838,7 +4838,7 @@ const wordsData = [
   },
   {
     "term": "batch",
-    "meaning": "Par",
+    "meaning": "Parti",
     "hint": "a quantity produced at one time",
     "example": "This is the first batch.",
     "level": "B2"
@@ -4943,7 +4943,7 @@ const wordsData = [
   },
   {
     "term": "bear",
-    "meaning": "Dayanmak",
+    "meaning": "A",
     "hint": "massive plantigrade carnivorous or omnivorous mammals with long shaggy coats and strong claws",
     "example": "The term 'bear' plays a significant role in various contexts.",
     "level": "C2"
@@ -4999,14 +4999,14 @@ const wordsData = [
   },
   {
     "term": "beauty",
-    "meaning": "Güzellikmek",
+    "meaning": "Güzellikmak",
     "hint": "the qualities that give pleasure to the senses",
     "example": "The term 'beauty' plays a significant role in various contexts.",
     "level": "B2"
   },
   {
     "term": "became",
-    "meaning": "Dönüş",
+    "meaning": "Dönüştü",
     "hint": "enter or assume a certain state or condition",
     "example": "He became annoyed when he heard the bad news",
     "level": "B1"
@@ -5104,7 +5104,7 @@ const wordsData = [
   },
   {
     "term": "began",
-    "meaning": "Sulan",
+    "meaning": "Sulandı",
     "hint": "take the first step or steps in carrying out an action",
     "example": "We began working at dawn",
     "level": "B1"
@@ -5125,7 +5125,7 @@ const wordsData = [
   },
   {
     "term": "beginning",
-    "meaning": "Başlangıç",
+    "meaning": "Başlangıçtı",
     "hint": "the event consisting of the start of something",
     "example": "the beginning of the war",
     "level": "C1"
@@ -5153,7 +5153,7 @@ const wordsData = [
   },
   {
     "term": "begun",
-    "meaning": "Başla",
+    "meaning": "Başladı",
     "hint": "take the first step or steps in carrying out an action",
     "example": "We began working at dawn",
     "level": "B2"
@@ -5251,7 +5251,7 @@ const wordsData = [
   },
   {
     "term": "believes",
-    "meaning": "İnanmak",
+    "meaning": "Inanıyor",
     "hint": "any cognitive content held as true",
     "example": "The term 'believes' plays a significant role in various contexts.",
     "level": "B2"
@@ -5265,7 +5265,7 @@ const wordsData = [
   },
   {
     "term": "bell",
-    "meaning": "Çan",
+    "meaning": "Ça",
     "hint": "a hollow device made of metal that makes a ringing sound when struck",
     "example": "The term 'bell' plays a significant role in various contexts.",
     "level": "B1"
@@ -5496,7 +5496,7 @@ const wordsData = [
   },
   {
     "term": "best",
-    "meaning": "En iyi",
+    "meaning": "Iyisidir",
     "hint": "the supreme effort one can make",
     "example": "they did their best",
     "level": "C2"
@@ -5580,7 +5580,7 @@ const wordsData = [
   },
   {
     "term": "bibliophile",
-    "meaning": "Kitap kur",
+    "meaning": "Kitap kurdu",
     "hint": "a person who collects books",
     "example": "She is a devoted bibliophile.",
     "level": "C2"
@@ -5629,7 +5629,7 @@ const wordsData = [
   },
   {
     "term": "bike",
-    "meaning": "Bisiklet",
+    "meaning": "Bisikleti",
     "hint": "a motor vehicle with two wheels and a strong frame",
     "example": "The term 'bike' plays a significant role in various contexts.",
     "level": "C1"
@@ -5776,7 +5776,7 @@ const wordsData = [
   },
   {
     "term": "bit",
-    "meaning": "Isır",
+    "meaning": "Isırdı",
     "hint": "a small piece or quantity of something",
     "example": "a spot of tea",
     "level": "A1"
@@ -5923,7 +5923,7 @@ const wordsData = [
   },
   {
     "term": "blessed",
-    "meaning": "Kutsa",
+    "meaning": "Kutsadı",
     "hint": "give a benediction to",
     "example": "The dying man blessed his son",
     "level": "A1"
@@ -6056,7 +6056,7 @@ const wordsData = [
   },
   {
     "term": "blue",
-    "meaning": "Mavi",
+    "meaning": "Maviydi",
     "hint": "blue color or pigment; resembling the color of the clear sky in the daytime",
     "example": "he had eyes of bright blue",
     "level": "B1"
@@ -6357,7 +6357,7 @@ const wordsData = [
   },
   {
     "term": "bored",
-    "meaning": "Sıkkın",
+    "meaning": "Sıkılmış",
     "hint": "feeling weary",
     "example": "I'm bored.",
     "level": "B2"
@@ -6406,7 +6406,7 @@ const wordsData = [
   },
   {
     "term": "both",
-    "meaning": "Her ikisi",
+    "meaning": "İkinize",
     "hint": "(used with count nouns) two considered together; the two",
     "example": "both girls are pretty",
     "level": "C1"
@@ -6658,7 +6658,7 @@ const wordsData = [
   },
   {
     "term": "breakfast",
-    "meaning": "Kahval",
+    "meaning": "Kahvaltı",
     "hint": "the first meal of the day (usually in the morning)",
     "example": "The term 'breakfast' plays a significant role in various contexts.",
     "level": "B2"
@@ -6805,7 +6805,7 @@ const wordsData = [
   },
   {
     "term": "brings",
-    "meaning": "Getirmek",
+    "meaning": "Rüzgâr",
     "hint": "take something or somebody with oneself somewhere",
     "example": "Bring me the box from the other room",
     "level": "C1"
@@ -6868,7 +6868,7 @@ const wordsData = [
   },
   {
     "term": "broadcast",
-    "meaning": "Yayın, Yayınlamak",
+    "meaning": "Ya",
     "hint": "message that is transmitted by radio or television",
     "example": "The term 'broadcast' plays a significant role in various contexts.",
     "level": "B1"
@@ -6896,7 +6896,7 @@ const wordsData = [
   },
   {
     "term": "broken",
-    "meaning": "Kırıl",
+    "meaning": "Kırılmış",
     "hint": "terminate",
     "example": "She interrupted her pregnancy",
     "level": "B1"
@@ -7141,7 +7141,7 @@ const wordsData = [
   },
   {
     "term": "bumptious",
-    "meaning": "Kendini beğen",
+    "meaning": "Kendini beğenmiş",
     "hint": "self-assertive",
     "example": "His bumptious attitude annoyed everyone.",
     "level": "C1"
@@ -7463,14 +7463,14 @@ const wordsData = [
   },
   {
     "term": "cacoethes",
-    "meaning": "Kötü alışkanlıkmak",
+    "meaning": "Kötü alışkanlık",
     "hint": "an urge to do something inadvisable",
     "example": "He had a cacoethes for gambling.",
     "level": "C2"
   },
   {
     "term": "cacophony",
-    "meaning": "Gürül",
+    "meaning": "Gürültü",
     "hint": "a harsh mixture of sounds",
     "example": "The cacophony of the city was overwhelming.",
     "level": "C1"
@@ -7799,7 +7799,7 @@ const wordsData = [
   },
   {
     "term": "capital",
-    "meaning": "Başkent",
+    "meaning": "Başkenti",
     "hint": "assets available for use in the production of further assets",
     "example": "The term 'capital' plays a significant role in various contexts.",
     "level": "B1"
@@ -8002,7 +8002,7 @@ const wordsData = [
   },
   {
     "term": "carrying",
-    "meaning": "Taşıyor",
+    "meaning": "Taşıyormuş",
     "hint": "move while supporting, either in a vehicle or in one's hands or on one's body",
     "example": "You must carry your camping gear",
     "level": "B1"
@@ -8205,7 +8205,7 @@ const wordsData = [
   },
   {
     "term": "caucus",
-    "meaning": "Toplan",
+    "meaning": "Toplantı",
     "hint": "a meeting of party members",
     "example": "The party held a caucus to select candidates.",
     "level": "C1"
@@ -8520,7 +8520,7 @@ const wordsData = [
   },
   {
     "term": "chagrin",
-    "meaning": "Üzün",
+    "meaning": "Üzüntü",
     "hint": "distress or embarrassment",
     "example": "To my chagrin, I failed the test.",
     "level": "C1"
@@ -9059,7 +9059,7 @@ const wordsData = [
   },
   {
     "term": "chosen",
-    "meaning": "Seçil",
+    "meaning": "Seçilmiş",
     "hint": "one who is the object of choice; who is given preference",
     "example": "she was Mama's chosen",
     "level": "C1"
@@ -9115,7 +9115,7 @@ const wordsData = [
   },
   {
     "term": "chthonic",
-    "meaning": "Yeral",
+    "meaning": "Yeraltı",
     "hint": "concerning the underworld",
     "example": "Chthonic deities were worshipped.",
     "level": "C2"
@@ -9255,7 +9255,7 @@ const wordsData = [
   },
   {
     "term": "citation",
-    "meaning": "Alın",
+    "meaning": "Alıntı",
     "hint": "a quotation from a book",
     "example": "Please include proper citations.",
     "level": "C1"
@@ -9360,14 +9360,14 @@ const wordsData = [
   },
   {
     "term": "clairvoyant",
-    "meaning": "Ruh görenmek",
+    "meaning": "Ruh gören",
     "hint": "a person who claims to have supernatural insight",
     "example": "The clairvoyant predicted the future.",
     "level": "C1"
   },
   {
     "term": "clamor",
-    "meaning": "Gürül",
+    "meaning": "Gürültü",
     "hint": "a loud and confused noise",
     "example": "The clamor of the crowd was deafening.",
     "level": "C1"
@@ -9787,7 +9787,7 @@ const wordsData = [
   },
   {
     "term": "coast",
-    "meaning": "Kıyı",
+    "meaning": "Kı",
     "hint": "the shore of a sea or ocean",
     "example": "The term 'coast' plays a significant role in various contexts.",
     "level": "B1"
@@ -10130,14 +10130,14 @@ const wordsData = [
   },
   {
     "term": "comedy",
-    "meaning": "Kome",
+    "meaning": "Komedi",
     "hint": "a funny play or film",
     "example": "We watched a romantic comedy.",
     "level": "B1"
   },
   {
     "term": "comely",
-    "meaning": "Güzelmek",
+    "meaning": "Güzelmak",
     "hint": "pleasant to look at",
     "example": "She has a comely appearance.",
     "level": "C1"
@@ -10235,14 +10235,14 @@ const wordsData = [
   },
   {
     "term": "comment",
-    "meaning": "Yorum",
+    "meaning": "Y",
     "hint": "a statement that expresses a personal opinion or belief or adds information",
     "example": "from time to time she contributed a personal comment on his account",
     "level": "B2"
   },
   {
     "term": "commentary",
-    "meaning": "Yorum",
+    "meaning": "Y",
     "hint": "a spoken description",
     "example": "The commentary was excellent.",
     "level": "B1"
@@ -10256,7 +10256,7 @@ const wordsData = [
   },
   {
     "term": "comments",
-    "meaning": "Yorumlar",
+    "meaning": "Y",
     "hint": "a statement that expresses a personal opinion or belief or adds information",
     "example": "from time to time she contributed a personal comment on his account",
     "level": "B2"
@@ -10319,7 +10319,7 @@ const wordsData = [
   },
   {
     "term": "committed",
-    "meaning": "To kendini ada",
+    "meaning": "To kendini adamış",
     "hint": "perform an act, usually with a negative connotation",
     "example": "perpetrate a crime",
     "level": "B1"
@@ -10564,7 +10564,7 @@ const wordsData = [
   },
   {
     "term": "complacent",
-    "meaning": "Kendini beğen",
+    "meaning": "Kendini beğenmiş",
     "hint": "showing smug satisfaction",
     "example": "We cannot afford to be complacent.",
     "level": "C1"
@@ -10613,7 +10613,7 @@ const wordsData = [
   },
   {
     "term": "completely",
-    "meaning": "Tamamen, bütünüylemek",
+    "meaning": "Tamamen, bütünüyle",
     "hint": "to a complete degree or to the full or entire extent (`whole' is often used informally for `wholly')",
     "example": "he was wholly convinced",
     "level": "B1"
@@ -11019,7 +11019,7 @@ const wordsData = [
   },
   {
     "term": "conducted",
-    "meaning": "Yönet",
+    "meaning": "Yönetti",
     "hint": "direct the course of; manage or control",
     "example": "You cannot conduct business like this",
     "level": "B1"
@@ -11110,7 +11110,7 @@ const wordsData = [
   },
   {
     "term": "confirmed",
-    "meaning": "Doğrula",
+    "meaning": "Doğruladı",
     "hint": "establish or strengthen as with new evidence or facts",
     "example": "his story confirmed my doubts",
     "level": "B1"
@@ -11306,7 +11306,7 @@ const wordsData = [
   },
   {
     "term": "connection",
-    "meaning": "Bağlan",
+    "meaning": "Bağlantı",
     "hint": "a relation between things or events (as in the case of one causing the other or sharing features with it)",
     "example": "there was a connection between eating that pickle and having that nightmare",
     "level": "B2"
@@ -11488,7 +11488,7 @@ const wordsData = [
   },
   {
     "term": "consist",
-    "meaning": "Of -den oluşmak, meydana gelmek",
+    "meaning": "Of -den oluşmak, meydana gel",
     "hint": "to be made up of",
     "example": "The team consists of five members.",
     "level": "B1"
@@ -11873,7 +11873,7 @@ const wordsData = [
   },
   {
     "term": "contract",
-    "meaning": "Kontra",
+    "meaning": "Kontratı",
     "hint": "a binding agreement between two or more persons that is enforceable by law",
     "example": "The term 'contract' plays a significant role in various contexts.",
     "level": "B1"
@@ -12048,7 +12048,7 @@ const wordsData = [
   },
   {
     "term": "conversation",
-    "meaning": "Sohbe",
+    "meaning": "Sohbeti",
     "hint": "the use of speech for informal exchange of views or ideas or information etc.",
     "example": "The term 'conversation' plays a significant role in various contexts.",
     "level": "B1"
@@ -12104,7 +12104,7 @@ const wordsData = [
   },
   {
     "term": "convinced",
-    "meaning": "Ikna ol",
+    "meaning": "Ikna olmuş",
     "hint": "completely certain",
     "example": "I'm convinced he's right.",
     "level": "B2"
@@ -12265,7 +12265,7 @@ const wordsData = [
   },
   {
     "term": "cordial",
-    "meaning": "İçten",
+    "meaning": "Iç",
     "hint": "warm and friendly",
     "example": "We received a cordial welcome.",
     "level": "C1"
@@ -12426,7 +12426,7 @@ const wordsData = [
   },
   {
     "term": "corrupt",
-    "meaning": "Yozlaş",
+    "meaning": "Yozlaşmış",
     "hint": "dishonest",
     "example": "The government was corrupt.",
     "level": "B1"
@@ -12517,7 +12517,7 @@ const wordsData = [
   },
   {
     "term": "could",
-    "meaning": "Yapabilir",
+    "meaning": "Yapabilirdi",
     "hint": "past tense of can",
     "example": "I could swim when I was young.",
     "level": "B1"
@@ -12909,7 +12909,7 @@ const wordsData = [
   },
   {
     "term": "credulity",
-    "meaning": "Kolay inanmamak",
+    "meaning": "Kolay inanma",
     "hint": "a tendency to be too ready to believe",
     "example": "The story strains credulity.",
     "level": "C1"
@@ -13623,7 +13623,7 @@ const wordsData = [
   },
   {
     "term": "dark",
-    "meaning": "Karanlık",
+    "meaning": "Karanlıktı",
     "hint": "absence of light or illumination",
     "example": "The term 'dark' plays a significant role in various contexts.",
     "level": "C2"
@@ -13819,7 +13819,7 @@ const wordsData = [
   },
   {
     "term": "death",
-    "meaning": "Ölüm",
+    "meaning": "Öl",
     "hint": "the event of dying or departure from life",
     "example": "her death came as a terrible shock",
     "level": "C1"
@@ -14085,7 +14085,7 @@ const wordsData = [
   },
   {
     "term": "decrepit",
-    "meaning": "Yıpran",
+    "meaning": "Yıpranmış",
     "hint": "worn out by age",
     "example": "The old house was decrepit.",
     "level": "C1"
@@ -14232,7 +14232,7 @@ const wordsData = [
   },
   {
     "term": "defensive",
-    "meaning": "Savunmacı",
+    "meaning": "L",
     "hint": "an attitude of defensiveness (especially in the phrase `on the defensive')",
     "example": "The term 'defensive' plays a significant role in various contexts.",
     "level": "B1"
@@ -14288,7 +14288,7 @@ const wordsData = [
   },
   {
     "term": "defined",
-    "meaning": "Tanımlan",
+    "meaning": "Tanımlanmış",
     "hint": "determine the essential quality of",
     "example": "The term 'defined' plays a significant role in various contexts.",
     "level": "C1"
@@ -14309,7 +14309,7 @@ const wordsData = [
   },
   {
     "term": "definition",
-    "meaning": "Tanım",
+    "meaning": "",
     "hint": "a concise explanation of the meaning of a word or phrase or symbol",
     "example": "The term 'definition' plays a significant role in various contexts.",
     "level": "B2"
@@ -14673,7 +14673,7 @@ const wordsData = [
   },
   {
     "term": "denied",
-    "meaning": "Reddedil",
+    "meaning": "Reddedildi",
     "hint": "declare untrue; contradict",
     "example": "He denied the allegations",
     "level": "C1"
@@ -15002,7 +15002,7 @@ const wordsData = [
   },
   {
     "term": "desiccated",
-    "meaning": "Kurutul",
+    "meaning": "Kurutulmuş",
     "hint": "having had moisture removed",
     "example": "The desiccated fruit lasted longer.",
     "level": "C1"
@@ -15065,7 +15065,7 @@ const wordsData = [
   },
   {
     "term": "desktop",
-    "meaning": "Masaüs",
+    "meaning": "Masaüstü",
     "hint": "the main screen area",
     "example": "Save the file to your desktop.",
     "level": "B1"
@@ -15128,7 +15128,7 @@ const wordsData = [
   },
   {
     "term": "destination",
-    "meaning": "Varış yerimek",
+    "meaning": "Varış yeri",
     "hint": "the place to which someone is going",
     "example": "Our destination is Paris.",
     "level": "B1"
@@ -15240,7 +15240,7 @@ const wordsData = [
   },
   {
     "term": "detention",
-    "meaning": "Gözal",
+    "meaning": "Gözaltı",
     "hint": "the action of detaining",
     "example": "He was in detention.",
     "level": "B2"
@@ -15534,7 +15534,7 @@ const wordsData = [
   },
   {
     "term": "dick",
-    "meaning": "Alet, Penis",
+    "meaning": "Aleti",
     "hint": "someone who is a detective",
     "example": "The term 'dick' plays a significant role in various contexts.",
     "level": "B2"
@@ -15751,7 +15751,7 @@ const wordsData = [
   },
   {
     "term": "din",
-    "meaning": "Gürül",
+    "meaning": "Gürültü",
     "hint": "a loud, unpleasant noise",
     "example": "The din of the traffic was constant.",
     "level": "A1"
@@ -16038,7 +16038,7 @@ const wordsData = [
   },
   {
     "term": "disclaim",
-    "meaning": "Sorumluluk red",
+    "meaning": "Sorumluluk reddi",
     "hint": "deny responsibility",
     "example": "The company disclaimed liability.",
     "level": "C1"
@@ -16171,7 +16171,7 @@ const wordsData = [
   },
   {
     "term": "discursive",
-    "meaning": "Konudan konuya atlayanmak",
+    "meaning": "Konudan konuya atlayan",
     "hint": "digressing from subject to subject",
     "example": "His writing is discursive.",
     "level": "C1"
@@ -16472,7 +16472,7 @@ const wordsData = [
   },
   {
     "term": "dissatisfied",
-    "meaning": "Tatmin olmayanmak",
+    "meaning": "Tatmin olmayan",
     "hint": "fail to satisfy",
     "example": "The term 'dissatisfied' plays a significant role in various contexts.",
     "level": "C1"
@@ -16626,7 +16626,7 @@ const wordsData = [
   },
   {
     "term": "distress",
-    "meaning": "Sıkın",
+    "meaning": "Sıkıntı",
     "hint": "extreme anxiety",
     "example": "The news caused distress.",
     "level": "B1"
@@ -16640,7 +16640,7 @@ const wordsData = [
   },
   {
     "term": "distributed",
-    "meaning": "Dağıtıl",
+    "meaning": "Dağıtıldı",
     "hint": "administer or bestow, as in small portions",
     "example": "administer critical remarks to everyone present",
     "level": "B2"
@@ -16766,7 +16766,7 @@ const wordsData = [
   },
   {
     "term": "division",
-    "meaning": "Paylaştırma, bölüşmemek",
+    "meaning": "Paylaştırma, bölüşme",
     "hint": "an army unit large enough to sustain combat",
     "example": "two infantry divisions were held in reserve",
     "level": "C1"
@@ -17032,7 +17032,7 @@ const wordsData = [
   },
   {
     "term": "done",
-    "meaning": "Bit",
+    "meaning": "Bitti",
     "hint": "engage in",
     "example": "make love, not war",
     "level": "A2"
@@ -17123,7 +17123,7 @@ const wordsData = [
   },
   {
     "term": "dowdy",
-    "meaning": "Modası geç",
+    "meaning": "Modası geçmiş",
     "hint": "unfashionable",
     "example": "Her clothes were dowdy.",
     "level": "C1"
@@ -17270,7 +17270,7 @@ const wordsData = [
   },
   {
     "term": "dream",
-    "meaning": "Rüya",
+    "meaning": "Rüyaydı",
     "hint": "a series of mental images and emotions occurring during sleep",
     "example": "I had a dream about you last night",
     "level": "C1"
@@ -17291,7 +17291,7 @@ const wordsData = [
   },
   {
     "term": "dressed",
-    "meaning": "Giyin",
+    "meaning": "Giyinmiş",
     "hint": "put on clothes",
     "example": "we had to dress quickly",
     "level": "B2"
@@ -17305,7 +17305,7 @@ const wordsData = [
   },
   {
     "term": "dried",
-    "meaning": "Kurutul",
+    "meaning": "Kurutulmuş",
     "hint": "preserved by drying",
     "example": "I bought some dried fruit.",
     "level": "B1"
@@ -17333,7 +17333,7 @@ const wordsData = [
   },
   {
     "term": "drinking",
-    "meaning": "İçmek",
+    "meaning": "İçiyormak",
     "hint": "the act of consuming liquids",
     "example": "The term 'drinking' plays a significant role in various contexts.",
     "level": "B2"
@@ -17459,7 +17459,7 @@ const wordsData = [
   },
   {
     "term": "dry",
-    "meaning": "Kuru",
+    "meaning": "Kurudu",
     "hint": "a reformer who opposes the use of intoxicating beverages",
     "example": "The term 'dry' plays a significant role in various contexts.",
     "level": "B2"
@@ -17725,7 +17725,7 @@ const wordsData = [
   },
   {
     "term": "earnest",
-    "meaning": "Cid",
+    "meaning": "Ciddi",
     "hint": "resulting from genuine conviction",
     "example": "Her earnest plea moved the jury.",
     "level": "C1"
@@ -17809,7 +17809,7 @@ const wordsData = [
   },
   {
     "term": "easy",
-    "meaning": "Kola",
+    "meaning": "Kolaydı",
     "hint": "posing no difficulty; requiring little effort",
     "example": "an easy job",
     "level": "A1"
@@ -18005,7 +18005,7 @@ const wordsData = [
   },
   {
     "term": "edited",
-    "meaning": "Düzenlen",
+    "meaning": "Düzenlenmiş",
     "hint": "prepare for publication or presentation by correcting, revising, or adapting",
     "example": "Edit a book on lexical semantics",
     "level": "B2"
@@ -18313,7 +18313,7 @@ const wordsData = [
   },
   {
     "term": "elastic",
-    "meaning": "Esnek, elastikmek",
+    "meaning": "Esnek, elastik",
     "hint": "able to resume normal shape after stretching",
     "example": "The waistband is made of elastic material.",
     "level": "B2"
@@ -18348,7 +18348,7 @@ const wordsData = [
   },
   {
     "term": "elected",
-    "meaning": "Seçil",
+    "meaning": "Seçilmiş",
     "hint": "select by a vote for an office or membership",
     "example": "We elected him chairman of the board",
     "level": "B1"
@@ -18915,7 +18915,7 @@ const wordsData = [
   },
   {
     "term": "empty",
-    "meaning": "Boş",
+    "meaning": "Boştu",
     "hint": "a container that has been emptied",
     "example": "return all empties to the store",
     "level": "B1"
@@ -19041,7 +19041,7 @@ const wordsData = [
   },
   {
     "term": "end",
-    "meaning": "Son",
+    "meaning": "So",
     "hint": "either extremity of something that has length",
     "example": "the end of the pier",
     "level": "A1"
@@ -19055,7 +19055,7 @@ const wordsData = [
   },
   {
     "term": "ended",
-    "meaning": "Bitir",
+    "meaning": "Bitirdi",
     "hint": "have an end, in a temporal, spatial, or quantitative sense; either spatial or metaphorical",
     "example": "the bronchioles terminate in a capillary bed",
     "level": "B2"
@@ -19069,7 +19069,7 @@ const wordsData = [
   },
   {
     "term": "ending",
-    "meaning": "Son",
+    "meaning": "So",
     "hint": "the end of a word (a suffix or inflectional ending or final morpheme)",
     "example": "I don't like words that have -ism as an ending",
     "level": "A1"
@@ -19104,7 +19104,7 @@ const wordsData = [
   },
   {
     "term": "ends",
-    "meaning": "Sona ermek",
+    "meaning": "Eriyor",
     "hint": "either extremity of something that has length",
     "example": "the end of the pier",
     "level": "B2"
@@ -19377,7 +19377,7 @@ const wordsData = [
   },
   {
     "term": "enormously",
-    "meaning": "Son derece, çokmak",
+    "meaning": "Son derece, çok",
     "hint": "to a very great degree",
     "example": "The project was enormously successful.",
     "level": "B2"
@@ -19692,7 +19692,7 @@ const wordsData = [
   },
   {
     "term": "epicurean",
-    "meaning": "Zevk düşkünümek",
+    "meaning": "Zevk düşkünü",
     "hint": "devoted to pleasure",
     "example": "He has an epicurean lifestyle.",
     "level": "C1"
@@ -19769,7 +19769,7 @@ const wordsData = [
   },
   {
     "term": "epistolary",
-    "meaning": "Mektup tarzındamak",
+    "meaning": "Mektup tarzında",
     "hint": "relating to letters",
     "example": "An epistolary novel.",
     "level": "C2"
@@ -19860,7 +19860,7 @@ const wordsData = [
   },
   {
     "term": "equipped",
-    "meaning": "Donatıl",
+    "meaning": "Donatılmış",
     "hint": "provide with (something) usually for a specific purpose",
     "example": "The expedition was equipped with proper clothing, food, and other necessities",
     "level": "B2"
@@ -20105,7 +20105,7 @@ const wordsData = [
   },
   {
     "term": "established",
-    "meaning": "Kurul",
+    "meaning": "Kuruldu",
     "hint": "set up or found",
     "example": "She set up a literacy program",
     "level": "B1"
@@ -20161,7 +20161,7 @@ const wordsData = [
   },
   {
     "term": "estranged",
-    "meaning": "Yabancılaş",
+    "meaning": "Yabancılaşmış",
     "hint": "no longer close",
     "example": "He is estranged from his family.",
     "level": "C1"
@@ -20238,7 +20238,7 @@ const wordsData = [
   },
   {
     "term": "euphony",
-    "meaning": "Uyumlu sesmek",
+    "meaning": "Uyumlu ses",
     "hint": "the quality of being pleasing to the ear",
     "example": "The euphony of the words.",
     "level": "C2"
@@ -20350,7 +20350,7 @@ const wordsData = [
   },
   {
     "term": "evening",
-    "meaning": "Akşam",
+    "meaning": "Akşamdı",
     "hint": "the latter part of the day (the period of decreasing daylight from late afternoon until nightfall)",
     "example": "he enjoyed the evening light across the lake",
     "level": "B1"
@@ -20490,7 +20490,7 @@ const wordsData = [
   },
   {
     "term": "exacerbate",
-    "meaning": "Kötüleştir",
+    "meaning": "Kötüleştirmek",
     "hint": "make worse",
     "example": "The policy exacerbated inequality.",
     "level": "C1"
@@ -20553,7 +20553,7 @@ const wordsData = [
   },
   {
     "term": "example",
-    "meaning": "Örnek",
+    "meaning": "Örnekti",
     "hint": "an item of information that is typical of a class or group",
     "example": "this patient provides a typical example of the syndrome",
     "level": "B1"
@@ -20609,14 +20609,14 @@ const wordsData = [
   },
   {
     "term": "exception",
-    "meaning": "İstisna",
+    "meaning": "İstisna",
     "hint": "a deliberate act of omission",
     "example": "with the exception of the children, everyone was told the news",
     "level": "C1"
   },
   {
     "term": "exceptionable",
-    "meaning": "Itiraz edilebilirmek",
+    "meaning": "Itiraz edilebilir",
     "hint": "open to objection",
     "example": "His remarks were exceptionable.",
     "level": "C1"
@@ -20630,7 +20630,7 @@ const wordsData = [
   },
   {
     "term": "excerpt",
-    "meaning": "Alın",
+    "meaning": "Alıntı",
     "hint": "a short piece taken from a text",
     "example": "I read an excerpt from the book.",
     "level": "C1"
@@ -20861,7 +20861,7 @@ const wordsData = [
   },
   {
     "term": "exhausted",
-    "meaning": "Tüken",
+    "meaning": "Tükenmiş",
     "hint": "wear out completely",
     "example": "This kind of work exhausts me",
     "level": "C1"
@@ -21022,7 +21022,7 @@ const wordsData = [
   },
   {
     "term": "expanded",
-    "meaning": "Genişle",
+    "meaning": "Genişledi",
     "hint": "extend in one or more directions",
     "example": "The dough expands",
     "level": "B2"
@@ -21064,7 +21064,7 @@ const wordsData = [
   },
   {
     "term": "expectation",
-    "meaning": "Beklen",
+    "meaning": "Beklenti",
     "hint": "a strong belief that something will happen",
     "example": "The movie met all my expectations.",
     "level": "B2"
@@ -21358,7 +21358,7 @@ const wordsData = [
   },
   {
     "term": "exposure",
-    "meaning": "Maruz kalmamak",
+    "meaning": "Maruz kalma",
     "hint": "vulnerability to the elements; to the action of heat or cold or wind or rain; or",
     "example": "exposure to the weather",
     "level": "B2"
@@ -21379,7 +21379,7 @@ const wordsData = [
   },
   {
     "term": "expressed",
-    "meaning": "Belirt",
+    "meaning": "Belirtti",
     "hint": "give expression to",
     "example": "She showed her disappointment",
     "level": "B2"
@@ -21442,7 +21442,7 @@ const wordsData = [
   },
   {
     "term": "extended",
-    "meaning": "Uzatıl",
+    "meaning": "Uzatılmış",
     "hint": "extend in scope or range or area",
     "example": "The law was extended to all citizens",
     "level": "B1"
@@ -21463,7 +21463,7 @@ const wordsData = [
   },
   {
     "term": "extensively",
-    "meaning": "Kapsamlı bir şekildemek",
+    "meaning": "Kapsamlı bir şekilde",
     "hint": "to a great extent",
     "example": "The area was extensively damaged.",
     "level": "B1"
@@ -21498,7 +21498,7 @@ const wordsData = [
   },
   {
     "term": "extinct",
-    "meaning": "Soyu tüken",
+    "meaning": "Soyu tükenmiş",
     "hint": "no longer in existence",
     "example": "Dinosaurs have been extinct for millions of years.",
     "level": "B2"
@@ -21575,7 +21575,7 @@ const wordsData = [
   },
   {
     "term": "extraordinary",
-    "meaning": "Olağanüs",
+    "meaning": "Olağanüstü",
     "hint": "beyond what is ordinary or usual; highly unusual or exceptional or remarkable",
     "example": "extraordinary authority",
     "level": "C1"
@@ -21981,7 +21981,7 @@ const wordsData = [
   },
   {
     "term": "fallen",
-    "meaning": "Düş",
+    "meaning": "Düşmüş",
     "hint": "descend in free fall under the influence of gravity",
     "example": "The branch fell from the tree",
     "level": "B2"
@@ -22002,7 +22002,7 @@ const wordsData = [
   },
   {
     "term": "fallow",
-    "meaning": "Nadasa bırakıl",
+    "meaning": "Nadasa bırakılmış",
     "hint": "plowed and left unseeded",
     "example": "The field lay fallow.",
     "level": "C1"
@@ -22016,7 +22016,7 @@ const wordsData = [
   },
   {
     "term": "false",
-    "meaning": "Alarm",
+    "meaning": "Alarmmış",
     "hint": "not in accordance with the fact or reality or actuality",
     "example": "gave false testimony under oath",
     "level": "B2"
@@ -22128,7 +22128,7 @@ const wordsData = [
   },
   {
     "term": "fare",
-    "meaning": "Yolcu ücreti",
+    "meaning": "Ücret, yolcu ücreti",
     "hint": "the money paid for transport",
     "example": "The bus fare has increased this year.",
     "level": "B2"
@@ -22212,7 +22212,7 @@ const wordsData = [
   },
   {
     "term": "fast",
-    "meaning": "Hızlı",
+    "meaning": "Hızlıydı",
     "hint": "abstaining from food",
     "example": "The term 'fast' plays a significant role in various contexts.",
     "level": "C2"
@@ -22485,7 +22485,7 @@ const wordsData = [
   },
   {
     "term": "fee",
-    "meaning": "Ücret",
+    "meaning": "Ücreti",
     "hint": "a fixed charge for a privilege or for professional services",
     "example": "The term 'fee' plays a significant role in various contexts.",
     "level": "A1"
@@ -22499,7 +22499,7 @@ const wordsData = [
   },
   {
     "term": "feedback",
-    "meaning": "Geri bildirimmek",
+    "meaning": "Geri bildirim",
     "hint": "the process in which part of the output of a system is returned to its input in order to regulate its further output",
     "example": "The term 'feedback' plays a significant role in various contexts.",
     "level": "B1"
@@ -22905,7 +22905,7 @@ const wordsData = [
   },
   {
     "term": "fin de siècle",
-    "meaning": "Yüzyıl sonumak",
+    "meaning": "Yüzyıl sonu",
     "hint": "relating to the end of a century",
     "example": "Fin de siècle decadence.",
     "level": "C2"
@@ -23115,7 +23115,7 @@ const wordsData = [
   },
   {
     "term": "fiscal",
-    "meaning": "Mali, bütçe ile ilgilimek",
+    "meaning": "Mali, bütçe ile ilgili",
     "hint": "relating to government revenue",
     "example": "The country's fiscal policy needs reform.",
     "level": "B2"
@@ -23465,7 +23465,7 @@ const wordsData = [
   },
   {
     "term": "focused",
-    "meaning": "Odaklan",
+    "meaning": "Odaklanmış",
     "hint": "direct one's attention on something",
     "example": "Please focus on your studies and not on your hobbies",
     "level": "B1"
@@ -23738,7 +23738,7 @@ const wordsData = [
   },
   {
     "term": "forgotten",
-    "meaning": "Unutul",
+    "meaning": "Unutulmuş",
     "hint": "dismiss from the mind; stop remembering",
     "example": "I tried to bury these unpleasant memories",
     "level": "B1"
@@ -23843,7 +23843,7 @@ const wordsData = [
   },
   {
     "term": "forth",
-    "meaning": "İleri",
+    "meaning": "İlerimek",
     "hint": "a river in southern Scotland that flows eastward to the Firth of Forth",
     "example": "The term 'forth' plays a significant role in various contexts.",
     "level": "B1"
@@ -23941,7 +23941,7 @@ const wordsData = [
   },
   {
     "term": "founded",
-    "meaning": "Kurul",
+    "meaning": "Kuruldu",
     "hint": "set up or found",
     "example": "She set up a literacy program",
     "level": "C1"
@@ -23955,7 +23955,7 @@ const wordsData = [
   },
   {
     "term": "four",
-    "meaning": "Dör",
+    "meaning": "Dördü",
     "hint": "the cardinal number that is the sum of three and one",
     "example": "The term 'four' plays a significant role in various contexts.",
     "level": "B2"
@@ -24004,7 +24004,7 @@ const wordsData = [
   },
   {
     "term": "fragment",
-    "meaning": "Parça, kırın",
+    "meaning": "Parça, kırıntı",
     "hint": "a small part broken off",
     "example": "A fragment of pottery was found at the site.",
     "level": "B2"
@@ -24214,7 +24214,7 @@ const wordsData = [
   },
   {
     "term": "frightened",
-    "meaning": "Kork",
+    "meaning": "Korkmuş",
     "hint": "afraid",
     "example": "I'm frightened of spiders.",
     "level": "B1"
@@ -24242,7 +24242,7 @@ const wordsData = [
   },
   {
     "term": "from",
-    "meaning": "-den, -dan",
+    "meaning": "",
     "hint": "indicating the point in space",
     "example": "I'm from Istanbul.",
     "level": "B1"
@@ -24277,7 +24277,7 @@ const wordsData = [
   },
   {
     "term": "frozen",
-    "meaning": "Don",
+    "meaning": "Donmuş",
     "hint": "stop moving or become immobilized",
     "example": "When he saw the police car he froze",
     "level": "B1"
@@ -24298,7 +24298,7 @@ const wordsData = [
   },
   {
     "term": "frustrated",
-    "meaning": "Hayal kırıklığına uğra",
+    "meaning": "Hayal kırıklığına uğramış",
     "hint": "feeling annoyed",
     "example": "I'm frustrated with this.",
     "level": "B1"
@@ -24396,7 +24396,7 @@ const wordsData = [
   },
   {
     "term": "fun",
-    "meaning": "Eğlence",
+    "meaning": "Eğlenceliydi",
     "hint": "activities that are enjoyable or amusing",
     "example": "I do it for the fun of it",
     "level": "B1"
@@ -24424,7 +24424,7 @@ const wordsData = [
   },
   {
     "term": "fund",
-    "meaning": "Fon",
+    "meaning": "Fo",
     "hint": "a reserve of money set aside for some purpose",
     "example": "The term 'fund' plays a significant role in various contexts.",
     "level": "A1"
@@ -24774,7 +24774,7 @@ const wordsData = [
   },
   {
     "term": "gathered",
-    "meaning": "Toplan",
+    "meaning": "Toplandı",
     "hint": "assemble or get together",
     "example": "gather some stones",
     "level": "C1"
@@ -25005,7 +25005,7 @@ const wordsData = [
   },
   {
     "term": "gentleman",
-    "meaning": "Beyefen",
+    "meaning": "Beyefendi",
     "hint": "a man of refinement",
     "example": "The term 'gentleman' plays a significant role in various contexts.",
     "level": "B2"
@@ -25194,7 +25194,7 @@ const wordsData = [
   },
   {
     "term": "gift",
-    "meaning": "Hediye",
+    "meaning": "Hediyeydi",
     "hint": "something acquired without compensation",
     "example": "The term 'gift' plays a significant role in various contexts.",
     "level": "C2"
@@ -25271,7 +25271,7 @@ const wordsData = [
   },
   {
     "term": "given",
-    "meaning": "Veril",
+    "meaning": "Verilmiş",
     "hint": "an assumption that is taken for granted",
     "example": "The term 'given' plays a significant role in various contexts.",
     "level": "A1"
@@ -25348,7 +25348,7 @@ const wordsData = [
   },
   {
     "term": "gleam",
-    "meaning": "Parıl",
+    "meaning": "Parıltı",
     "hint": "shine brightly",
     "example": "A gleam of light came through the window.",
     "level": "B2"
@@ -25376,7 +25376,7 @@ const wordsData = [
   },
   {
     "term": "glimpse",
-    "meaning": "Anılık görün",
+    "meaning": "Anılık görüntü",
     "hint": "a momentary view",
     "example": "I caught a glimpse of her in the crowd.",
     "level": "B2"
@@ -25439,7 +25439,7 @@ const wordsData = [
   },
   {
     "term": "glow",
-    "meaning": "Parıl",
+    "meaning": "Parıltı",
     "hint": "an alert and refreshed state",
     "example": "The term 'glow' plays a significant role in various contexts.",
     "level": "B1"
@@ -25621,7 +25621,7 @@ const wordsData = [
   },
   {
     "term": "gossip",
-    "meaning": "Dediko",
+    "meaning": "Dedikodu",
     "hint": "light informal conversation for social occasions",
     "example": "The term 'gossip' plays a significant role in various contexts.",
     "level": "B1"
@@ -25964,7 +25964,7 @@ const wordsData = [
   },
   {
     "term": "great",
-    "meaning": "Harika",
+    "meaning": "Harikaydı",
     "hint": "a person who has achieved distinction and honor in some field",
     "example": "he is one of the greats of American music",
     "level": "B2"
@@ -25978,7 +25978,7 @@ const wordsData = [
   },
   {
     "term": "greatest",
-    "meaning": "En iyi",
+    "meaning": "Gelmiş",
     "hint": "highest in quality",
     "example": "The term 'greatest' plays a significant role in various contexts.",
     "level": "B2"
@@ -26083,7 +26083,7 @@ const wordsData = [
   },
   {
     "term": "grim",
-    "meaning": "Kasıvetli, cid",
+    "meaning": "Kasıvetli, ciddi",
     "hint": "very serious",
     "example": "The situation looks grim.",
     "level": "B2"
@@ -26139,7 +26139,7 @@ const wordsData = [
   },
   {
     "term": "gross",
-    "meaning": "İğrenç",
+    "meaning": "İğrenç",
     "hint": "twelve dozen",
     "example": "The term 'gross' plays a significant role in various contexts.",
     "level": "B1"
@@ -26160,7 +26160,7 @@ const wordsData = [
   },
   {
     "term": "groundbreaking",
-    "meaning": "Çığır açanmak",
+    "meaning": "Çığır açan",
     "hint": "the ceremonial breaking of the ground to formally begin a construction project",
     "example": "The term 'groundbreaking' plays a significant role in various contexts.",
     "level": "C1"
@@ -26230,21 +26230,21 @@ const wordsData = [
   },
   {
     "term": "guarantee",
-    "meaning": "Garan",
+    "meaning": "Garanti",
     "hint": "a written assurance that some product or service will be provided or will meet certain specifications",
     "example": "The term 'guarantee' plays a significant role in various contexts.",
     "level": "C1"
   },
   {
     "term": "guaranteed",
-    "meaning": "Garan",
+    "meaning": "Garanti",
     "hint": "give surety or assume responsibility",
     "example": "I vouch for the quality of my products",
     "level": "B2"
   },
   {
     "term": "guard",
-    "meaning": "Koruma",
+    "meaning": "Gardı",
     "hint": "a person who keeps watch over something or someone",
     "example": "The term 'guard' plays a significant role in various contexts.",
     "level": "B2"
@@ -26398,7 +26398,7 @@ const wordsData = [
   },
   {
     "term": "gut",
-    "meaning": "İçgüdü",
+    "meaning": "İçgüdülerim",
     "hint": "the part of the alimentary canal between the stomach and the anus",
     "example": "The term 'gut' plays a significant role in various contexts.",
     "level": "B1"
@@ -26426,7 +26426,7 @@ const wordsData = [
   },
   {
     "term": "habeas corpus",
-    "meaning": "Hukuki korumamak",
+    "meaning": "Hukuki koruma",
     "hint": "a writ requiring a person to be brought before a judge",
     "example": "Habeas corpus is a fundamental right.",
     "level": "C2"
@@ -26454,7 +26454,7 @@ const wordsData = [
   },
   {
     "term": "habitual",
-    "meaning": "Alışıl",
+    "meaning": "Alışılmış",
     "hint": "done constantly",
     "example": "He took his habitual seat by the window.",
     "level": "B2"
@@ -26475,7 +26475,7 @@ const wordsData = [
   },
   {
     "term": "hagiography",
-    "meaning": "Azizlerin haya",
+    "meaning": "Azizlerin hayatı",
     "hint": "the writing of the lives of saints",
     "example": "The book is hagiography.",
     "level": "C2"
@@ -26692,7 +26692,7 @@ const wordsData = [
   },
   {
     "term": "happy",
-    "meaning": "Mutlu",
+    "meaning": "Mutluydu",
     "hint": "enjoying or showing or marked by joy or pleasure",
     "example": "a happy smile",
     "level": "B2"
@@ -26783,7 +26783,7 @@ const wordsData = [
   },
   {
     "term": "harness",
-    "meaning": "Faydalanmak, kullanmak",
+    "meaning": "Faydalanmak, kullan",
     "hint": "a support consisting of an arrangement of straps for holding something to the body (especially one supporting a person suspended from a parachute)",
     "example": "The term 'harness' plays a significant role in various contexts.",
     "level": "B2"
@@ -26902,7 +26902,7 @@ const wordsData = [
   },
   {
     "term": "hatred",
-    "meaning": "Nefre",
+    "meaning": "Nefreti",
     "hint": "the emotion of intense dislike; a feeling of dislike so strong that it demands action",
     "example": "The term 'hatred' plays a significant role in various contexts.",
     "level": "B2"
@@ -27014,7 +27014,7 @@ const wordsData = [
   },
   {
     "term": "healing",
-    "meaning": "İyileşmek",
+    "meaning": "Iyileşiyor",
     "hint": "the natural process by which the body repairs itself",
     "example": "The term 'healing' plays a significant role in various contexts.",
     "level": "B2"
@@ -27112,7 +27112,7 @@ const wordsData = [
   },
   {
     "term": "heavy",
-    "meaning": "Ağır",
+    "meaning": "Ağırmış",
     "hint": "an actor who plays villainous roles",
     "example": "The term 'heavy' plays a significant role in various contexts.",
     "level": "B1"
@@ -27357,7 +27357,7 @@ const wordsData = [
   },
   {
     "term": "hidden",
-    "meaning": "Gizlen",
+    "meaning": "Gizlenmiş",
     "hint": "prevent from being seen or discovered",
     "example": "Muslim women hide their faces",
     "level": "B1"
@@ -27427,7 +27427,7 @@ const wordsData = [
   },
   {
     "term": "highlights",
-    "meaning": "Öze",
+    "meaning": "Özeti",
     "hint": "the most interesting or memorable part",
     "example": "the highlight of the tour was our visit to the Vatican",
     "level": "B2"
@@ -27448,7 +27448,7 @@ const wordsData = [
   },
   {
     "term": "hilarious",
-    "meaning": "Komik",
+    "meaning": "Komikti",
     "hint": "marked by or causing boisterous merriment or convulsive laughter",
     "example": "hilarious broad comedy",
     "level": "C1"
@@ -27497,7 +27497,7 @@ const wordsData = [
   },
   {
     "term": "hindu",
-    "meaning": "Hin",
+    "meaning": "Hindu",
     "hint": "a native or inhabitant of Hindustan or India",
     "example": "The term 'hindu' plays a significant role in various contexts.",
     "level": "A2"
@@ -27525,7 +27525,7 @@ const wordsData = [
   },
   {
     "term": "hired",
-    "meaning": "Kirala",
+    "meaning": "Kiraladı",
     "hint": "engage or hire for work",
     "example": "They hired two new secretaries in the department",
     "level": "B1"
@@ -27819,7 +27819,7 @@ const wordsData = [
   },
   {
     "term": "honor",
-    "meaning": "Onur",
+    "meaning": "Onurdu",
     "hint": "a tangible symbol signifying approval or distinction",
     "example": "an award for bravery",
     "level": "B1"
@@ -27847,7 +27847,7 @@ const wordsData = [
   },
   {
     "term": "hood",
-    "meaning": "Kapüşon",
+    "meaning": "Kaputu",
     "hint": "an aggressive and violent young criminal",
     "example": "The term 'hood' plays a significant role in various contexts.",
     "level": "B2"
@@ -27903,7 +27903,7 @@ const wordsData = [
   },
   {
     "term": "hopes",
-    "meaning": "Ummak",
+    "meaning": "Umuyor",
     "hint": "a specific instance of feeling hopeful",
     "example": "it revived their hope of winning the pennant",
     "level": "C1"
@@ -27938,7 +27938,7 @@ const wordsData = [
   },
   {
     "term": "horrible",
-    "meaning": "Korkunç",
+    "meaning": "Korkunçtu",
     "hint": "provoking horror",
     "example": "an atrocious automobile accident",
     "level": "B1"
@@ -27952,7 +27952,7 @@ const wordsData = [
   },
   {
     "term": "horror",
-    "meaning": "Dehşe",
+    "meaning": "Dehşeti",
     "hint": "intense and profound fear",
     "example": "The term 'horror' plays a significant role in various contexts.",
     "level": "C1"
@@ -28036,7 +28036,7 @@ const wordsData = [
   },
   {
     "term": "hot",
-    "meaning": "Sıcak",
+    "meaning": "Sıcaktı",
     "hint": "used of physical heat; having a high or higher than desirable temperature or giving off heat or feeling or causing a sensation of heat or burning",
     "example": "hot stove",
     "level": "B2"
@@ -28274,7 +28274,7 @@ const wordsData = [
   },
   {
     "term": "hung",
-    "meaning": "Kapat",
+    "meaning": "Kapattı",
     "hint": "be suspended or hanging",
     "example": "The flag hung on the wall",
     "level": "C2"
@@ -28435,14 +28435,14 @@ const wordsData = [
   },
   {
     "term": "iconoclast",
-    "meaning": "Gelenek karşı",
+    "meaning": "Gelenek karşıtı",
     "hint": "a person who attacks cherished beliefs",
     "example": "He was an iconoclast.",
     "level": "C2"
   },
   {
     "term": "idea",
-    "meaning": "Fikrim",
+    "meaning": "Fikrimdi",
     "hint": "the content of cognition; the main thing you are thinking about",
     "example": "it was not a good idea",
     "level": "C1"
@@ -28477,7 +28477,7 @@ const wordsData = [
   },
   {
     "term": "identified",
-    "meaning": "Tanımlan",
+    "meaning": "Tanımlandı",
     "hint": "recognize as being; establish the identity of someone or something",
     "example": "She identified the man on the 'wanted' poster",
     "level": "B2"
@@ -28533,7 +28533,7 @@ const wordsData = [
   },
   {
     "term": "idée fixe",
-    "meaning": "Takın",
+    "meaning": "Takıntı",
     "hint": "an obsession",
     "example": "The idée fixe consumed him.",
     "level": "C2"
@@ -28589,7 +28589,7 @@ const wordsData = [
   },
   {
     "term": "ill",
-    "meaning": "Hasta",
+    "meaning": "Hastaydı",
     "hint": "an often persistent bodily disorder or disease; a cause for complaining",
     "example": "The term 'ill' plays a significant role in various contexts.",
     "level": "B2"
@@ -28666,7 +28666,7 @@ const wordsData = [
   },
   {
     "term": "imagine",
-    "meaning": "Hayal etmek",
+    "meaning": "Düşünebiliyor",
     "hint": "form a mental image of something that is not present or that is not the case",
     "example": "Can you conceive of him as the president?",
     "level": "B1"
@@ -28939,7 +28939,7 @@ const wordsData = [
   },
   {
     "term": "impulse",
-    "meaning": "Dür",
+    "meaning": "Dürtü",
     "hint": "a sudden strong urge",
     "example": "I bought it on impulse.",
     "level": "B2"
@@ -28967,7 +28967,7 @@ const wordsData = [
   },
   {
     "term": "in medias res",
-    "meaning": "Olayların ortasındamak",
+    "meaning": "Olayların ortasında",
     "hint": "into the middle of things",
     "example": "The story begins in medias res.",
     "level": "C2"
@@ -29072,7 +29072,7 @@ const wordsData = [
   },
   {
     "term": "includes",
-    "meaning": "Kapsamak",
+    "meaning": "Kapsıyor",
     "hint": "have as a part, be made up out of",
     "example": "The list includes the names of many famous writers",
     "level": "B2"
@@ -29128,28 +29128,28 @@ const wordsData = [
   },
   {
     "term": "increasing",
-    "meaning": "Artan",
+    "meaning": "Artıyor",
     "hint": "become bigger or greater in amount",
     "example": "The amount of work increased",
     "level": "B1"
   },
   {
     "term": "increasingly",
-    "meaning": "Giderek",
+    "meaning": "Ar",
     "hint": "advancing in amount or intensity",
     "example": "she became increasingly depressed",
     "level": "B2"
   },
   {
     "term": "incredible",
-    "meaning": "İnanılmaz",
+    "meaning": "İnanılmaz",
     "hint": "beyond belief or understanding",
     "example": "at incredible speed",
     "level": "C1"
   },
   {
     "term": "incredibly",
-    "meaning": "İnanılmaz",
+    "meaning": "İnanılmazmak",
     "hint": "not easy to believe",
     "example": "behind you the coastal hills plunge to the incredibly blue sea backed by the Turkish mountains",
     "level": "B2"
@@ -29184,7 +29184,7 @@ const wordsData = [
   },
   {
     "term": "indefeasible",
-    "meaning": "Iptal edilemezmek",
+    "meaning": "Iptal edilemez",
     "hint": "not able to be annulled",
     "example": "An indefeasible right.",
     "level": "C2"
@@ -29268,7 +29268,7 @@ const wordsData = [
   },
   {
     "term": "indicates",
-    "meaning": "Belirtmek",
+    "meaning": "Belirtiyor",
     "hint": "be a signal for or a symptom of",
     "example": "These symptoms indicate a serious illness",
     "level": "B2"
@@ -29296,7 +29296,7 @@ const wordsData = [
   },
   {
     "term": "indispensable",
-    "meaning": "Elzem, gerekli, temelmek",
+    "meaning": "Elzem, gerekli, temel",
     "hint": "not to be dispensed with; essential",
     "example": "foods indispensable to good nutrition",
     "level": "C1"
@@ -29373,7 +29373,7 @@ const wordsData = [
   },
   {
     "term": "ineffable",
-    "meaning": "Tarif edilemezmek",
+    "meaning": "Tarif edilemez",
     "hint": "too great to be expressed",
     "example": "The ineffable beauty.",
     "level": "C2"
@@ -29520,7 +29520,7 @@ const wordsData = [
   },
   {
     "term": "informed",
-    "meaning": "Bilgilendir",
+    "meaning": "Bilgilendirdi",
     "hint": "impart knowledge of some fact, state or affairs, or event to",
     "example": "I informed him of his rights",
     "level": "B2"
@@ -29590,7 +29590,7 @@ const wordsData = [
   },
   {
     "term": "initially",
-    "meaning": "İlk olarak",
+    "meaning": "İlk olarak",
     "hint": "at the beginning",
     "example": "at first he didn't notice anything strange",
     "level": "C1"
@@ -29737,7 +29737,7 @@ const wordsData = [
   },
   {
     "term": "inside",
-    "meaning": "İçeri",
+    "meaning": "İçeri",
     "hint": "the region that is inside of something",
     "example": "The term 'inside' plays a significant role in various contexts.",
     "level": "C1"
@@ -29821,7 +29821,7 @@ const wordsData = [
   },
   {
     "term": "installed",
-    "meaning": "Kurmak",
+    "meaning": "L",
     "hint": "set up for use",
     "example": "install the washer and dryer",
     "level": "B2"
@@ -29863,7 +29863,7 @@ const wordsData = [
   },
   {
     "term": "instinct",
-    "meaning": "Içgü",
+    "meaning": "Içgüdü",
     "hint": "an innate pattern of behavior",
     "example": "Maternal instinct is very powerful.",
     "level": "B2"
@@ -29954,7 +29954,7 @@ const wordsData = [
   },
   {
     "term": "intact",
-    "meaning": "Sağlam, dokunulma",
+    "meaning": "Sağlam, dokunulmamış",
     "hint": "not damaged",
     "example": "The package arrived intact.",
     "level": "B2"
@@ -29968,7 +29968,7 @@ const wordsData = [
   },
   {
     "term": "integral",
-    "meaning": "Tamamlayıcı, ayrılmazmak",
+    "meaning": "Tamamlayıcı, ayrılmaz",
     "hint": "necessary to make complete",
     "example": "Trust is an integral part of any relationship.",
     "level": "B2"
@@ -30073,7 +30073,7 @@ const wordsData = [
   },
   {
     "term": "intentions",
-    "meaning": "Niye",
+    "meaning": "Niyeti",
     "hint": "an anticipated outcome that is intended or that guides your planned actions",
     "example": "his intent was to provide a new translation",
     "level": "B1"
@@ -30129,7 +30129,7 @@ const wordsData = [
   },
   {
     "term": "interested",
-    "meaning": "İlgili",
+    "meaning": "İlgilenmiy",
     "hint": "excite the curiosity of; engage the interest of",
     "example": "The term 'interested' plays a significant role in various contexts.",
     "level": "C1"
@@ -30178,7 +30178,7 @@ const wordsData = [
   },
   {
     "term": "internal",
-    "meaning": "Dahili",
+    "meaning": "Dâhili",
     "hint": "happening or arising or located within some limits or especially surface",
     "example": "internal organs",
     "level": "B1"
@@ -30192,7 +30192,7 @@ const wordsData = [
   },
   {
     "term": "internet",
-    "meaning": "İnternet",
+    "meaning": "İnternetmak",
     "hint": "a computer network consisting of a worldwide network of computer networks that use the TCP/IP network protocols to facilitate data transmission and exchange",
     "example": "The term 'internet' plays a significant role in various contexts.",
     "level": "A2"
@@ -30206,7 +30206,7 @@ const wordsData = [
   },
   {
     "term": "interpretation",
-    "meaning": "Yorum",
+    "meaning": "Y",
     "hint": "a mental representation of the meaning or significance of something",
     "example": "The term 'interpretation' plays a significant role in various contexts.",
     "level": "B1"
@@ -30339,7 +30339,7 @@ const wordsData = [
   },
   {
     "term": "invent",
-    "meaning": "İcat etmek",
+    "meaning": "İcat etmek",
     "hint": "create something new",
     "example": "Who invented the telephone?",
     "level": "B2"
@@ -30388,7 +30388,7 @@ const wordsData = [
   },
   {
     "term": "investigated",
-    "meaning": "Araştır",
+    "meaning": "Araştırdı",
     "hint": "investigate scientifically",
     "example": "Let's investigate the syntax of Chinese",
     "level": "B1"
@@ -30500,7 +30500,7 @@ const wordsData = [
   },
   {
     "term": "involves",
-    "meaning": "İçermek",
+    "meaning": "Içeriyor",
     "hint": "connect closely and often incriminatingly",
     "example": "This new ruling affects your business",
     "level": "B1"
@@ -30696,7 +30696,7 @@ const wordsData = [
   },
   {
     "term": "issued",
-    "meaning": "Yayınla",
+    "meaning": "Yayınladı",
     "hint": "prepare and issue for public distribution or sale",
     "example": "publish a magazine or newspaper",
     "level": "B2"
@@ -30710,14 +30710,14 @@ const wordsData = [
   },
   {
     "term": "italian",
-    "meaning": "İtalyan",
+    "meaning": "İtalyan",
     "hint": "a native or inhabitant of Italy",
     "example": "The term 'italian' plays a significant role in various contexts.",
     "level": "B1"
   },
   {
     "term": "italy",
-    "meaning": "İtalya",
+    "meaning": "İtalya",
     "hint": "a republic in southern Europe on the Italian Peninsula; was the core of the Roman Republic and the Roman Empire between the 4th century BC and the 5th century AD",
     "example": "The term 'italy' plays a significant role in various contexts.",
     "level": "B2"
@@ -30906,7 +30906,7 @@ const wordsData = [
   },
   {
     "term": "jammed",
-    "meaning": "Sıkış",
+    "meaning": "Sıkışmış",
     "hint": "press tightly together or cram",
     "example": "The crowd packed the auditorium",
     "level": "B1"
@@ -31403,7 +31403,7 @@ const wordsData = [
   },
   {
     "term": "joined",
-    "meaning": "Katıl",
+    "meaning": "Katıldı",
     "hint": "become part of; become a member of a group or organization",
     "example": "He joined the Communist Party as a young man",
     "level": "B1"
@@ -31417,7 +31417,7 @@ const wordsData = [
   },
   {
     "term": "joins",
-    "meaning": "Katılmak",
+    "meaning": "Katılıyor",
     "hint": "the shape or manner in which things come together and a connection is made",
     "example": "The term 'joins' plays a significant role in various contexts.",
     "level": "B2"
@@ -31543,7 +31543,7 @@ const wordsData = [
   },
   {
     "term": "joy",
-    "meaning": "Neşe",
+    "meaning": "Neşe / sevinç",
     "hint": "the emotion of great happiness",
     "example": "A newborn baby brings much joy.",
     "level": "B1"
@@ -31676,7 +31676,7 @@ const wordsData = [
   },
   {
     "term": "juice",
-    "meaning": "Meyve suyu",
+    "meaning": "Meyve suyu; sıvı",
     "hint": "the liquid part that can be extracted from plant or animal tissue by squeezing or cooking",
     "example": "The term 'juice' plays a significant role in various contexts.",
     "level": "B1"
@@ -31718,7 +31718,7 @@ const wordsData = [
   },
   {
     "term": "jumped",
-    "meaning": "Atla",
+    "meaning": "Atladı",
     "hint": "move forward by leaps and bounds",
     "example": "The horse bounded across the meadow",
     "level": "C1"
@@ -31746,7 +31746,7 @@ const wordsData = [
   },
   {
     "term": "jumps",
-    "meaning": "Atlamak",
+    "meaning": "Atlıyor",
     "hint": "a sudden and decisive increase",
     "example": "a jump in attendance",
     "level": "B1"
@@ -31844,7 +31844,7 @@ const wordsData = [
   },
   {
     "term": "just",
-    "meaning": "Sadece, Az",
+    "meaning": "Az",
     "hint": "used especially of what is legally or ethically right or proper or fitting",
     "example": "a just and lasting peace",
     "level": "C1"
@@ -31914,7 +31914,7 @@ const wordsData = [
   },
   {
     "term": "kaffeeklatsch",
-    "meaning": "Kahve sohbe",
+    "meaning": "Kahve sohbeti",
     "hint": "an informal gathering",
     "example": "The kaffeeklatsch was enjoyable.",
     "level": "C2"
@@ -32082,7 +32082,7 @@ const wordsData = [
   },
   {
     "term": "keeps",
-    "meaning": "Tutmak, Saklamak",
+    "meaning": "Saklıyor",
     "hint": "the financial means whereby one lives",
     "example": "each child was expected to pay for their keep",
     "level": "C2"
@@ -32271,7 +32271,7 @@ const wordsData = [
   },
   {
     "term": "kicking",
-    "meaning": "Kovmak, Tekmelemek",
+    "meaning": "Kovuyor",
     "hint": "a rhythmic thrusting movement of the legs as in swimming or calisthenics",
     "example": "the kick must be synchronized with the arm movements",
     "level": "B1"
@@ -32292,7 +32292,7 @@ const wordsData = [
   },
   {
     "term": "kid",
-    "meaning": "Çocuk",
+    "meaning": "Çocuktu",
     "hint": "a young person of either sex",
     "example": "she writes books for children",
     "level": "B2"
@@ -32502,7 +32502,7 @@ const wordsData = [
   },
   {
     "term": "kinds",
-    "meaning": "Çeşi",
+    "meaning": "Çeşidi",
     "hint": "a category of things distinguished by some common characteristic or quality",
     "example": "sculpture is a form of art",
     "level": "B2"
@@ -32572,7 +32572,7 @@ const wordsData = [
   },
   {
     "term": "kissed",
-    "meaning": "Öpmek",
+    "meaning": "Öptü",
     "hint": "touch with the lips or press the lips (against someone's mouth or other body part) as an expression of love, greeting, etc.",
     "example": "The newly married couple kissed",
     "level": "C1"
@@ -32628,7 +32628,7 @@ const wordsData = [
   },
   {
     "term": "kitten",
-    "meaning": "Kedi yavrusu",
+    "meaning": "Kedi",
     "hint": "young domestic cat",
     "example": "The term 'kitten' plays a significant role in various contexts.",
     "level": "B2"
@@ -33097,7 +33097,7 @@ const wordsData = [
   },
   {
     "term": "laissez-faire",
-    "meaning": "Serbest bırakmak",
+    "meaning": "Serbest bırak",
     "hint": "a policy of leaving things to take their own course",
     "example": "Laissez-faire economics.",
     "level": "C2"
@@ -33237,7 +33237,7 @@ const wordsData = [
   },
   {
     "term": "lasted",
-    "meaning": "Dayan",
+    "meaning": "Dayandı",
     "hint": "persist for a specified period of time",
     "example": "The bad weather lasted for three days",
     "level": "A2"
@@ -33300,7 +33300,7 @@ const wordsData = [
   },
   {
     "term": "laughed",
-    "meaning": "Gül",
+    "meaning": "Güldü",
     "hint": "produce laughter",
     "example": "The term 'laughed' plays a significant role in various contexts.",
     "level": "B1"
@@ -33328,7 +33328,7 @@ const wordsData = [
   },
   {
     "term": "launched",
-    "meaning": "Fırlatıl",
+    "meaning": "Fırlatıldı",
     "hint": "set up or found",
     "example": "She set up a literacy program",
     "level": "B2"
@@ -33398,7 +33398,7 @@ const wordsData = [
   },
   {
     "term": "laying",
-    "meaning": "Yatmak",
+    "meaning": "Yatıyordu",
     "hint": "the production of eggs (especially in birds)",
     "example": "The term 'laying' plays a significant role in various contexts.",
     "level": "C1"
@@ -33447,7 +33447,7 @@ const wordsData = [
   },
   {
     "term": "leads",
-    "meaning": "İpucu",
+    "meaning": "İpucu",
     "hint": "an advantage held by a competitor in a race",
     "example": "he took the lead at the last turn",
     "level": "B2"
@@ -33503,7 +33503,7 @@ const wordsData = [
   },
   {
     "term": "lease",
-    "meaning": "Kontra",
+    "meaning": "Kontratı",
     "hint": "property that is leased or rented out or let",
     "example": "The term 'lease' plays a significant role in various contexts.",
     "level": "C1"
@@ -33720,7 +33720,7 @@ const wordsData = [
   },
   {
     "term": "let",
-    "meaning": "İzin vermek",
+    "meaning": "İzin vermek",
     "hint": "a brutal terrorist group active in Kashmir; fights against India with the goal of restoring Islamic rule of India",
     "example": "Lashkar-e-Toiba has committed mass murders of civilian Hindus",
     "level": "B1"
@@ -33832,7 +33832,7 @@ const wordsData = [
   },
   {
     "term": "lie",
-    "meaning": "Yalan söylemek",
+    "meaning": "Yalandı",
     "hint": "a statement that deviates from or perverts the truth",
     "example": "The term 'lie' plays a significant role in various contexts.",
     "level": "B2"
@@ -33951,7 +33951,7 @@ const wordsData = [
   },
   {
     "term": "likes",
-    "meaning": "Hoşlanmak",
+    "meaning": "Hoşlanıyor",
     "hint": "a similar kind; ,",
     "example": "dogs, foxes, and the like",
     "level": "B2"
@@ -34077,14 +34077,14 @@ const wordsData = [
   },
   {
     "term": "listed",
-    "meaning": "Listelen",
+    "meaning": "Listelenmiş",
     "hint": "give or make a list of; name individually; give the names of",
     "example": "List the states west of the Mississippi",
     "level": "C1"
   },
   {
     "term": "listen",
-    "meaning": "Dinleme",
+    "meaning": "Dinlemedi",
     "hint": "hear with intention",
     "example": "Listen to the sound of this cello",
     "level": "B2"
@@ -34119,7 +34119,7 @@ const wordsData = [
   },
   {
     "term": "lit",
-    "meaning": "Aydınlan",
+    "meaning": "Aydınlandı",
     "hint": "the humanistic study of a body of literature",
     "example": "he took a course in Russian lit",
     "level": "B1"
@@ -34168,7 +34168,7 @@ const wordsData = [
   },
   {
     "term": "lived",
-    "meaning": "Yaşar",
+    "meaning": "Yaşardı",
     "hint": "inhabit or live in; be an inhabitant of",
     "example": "People lived in Africa millions of years ago",
     "level": "A1"
@@ -34350,7 +34350,7 @@ const wordsData = [
   },
   {
     "term": "longer",
-    "meaning": "Sür",
+    "meaning": "Sürdü",
     "hint": "a person with a strong desire for something",
     "example": "a longer for money",
     "level": "B1"
@@ -34504,7 +34504,7 @@ const wordsData = [
   },
   {
     "term": "lovely",
-    "meaning": "Hoş",
+    "meaning": "Hoştu",
     "hint": "a very pretty girl who works as a photographer's model",
     "example": "The term 'lovely' plays a significant role in various contexts.",
     "level": "B2"
@@ -34525,7 +34525,7 @@ const wordsData = [
   },
   {
     "term": "loves",
-    "meaning": "Sevmek",
+    "meaning": "Bayılıyor",
     "hint": "a strong positive emotion of regard and affection",
     "example": "his love for his work",
     "level": "C1"
@@ -34672,7 +34672,7 @@ const wordsData = [
   },
   {
     "term": "made",
-    "meaning": "Yapıl",
+    "meaning": "Yapılmış",
     "hint": "engage in",
     "example": "make love, not war",
     "level": "B1"
@@ -34735,7 +34735,7 @@ const wordsData = [
   },
   {
     "term": "maintain",
-    "meaning": "Sürdürmek",
+    "meaning": "İleri sürmek, devam etmek",
     "hint": "keep in a certain state, position, or activity; e.g.,",
     "example": "keep clean",
     "level": "B2"
@@ -34840,7 +34840,7 @@ const wordsData = [
   },
   {
     "term": "manage",
-    "meaning": "İdare etmek",
+    "meaning": "İdare",
     "hint": "be successful; achieve a goal",
     "example": "She succeeded in persuading us all",
     "level": "B1"
@@ -34966,7 +34966,7 @@ const wordsData = [
   },
   {
     "term": "margin",
-    "meaning": "Kenar boşluğu",
+    "meaning": "Pa",
     "hint": "the boundary line or the area immediately inside the boundary",
     "example": "The term 'margin' plays a significant role in various contexts.",
     "level": "B2"
@@ -34994,7 +34994,7 @@ const wordsData = [
   },
   {
     "term": "marked",
-    "meaning": "Işaretlen",
+    "meaning": "Işaretlenmiş",
     "hint": "attach a tag or label to",
     "example": "label these bottles",
     "level": "B2"
@@ -35470,7 +35470,7 @@ const wordsData = [
   },
   {
     "term": "menu",
-    "meaning": "Menü",
+    "meaning": "Me",
     "hint": "a list of dishes available at a restaurant",
     "example": "the menu was in French",
     "level": "B2"
@@ -35505,7 +35505,7 @@ const wordsData = [
   },
   {
     "term": "met",
-    "meaning": "Tanış",
+    "meaning": "Tanıştı",
     "hint": "come together",
     "example": "I'll probably see you at the meeting",
     "level": "A1"
@@ -35519,7 +35519,7 @@ const wordsData = [
   },
   {
     "term": "method",
-    "meaning": "Meto",
+    "meaning": "Metodu",
     "hint": "a way of doing something, especially a systematic way; implies an orderly logical arrangement (usually in steps)",
     "example": "The term 'method' plays a significant role in various contexts.",
     "level": "B1"
@@ -35687,7 +35687,7 @@ const wordsData = [
   },
   {
     "term": "mini",
-    "meaning": "Mini",
+    "meaning": "Mi",
     "hint": "a very short skirt",
     "example": "The term 'mini' plays a significant role in various contexts.",
     "level": "B1"
@@ -35834,7 +35834,7 @@ const wordsData = [
   },
   {
     "term": "mixed",
-    "meaning": "Karıştırıl",
+    "meaning": "Karıştırılmış",
     "hint": "mix together different elements",
     "example": "The colors blend well",
     "level": "B2"
@@ -36135,7 +36135,7 @@ const wordsData = [
   },
   {
     "term": "moved",
-    "meaning": "Taşın",
+    "meaning": "Taşındı",
     "hint": "change location; move, travel, or proceed, also metaphorically",
     "example": "How fast does your new car go?",
     "level": "B1"
@@ -36163,7 +36163,7 @@ const wordsData = [
   },
   {
     "term": "movie",
-    "meaning": "Film",
+    "meaning": "Filmdi",
     "hint": "a form of entertainment that enacts a story by sound and a sequence of images giving the illusion of continuous movement",
     "example": "they went to a movie every Saturday night",
     "level": "C1"
@@ -36184,7 +36184,7 @@ const wordsData = [
   },
   {
     "term": "mrs",
-    "meaning": "Hanımefendi",
+    "meaning": "Bn",
     "hint": "a form of address for a married woman",
     "example": "The term 'mrs' plays a significant role in various contexts.",
     "level": "B2"
@@ -36219,7 +36219,7 @@ const wordsData = [
   },
   {
     "term": "murdered",
-    "meaning": "Öldürül",
+    "meaning": "Öldürüldü",
     "hint": "kill intentionally and with premeditation",
     "example": "The mafia boss ordered his enemies murdered",
     "level": "B1"
@@ -36289,7 +36289,7 @@ const wordsData = [
   },
   {
     "term": "mutual",
-    "meaning": "Karşılıklı, ortakmak",
+    "meaning": "Karşılıklı, ortak",
     "hint": "common to or shared by two or more parties",
     "example": "a common friend",
     "level": "B1"
@@ -36310,7 +36310,7 @@ const wordsData = [
   },
   {
     "term": "nailed",
-    "meaning": "Çivilen",
+    "meaning": "Çivilenmiş",
     "hint": "attach something somewhere by means of nails",
     "example": "nail the board onto the wall",
     "level": "C1"
@@ -36338,7 +36338,7 @@ const wordsData = [
   },
   {
     "term": "name",
-    "meaning": "İsim",
+    "meaning": "İsmin",
     "hint": "a language unit by which a person or thing is known",
     "example": "his name really is George Washington",
     "level": "B1"
@@ -36401,7 +36401,7 @@ const wordsData = [
   },
   {
     "term": "narrative",
-    "meaning": "Anla",
+    "meaning": "Anlatı",
     "hint": "a message that tells the particulars of an act or occurrence or course of events; presented in writing or drama or cinema or as a radio or television program",
     "example": "his narrative was interesting",
     "level": "C2"
@@ -36625,7 +36625,7 @@ const wordsData = [
   },
   {
     "term": "nearly",
-    "meaning": "Neredeyse",
+    "meaning": "Öldürüyordu",
     "hint": "(of actions or states) slightly short of or not quite accomplished; all but",
     "example": "the job is (just) about done",
     "level": "B2"
@@ -36688,7 +36688,7 @@ const wordsData = [
   },
   {
     "term": "needed",
-    "meaning": "Lazım",
+    "meaning": "Lazımdı",
     "hint": "require as useful, just, or proper",
     "example": "It takes nerve to do what she did",
     "level": "B1"
@@ -36751,7 +36751,7 @@ const wordsData = [
   },
   {
     "term": "neglected",
-    "meaning": "İhmal edilmiş",
+    "meaning": "Ihmal",
     "hint": "leave undone or leave out",
     "example": "How could I miss that typo?",
     "level": "C1"
@@ -37066,7 +37066,7 @@ const wordsData = [
   },
   {
     "term": "newly",
-    "meaning": "Atan",
+    "meaning": "Atanmış",
     "hint": "very recently",
     "example": "they are newly married",
     "level": "B1"
@@ -37136,7 +37136,7 @@ const wordsData = [
   },
   {
     "term": "nice",
-    "meaning": "Güzel",
+    "meaning": "Güzelmiş",
     "hint": "a city in southeastern France on the Mediterranean; the leading resort on the French Riviera",
     "example": "The term 'nice' plays a significant role in various contexts.",
     "level": "B1"
@@ -37542,7 +37542,7 @@ const wordsData = [
   },
   {
     "term": "northwest",
-    "meaning": "Kuzeyba",
+    "meaning": "Kuzeybatı",
     "hint": "the northwestern region of the United States",
     "example": "The term 'northwest' plays a significant role in various contexts.",
     "level": "B2"
@@ -37584,7 +37584,7 @@ const wordsData = [
   },
   {
     "term": "notable",
-    "meaning": "Kayda değermek",
+    "meaning": "Kayda değer",
     "hint": "a celebrity who is an inspiration to others",
     "example": "he was host to a large gathering of luminaries",
     "level": "B1"
@@ -37654,7 +37654,7 @@ const wordsData = [
   },
   {
     "term": "noticeable",
-    "meaning": "Fark edilebilir",
+    "meaning": "Edilmiyor",
     "hint": "capable or worthy of being perceived",
     "example": "noticeable shadows under her eyes",
     "level": "B2"
@@ -37689,7 +37689,7 @@ const wordsData = [
   },
   {
     "term": "notified",
-    "meaning": "Bilgilendiril",
+    "meaning": "Bilgilendirildi",
     "hint": "inform (somebody) of something",
     "example": "I advised him that the rent was due",
     "level": "B1"
@@ -37703,7 +37703,7 @@ const wordsData = [
   },
   {
     "term": "noting",
-    "meaning": "Dikkat etmek",
+    "meaning": "İnsamak",
     "hint": "make mention of",
     "example": "She observed that his presentation took up too much time",
     "level": "B1"
@@ -37787,7 +37787,7 @@ const wordsData = [
   },
   {
     "term": "nowhere",
-    "meaning": "Hiçbir yer",
+    "meaning": "Gidecek",
     "hint": "an insignificant place",
     "example": "he came out of nowhere",
     "level": "C1"
@@ -37850,7 +37850,7 @@ const wordsData = [
   },
   {
     "term": "numerous",
-    "meaning": "Sayısız, çokmak",
+    "meaning": "Sayısız, çok",
     "hint": "amounting to a large indefinite number",
     "example": "numerous times",
     "level": "C1"
@@ -37962,7 +37962,7 @@ const wordsData = [
   },
   {
     "term": "objective",
-    "meaning": "Amaç, hedefmek",
+    "meaning": "Amaç, hedef",
     "hint": "the goal intended to be attained (and which is believed to be attainable)",
     "example": "the sole object of her trip was to see her children",
     "level": "B1"
@@ -38249,7 +38249,7 @@ const wordsData = [
   },
   {
     "term": "odd",
-    "meaning": "Garip",
+    "meaning": "Garipti",
     "hint": "not divisible by two",
     "example": "The term 'odd' plays a significant role in various contexts.",
     "level": "B2"
@@ -38403,7 +38403,7 @@ const wordsData = [
   },
   {
     "term": "offshore",
-    "meaning": "Açık deniz",
+    "meaning": "Kı",
     "hint": "(of winds) coming from the land",
     "example": "offshore winds",
     "level": "C1"
@@ -38445,7 +38445,7 @@ const wordsData = [
   },
   {
     "term": "okay",
-    "meaning": "Geç",
+    "meaning": "Geçti",
     "hint": "an endorsement",
     "example": "they gave us the O.K. to go ahead",
     "level": "B1"
@@ -38459,7 +38459,7 @@ const wordsData = [
   },
   {
     "term": "old",
-    "meaning": "İhtiyar, Eski",
+    "meaning": "İhtiyar",
     "hint": "past times (especially in the phrase `in days of old')",
     "example": "The term 'old' plays a significant role in various contexts.",
     "level": "B2"
@@ -38564,7 +38564,7 @@ const wordsData = [
   },
   {
     "term": "online",
-    "meaning": "Çevrimiçi",
+    "meaning": "İnternette",
     "hint": "on a regular route of a railroad or bus or airline system",
     "example": "on-line industries",
     "level": "B1"
@@ -39278,7 +39278,7 @@ const wordsData = [
   },
   {
     "term": "outstanding",
-    "meaning": "Ödenme",
+    "meaning": "Ödenmemiş",
     "hint": "distinguished from others in excellence",
     "example": "did outstanding work in human relations",
     "level": "A1"
@@ -39299,7 +39299,7 @@ const wordsData = [
   },
   {
     "term": "over",
-    "meaning": "Bit",
+    "meaning": "Bitti",
     "hint": "(cricket) the division of play during which six balls are bowled at the batsman by one player from the other team from the same end of the pitch",
     "example": "The term 'over' plays a significant role in various contexts.",
     "level": "C2"
@@ -39453,7 +39453,7 @@ const wordsData = [
   },
   {
     "term": "owned",
-    "meaning": "Sahibi",
+    "meaning": "Sahibiydi",
     "hint": "have ownership or possession of",
     "example": "He owns three houses in Florida",
     "level": "C1"
@@ -39740,7 +39740,7 @@ const wordsData = [
   },
   {
     "term": "passed",
-    "meaning": "Bayıl",
+    "meaning": "Bayıldı",
     "hint": "go across or through",
     "example": "We passed the point where the police car had parked",
     "level": "B1"
@@ -39838,7 +39838,7 @@ const wordsData = [
   },
   {
     "term": "people",
-    "meaning": "İnsanlar",
+    "meaning": "İnsanlara",
     "hint": "(plural) any group of human beings (men or women or children) collectively",
     "example": "old people",
     "level": "B1"
@@ -39887,7 +39887,7 @@ const wordsData = [
   },
   {
     "term": "perfect",
-    "meaning": "Mükemmel",
+    "meaning": "Mükemmeldi",
     "hint": "a tense of verbs used in describing action that has been completed (sometimes regarded as perfective aspect)",
     "example": "The term 'perfect' plays a significant role in various contexts.",
     "level": "B2"
@@ -39915,7 +39915,7 @@ const wordsData = [
   },
   {
     "term": "performed",
-    "meaning": "Gerçekleştir",
+    "meaning": "Gerçekleştirdi",
     "hint": "carry out or perform an action",
     "example": "John did the painting, the weeding, and he cleaned out the gutters",
     "level": "B1"
@@ -39957,7 +39957,7 @@ const wordsData = [
   },
   {
     "term": "persist",
-    "meaning": "Devam etmek, ısrar etmek",
+    "meaning": "Devam etmek, ısrar et",
     "hint": "continue to exist",
     "example": "These stories die hard",
     "level": "B2"
@@ -40013,7 +40013,7 @@ const wordsData = [
   },
   {
     "term": "persuade",
-    "meaning": "İkna etmek",
+    "meaning": "İkna etmek",
     "hint": "win approval or support for",
     "example": "Carry all before one",
     "level": "B2"
@@ -40174,7 +40174,7 @@ const wordsData = [
   },
   {
     "term": "planning",
-    "meaning": "Planlamak",
+    "meaning": "Planlıyor",
     "hint": "an act of formulating a program for a definite course of action",
     "example": "the planning was more fun than the trip itself",
     "level": "B1"
@@ -40321,7 +40321,7 @@ const wordsData = [
   },
   {
     "term": "pointed",
-    "meaning": "Doğrultul",
+    "meaning": "Doğrultulmuş",
     "hint": "indicate a place, direction, person, or thing; either spatially or figuratively",
     "example": "I showed the customer the glove section",
     "level": "B1"
@@ -40489,7 +40489,7 @@ const wordsData = [
   },
   {
     "term": "posted",
-    "meaning": "Kefale",
+    "meaning": "Kefaleti",
     "hint": "affix in a public place or for public notice",
     "example": "post a warning",
     "level": "B2"
@@ -40741,7 +40741,7 @@ const wordsData = [
   },
   {
     "term": "primary",
-    "meaning": "Temel, Ana",
+    "meaning": "Ana, temel",
     "hint": "a preliminary election where delegates or nominees are chosen",
     "example": "The term 'primary' plays a significant role in various contexts.",
     "level": "C1"
@@ -40874,7 +40874,7 @@ const wordsData = [
   },
   {
     "term": "produced",
-    "meaning": "Üret",
+    "meaning": "Üretti",
     "hint": "bring forth or yield",
     "example": "The tree would not produce fruit",
     "level": "C1"
@@ -40986,7 +40986,7 @@ const wordsData = [
   },
   {
     "term": "prominent",
-    "meaning": "Göze çarpanmak",
+    "meaning": "Göze çarpan",
     "hint": "having a quality that thrusts itself into attention",
     "example": "an outstanding fact of our time is that nations poisoned by anti semitism proved less fortunate in regard to their own freedom",
     "level": "C1"
@@ -41014,7 +41014,7 @@ const wordsData = [
   },
   {
     "term": "prompt",
-    "meaning": "Hızlı, çabukmak",
+    "meaning": "Hızlı, çabuk",
     "hint": "a cue given to a performer (usually the beginning of the next line to be spoken)",
     "example": "the audience could hear his prompting",
     "level": "B1"
@@ -41098,7 +41098,7 @@ const wordsData = [
   },
   {
     "term": "protected",
-    "meaning": "Korunmuş",
+    "meaning": "Korunuyor",
     "hint": "shield from danger, injury, destruction, or damage",
     "example": "Weatherbeater protects your roof from the rain",
     "level": "C1"
@@ -41126,7 +41126,7 @@ const wordsData = [
   },
   {
     "term": "prove",
-    "meaning": "İspatlamak",
+    "meaning": "İspatlamak",
     "hint": "be shown or be found to be",
     "example": "She proved to be right",
     "level": "B2"
@@ -41252,7 +41252,7 @@ const wordsData = [
   },
   {
     "term": "put",
-    "meaning": "Koymak",
+    "meaning": "Forward i̇leri sürmek",
     "hint": "the option to sell a given stock (or stock index or commodity future) at a given price before a given date",
     "example": "The term 'put' plays a significant role in various contexts.",
     "level": "B2"
@@ -41546,7 +41546,7 @@ const wordsData = [
   },
   {
     "term": "query",
-    "meaning": "Postala",
+    "meaning": "Postaladı",
     "hint": "an instance of questioning",
     "example": "there was a question about my training",
     "level": "A1"
@@ -41560,7 +41560,7 @@ const wordsData = [
   },
   {
     "term": "question",
-    "meaning": "Soru",
+    "meaning": "Soruydu",
     "hint": "an instance of questioning",
     "example": "there was a question about my training",
     "level": "B2"
@@ -41574,7 +41574,7 @@ const wordsData = [
   },
   {
     "term": "questioned",
-    "meaning": "Sorgula",
+    "meaning": "Sorguladı",
     "hint": "challenge the accuracy, probity, or propriety of",
     "example": "We must question your judgment in this matter",
     "level": "C2"
@@ -41742,7 +41742,7 @@ const wordsData = [
   },
   {
     "term": "quotation",
-    "meaning": "Alın",
+    "meaning": "Alıntı",
     "hint": "a short note recognizing a source of information or of a quoted passage",
     "example": "the student's essay failed to list several important citations",
     "level": "B1"
@@ -41763,7 +41763,7 @@ const wordsData = [
   },
   {
     "term": "quoted",
-    "meaning": "Alın",
+    "meaning": "Alıntı",
     "hint": "repeat a passage from",
     "example": "He quoted the Bible to her",
     "level": "B2"
@@ -41777,7 +41777,7 @@ const wordsData = [
   },
   {
     "term": "quoting",
-    "meaning": "Alın",
+    "meaning": "Alıntı",
     "hint": "repeat a passage from",
     "example": "He quoted the Bible to her",
     "level": "B2"
@@ -41854,7 +41854,7 @@ const wordsData = [
   },
   {
     "term": "raised",
-    "meaning": "Büyüt",
+    "meaning": "Büyüttü",
     "hint": "raise the level or amount of something",
     "example": "raise my salary",
     "level": "C1"
@@ -41938,7 +41938,7 @@ const wordsData = [
   },
   {
     "term": "rate",
-    "meaning": "Oran, miktarmak",
+    "meaning": "Oran, miktar",
     "hint": "a magnitude or frequency relative to a time unit",
     "example": "they traveled at a rate of 55 miles per hour",
     "level": "B1"
@@ -42043,7 +42043,7 @@ const wordsData = [
   },
   {
     "term": "real",
-    "meaning": "Gerçek",
+    "meaning": "Gerçekti",
     "hint": "any rational or irrational number",
     "example": "The term 'real' plays a significant role in various contexts.",
     "level": "C1"
@@ -42106,7 +42106,7 @@ const wordsData = [
   },
   {
     "term": "rebel",
-    "meaning": "İsyan etmek",
+    "meaning": "Against i̇syan etmek",
     "hint": "`Johnny' was applied as a nickname for Confederate soldiers by the Federal soldiers in the American Civil War; `greyback' derived from their grey Confederate uniforms",
     "example": "The term 'rebel' plays a significant role in various contexts.",
     "level": "B1"
@@ -42183,7 +42183,7 @@ const wordsData = [
   },
   {
     "term": "recommended",
-    "meaning": "Öner",
+    "meaning": "Önerdi",
     "hint": "push for something",
     "example": "The travel agent recommended strongly that we not travel on Thanksgiving Day",
     "level": "C1"
@@ -42204,7 +42204,7 @@ const wordsData = [
   },
   {
     "term": "recording",
-    "meaning": "Kaydetmek",
+    "meaning": "Kaydediyor",
     "hint": "a signal that encodes something (e.g., picture or sound) that has been recorded",
     "example": "The term 'recording' plays a significant role in various contexts.",
     "level": "B1"
@@ -42239,7 +42239,7 @@ const wordsData = [
   },
   {
     "term": "reduced",
-    "meaning": "Indirgen",
+    "meaning": "Indirgenmiş",
     "hint": "cut down on; make a reduction in",
     "example": "reduce your daily fat intake",
     "level": "B2"
@@ -42316,7 +42316,7 @@ const wordsData = [
   },
   {
     "term": "refused",
-    "meaning": "Reddet",
+    "meaning": "Reddetti",
     "hint": "show unwillingness towards",
     "example": "he declined to join the group on a hike",
     "level": "B2"
@@ -42330,7 +42330,7 @@ const wordsData = [
   },
   {
     "term": "regarding",
-    "meaning": "Alakalı, ilgilimek",
+    "meaning": "Alakalı, ilgili",
     "hint": "deem to be",
     "example": "She views this quite differently from me",
     "level": "B2"
@@ -42442,7 +42442,7 @@ const wordsData = [
   },
   {
     "term": "relation",
-    "meaning": "İlişki",
+    "meaning": "İlişkimek",
     "hint": "an abstraction belonging to or characteristic of two entities or parts together",
     "example": "The term 'relation' plays a significant role in various contexts.",
     "level": "B2"
@@ -42491,7 +42491,7 @@ const wordsData = [
   },
   {
     "term": "released",
-    "meaning": "Bırakıl",
+    "meaning": "Bırakıldı",
     "hint": "release, as from one's grip",
     "example": "Let go of the door handle, please!",
     "level": "B2"
@@ -42526,14 +42526,14 @@ const wordsData = [
   },
   {
     "term": "religious",
-    "meaning": "Dini",
+    "meaning": "Di",
     "hint": "a member of a religious order who is bound by vows of poverty and chastity and obedience",
     "example": "The term 'religious' plays a significant role in various contexts.",
     "level": "B2"
   },
   {
     "term": "reluctant",
-    "meaning": "İsteksiz",
+    "meaning": "İsteksizmak",
     "hint": "unwillingness to do something contrary to your custom",
     "example": "a reluctant smile",
     "level": "C1"
@@ -42582,7 +42582,7 @@ const wordsData = [
   },
   {
     "term": "remember",
-    "meaning": "Hatırlamak",
+    "meaning": "Hatırlamıyor",
     "hint": "recall knowledge from memory; have a recollection",
     "example": "I can't remember saying any such thing",
     "level": "C1"
@@ -42596,7 +42596,7 @@ const wordsData = [
   },
   {
     "term": "remnant",
-    "meaning": "Kalın",
+    "meaning": "Kalıntı",
     "hint": "a small part or portion that remains after the main part no longer exists",
     "example": "The term 'remnant' plays a significant role in various contexts.",
     "level": "B2"
@@ -42624,7 +42624,7 @@ const wordsData = [
   },
   {
     "term": "removed",
-    "meaning": "Kaldırıl",
+    "meaning": "Kaldırıldı",
     "hint": "remove something concrete, as by lifting, pushing, or taking off, or remove something abstract",
     "example": "remove a threat",
     "level": "B2"
@@ -42666,7 +42666,7 @@ const wordsData = [
   },
   {
     "term": "replaced",
-    "meaning": "Değiştiril",
+    "meaning": "Değiştirildi",
     "hint": "substitute a person or thing for (another that is broken or inefficient or lost or no longer working or yielding what is expected)",
     "example": "He replaced the old razor blade",
     "level": "C1"
@@ -42708,7 +42708,7 @@ const wordsData = [
   },
   {
     "term": "reporting",
-    "meaning": "Raporlamak",
+    "meaning": "Bildiriyor",
     "hint": "the news as presented by reporters for newspapers or radio or television",
     "example": "they accused the paper of biased coverage of race relations",
     "level": "B2"
@@ -42995,7 +42995,7 @@ const wordsData = [
   },
   {
     "term": "resulted",
-    "meaning": "Sonuçlan",
+    "meaning": "Sonuçlandı",
     "hint": "issue or terminate (in a specified way, state, etc.); end",
     "example": "result in tragedy",
     "level": "C1"
@@ -43212,7 +43212,7 @@ const wordsData = [
   },
   {
     "term": "rising",
-    "meaning": "Yükselen",
+    "meaning": "Yükseliyor",
     "hint": "a movement upward",
     "example": "they cheered the rise of the hot-air balloon",
     "level": "B1"
@@ -43429,7 +43429,7 @@ const wordsData = [
   },
   {
     "term": "run",
-    "meaning": "Koşmak",
+    "meaning": "Into: rast gelmek",
     "hint": "a score in baseball made by a runner touching all four bases safely",
     "example": "the Yankees scored 3 runs in the bottom of the 9th",
     "level": "B2"
@@ -43443,7 +43443,7 @@ const wordsData = [
   },
   {
     "term": "runs",
-    "meaning": "Koşmak",
+    "meaning": "Işletiyor",
     "hint": "a score in baseball made by a runner touching all four bases safely",
     "example": "the Yankees scored 3 runs in the bottom of the 9th",
     "level": "B1"
@@ -43492,14 +43492,14 @@ const wordsData = [
   },
   {
     "term": "safety",
-    "meaning": "Emniye",
+    "meaning": "Emniyeti",
     "hint": "the state of being certain that adverse effects will not be caused by some agent under defined conditions",
     "example": "insure the safety of the children",
     "level": "B1"
   },
   {
     "term": "said",
-    "meaning": "Söylenen",
+    "meaning": "Demişti",
     "hint": "express in words",
     "example": "He said that he wanted to marry her",
     "level": "B1"
@@ -43548,7 +43548,7 @@ const wordsData = [
   },
   {
     "term": "savoir-faire",
-    "meaning": "Ince davranışmak",
+    "meaning": "Ince davranış",
     "hint": "the ability to act appropriately",
     "example": "She has great savoir-faire.",
     "level": "C2"
@@ -43639,7 +43639,7 @@ const wordsData = [
   },
   {
     "term": "scotland",
-    "meaning": "İskoçya",
+    "meaning": "İskoçya",
     "hint": "one of the four countries that make up the United Kingdom of Great Britain and Northern Ireland; located on the northern part of the island of Great Britain; famous for bagpipes and plaids and kilts",
     "example": "The term 'scotland' plays a significant role in various contexts.",
     "level": "B1"
@@ -43737,7 +43737,7 @@ const wordsData = [
   },
   {
     "term": "seeing",
-    "meaning": "Görmek",
+    "meaning": "Görüşüyor",
     "hint": "perception by means of the eyes",
     "example": "The term 'seeing' plays a significant role in various contexts.",
     "level": "C1"
@@ -43758,7 +43758,7 @@ const wordsData = [
   },
   {
     "term": "seemed",
-    "meaning": "Görünmek",
+    "meaning": "Gözüküyordu",
     "hint": "give a certain impression or have a certain outward aspect",
     "example": "She seems to be sleeping",
     "level": "B1"
@@ -43800,7 +43800,7 @@ const wordsData = [
   },
   {
     "term": "selling",
-    "meaning": "Satmak",
+    "meaning": "Satıyor",
     "hint": "the exchange of goods for an agreed sum of money",
     "example": "The term 'selling' plays a significant role in various contexts.",
     "level": "B1"
@@ -43884,7 +43884,7 @@ const wordsData = [
   },
   {
     "term": "served",
-    "meaning": "Yat",
+    "meaning": "Yatmış",
     "hint": "serve a purpose, role, or function",
     "example": "The tree stump serves as a table",
     "level": "B1"
@@ -43912,7 +43912,7 @@ const wordsData = [
   },
   {
     "term": "set",
-    "meaning": "Kurmak",
+    "meaning": "Up: kurmak",
     "hint": "a group of things of the same kind that belong together and are so used",
     "example": "a set of books",
     "level": "B2"
@@ -44115,7 +44115,7 @@ const wordsData = [
   },
   {
     "term": "signed",
-    "meaning": "Imzala",
+    "meaning": "Imzaladı",
     "hint": "mark with one's signature; write one's name (on)",
     "example": "She signed the letter and sent it off",
     "level": "B2"
@@ -44521,7 +44521,7 @@ const wordsData = [
   },
   {
     "term": "spanish",
-    "meaning": "İspanyolca",
+    "meaning": "İspanyolca",
     "hint": "the Romance language spoken in most of Spain and the countries colonized by Spain",
     "example": "The term 'spanish' plays a significant role in various contexts.",
     "level": "B1"
@@ -44717,7 +44717,7 @@ const wordsData = [
   },
   {
     "term": "started",
-    "meaning": "Başlat",
+    "meaning": "Başlattı",
     "hint": "take the first step or steps in carrying out an action",
     "example": "We began working at dawn",
     "level": "B1"
@@ -44738,7 +44738,7 @@ const wordsData = [
   },
   {
     "term": "state",
-    "meaning": "İfade etmek",
+    "meaning": "İfade etmek, söylemek",
     "hint": "the territory occupied by one of the constituent administrative districts of a nation",
     "example": "his state is in the deep south",
     "level": "B2"
@@ -44752,7 +44752,7 @@ const wordsData = [
   },
   {
     "term": "statement",
-    "meaning": "İfade",
+    "meaning": "İfadesi",
     "hint": "a message that is stated or declared; a communication (oral or written) setting forth particulars or facts etc",
     "example": "according to his statement he was in London on that day",
     "level": "B2"
@@ -44766,7 +44766,7 @@ const wordsData = [
   },
   {
     "term": "station",
-    "meaning": "İstasyon",
+    "meaning": "İstasyona",
     "hint": "a facility equipped with special equipment and personnel for a particular purpose",
     "example": "he started looking for a gas station",
     "level": "B1"
@@ -44794,7 +44794,7 @@ const wordsData = [
   },
   {
     "term": "steady",
-    "meaning": "İstikrarlı",
+    "meaning": "İstikrarlı",
     "hint": "a person loved by another person",
     "example": "The term 'steady' plays a significant role in various contexts.",
     "level": "B1"
@@ -45004,7 +45004,7 @@ const wordsData = [
   },
   {
     "term": "stupid",
-    "meaning": "Aptalca",
+    "meaning": "Aptalcaydı",
     "hint": "a person who is not very bright",
     "example": "The economy, stupid!",
     "level": "B1"
@@ -45025,7 +45025,7 @@ const wordsData = [
   },
   {
     "term": "subject",
-    "meaning": "Konu",
+    "meaning": "Konu; ders; deney konusu",
     "hint": "the subject matter of a conversation or discussion",
     "example": "he didn't want to discuss that subject",
     "level": "C1"
@@ -45081,7 +45081,7 @@ const wordsData = [
   },
   {
     "term": "suit",
-    "meaning": "Yakışmak",
+    "meaning": "Yakışmıyor",
     "hint": "a set of garments (usually including a jacket and trousers or skirt) for outerwear all of the same fabric and color",
     "example": "they buried him in his best suit",
     "level": "B1"
@@ -45291,7 +45291,7 @@ const wordsData = [
   },
   {
     "term": "taken",
-    "meaning": "Çekil",
+    "meaning": "Çekildi",
     "hint": "carry out",
     "example": "take action",
     "level": "B2"
@@ -45424,7 +45424,7 @@ const wordsData = [
   },
   {
     "term": "taught",
-    "meaning": "Öğret",
+    "meaning": "Öğretti",
     "hint": "impart skills or knowledge to",
     "example": "I taught them French",
     "level": "C1"
@@ -45452,7 +45452,7 @@ const wordsData = [
   },
   {
     "term": "tea",
-    "meaning": "Çay",
+    "meaning": "Ça",
     "hint": "a beverage made by steeping tea leaves in water",
     "example": "iced tea is a cooling drink",
     "level": "A1"
@@ -45480,7 +45480,7 @@ const wordsData = [
   },
   {
     "term": "teaching",
-    "meaning": "Öğretmek",
+    "meaning": "Öğretiyor",
     "hint": "the profession of a teacher",
     "example": "he prepared for teaching while still in college",
     "level": "B2"
@@ -45683,7 +45683,7 @@ const wordsData = [
   },
   {
     "term": "terrible",
-    "meaning": "Korkunç",
+    "meaning": "Korkunçtu",
     "hint": "causing fear or dread or terror",
     "example": "the awful war",
     "level": "B2"
@@ -45837,14 +45837,14 @@ const wordsData = [
   },
   {
     "term": "thing",
-    "meaning": "Şey",
+    "meaning": "Şeydi",
     "hint": "a special situation",
     "example": "this thing has got to end",
     "level": "B1"
   },
   {
     "term": "things",
-    "meaning": "İşler",
+    "meaning": "İşler",
     "hint": "any movable possession (especially articles of clothing)",
     "example": "she packed her things and left",
     "level": "B2"
@@ -45865,7 +45865,7 @@ const wordsData = [
   },
   {
     "term": "thinks",
-    "meaning": "Düşünmek",
+    "meaning": "Zannediyor",
     "hint": "an instance of deliberate thinking",
     "example": "I need to give it a good think",
     "level": "B1"
@@ -45914,7 +45914,7 @@ const wordsData = [
   },
   {
     "term": "thought",
-    "meaning": "Düşün",
+    "meaning": "Düşündü",
     "hint": "the content of cognition; the main thing you are thinking about",
     "example": "it was not a good idea",
     "level": "B1"
@@ -45928,7 +45928,7 @@ const wordsData = [
   },
   {
     "term": "thousand",
-    "meaning": "Bin",
+    "meaning": "1.000",
     "hint": "the cardinal number that is the product of 10 and 100",
     "example": "The term 'thousand' plays a significant role in various contexts.",
     "level": "B1"
@@ -46068,7 +46068,7 @@ const wordsData = [
   },
   {
     "term": "tied",
-    "meaning": "Bağla",
+    "meaning": "Bağladı",
     "hint": "fasten or secure with a rope, string, or cord",
     "example": "They tied their victim to the chair",
     "level": "B1"
@@ -46229,7 +46229,7 @@ const wordsData = [
   },
   {
     "term": "tone",
-    "meaning": "Ton",
+    "meaning": "To",
     "hint": "the quality of a person's voice",
     "example": "he began in a conversational tone",
     "level": "B2"
@@ -46292,7 +46292,7 @@ const wordsData = [
   },
   {
     "term": "topic",
-    "meaning": "Konu",
+    "meaning": "Ko",
     "hint": "the subject matter of a conversation or discussion",
     "example": "he didn't want to discuss that subject",
     "level": "B2"
@@ -46705,7 +46705,7 @@ const wordsData = [
   },
   {
     "term": "true",
-    "meaning": "Doğruy",
+    "meaning": "Doğruymuş",
     "hint": "proper alignment; the property possessed by something that is in correct or proper alignment",
     "example": "out of true",
     "level": "B1"
@@ -46775,7 +46775,7 @@ const wordsData = [
   },
   {
     "term": "turkey",
-    "meaning": "Hin",
+    "meaning": "Hindi",
     "hint": "large gallinaceous bird with fan-shaped tail; widely domesticated for food",
     "example": "The term 'turkey' plays a significant role in various contexts.",
     "level": "B2"
@@ -46929,7 +46929,7 @@ const wordsData = [
   },
   {
     "term": "ulster",
-    "meaning": "Uzun palto",
+    "meaning": "Ulster (kuzey i̇rlanda tarihî bölgesi); uzun palto",
     "hint": "a historic division of Ireland located in the northeastern part of the island; six of Ulster's nine counties are in Northern Ireland",
     "example": "The term 'ulster' plays a significant role in various contexts.",
     "level": "B2"
@@ -47041,7 +47041,7 @@ const wordsData = [
   },
   {
     "term": "unbelievable",
-    "meaning": "İnanılmaz",
+    "meaning": "İnanılmaz",
     "hint": "beyond belief or understanding",
     "example": "at incredible speed",
     "level": "A2"
@@ -47083,7 +47083,7 @@ const wordsData = [
   },
   {
     "term": "unchanged",
-    "meaning": "Değişme",
+    "meaning": "Değişmedi",
     "hint": "not made or become different",
     "example": "the causes that produced them have remained unchanged",
     "level": "B2"
@@ -47293,7 +47293,7 @@ const wordsData = [
   },
   {
     "term": "understood",
-    "meaning": "Anlamak",
+    "meaning": "Anlamıştı",
     "hint": "know and comprehend the nature or meaning of",
     "example": "She did not understand her husband",
     "level": "B2"
@@ -47321,14 +47321,14 @@ const wordsData = [
   },
   {
     "term": "undertook",
-    "meaning": "Üstlen",
+    "meaning": "Üstlendi",
     "hint": "enter upon an activity or enterprise",
     "example": "The term 'undertook' plays a significant role in various contexts.",
     "level": "C2"
   },
   {
     "term": "underwater",
-    "meaning": "Sual",
+    "meaning": "Sualtı",
     "hint": "beneath the surface of the water",
     "example": "submerged rocks",
     "level": "B1"
@@ -47363,7 +47363,7 @@ const wordsData = [
   },
   {
     "term": "underworld",
-    "meaning": "Yeral",
+    "meaning": "Yeraltı",
     "hint": "the criminal class",
     "example": "The term 'underworld' plays a significant role in various contexts.",
     "level": "B1"
@@ -47601,14 +47601,14 @@ const wordsData = [
   },
   {
     "term": "unite",
-    "meaning": "Birleşmek",
+    "meaning": "Birleştirecek",
     "hint": "act in concert or unite in a common purpose or belief",
     "example": "The term 'unite' plays a significant role in various contexts.",
     "level": "B1"
   },
   {
     "term": "united",
-    "meaning": "Birleş",
+    "meaning": "Birleşmiş",
     "hint": "act in concert or unite in a common purpose or belief",
     "example": "The term 'united' plays a significant role in various contexts.",
     "level": "B2"
@@ -47720,14 +47720,14 @@ const wordsData = [
   },
   {
     "term": "unlock",
-    "meaning": "Kili",
+    "meaning": "Kilidi",
     "hint": "open the lock of",
     "example": "unlock the door",
     "level": "C2"
   },
   {
     "term": "unlocked",
-    "meaning": "Kilitlenme",
+    "meaning": "Kilitlenmemiş",
     "hint": "open the lock of",
     "example": "unlock the door",
     "level": "B1"
@@ -47790,7 +47790,7 @@ const wordsData = [
   },
   {
     "term": "unpaid",
-    "meaning": "Ödenme",
+    "meaning": "Ödenmemiş",
     "hint": "not paid",
     "example": "unpaid wages",
     "level": "B1"
@@ -47811,7 +47811,7 @@ const wordsData = [
   },
   {
     "term": "unprecedented",
-    "meaning": "Eşi benzeri görülme",
+    "meaning": "Eşi benzeri görülmemiş",
     "hint": "having no precedent; novel",
     "example": "an unprecedented expansion in population and industry",
     "level": "B2"
@@ -47825,7 +47825,7 @@ const wordsData = [
   },
   {
     "term": "unpublished",
-    "meaning": "Yayınlanma",
+    "meaning": "Yayınlanmamış",
     "hint": "not published",
     "example": "unpublished letters and diaries",
     "level": "C1"
@@ -47916,7 +47916,7 @@ const wordsData = [
   },
   {
     "term": "untouched",
-    "meaning": "Dokunulma",
+    "meaning": "Dokunulmamış",
     "hint": "still full",
     "example": "an untouched cocktail in her hand",
     "level": "B1"
@@ -48126,7 +48126,7 @@ const wordsData = [
   },
   {
     "term": "upset",
-    "meaning": "Üzgün",
+    "meaning": "Üzgündü",
     "hint": "an unhappy and worried mental state",
     "example": "there was too much anger and disturbance",
     "level": "B1"
@@ -48343,7 +48343,7 @@ const wordsData = [
   },
   {
     "term": "using",
-    "meaning": "Kullanmak",
+    "meaning": "Kullanıyordu",
     "hint": "an act that exploits or victimizes someone (treats them unfairly)",
     "example": "capitalistic exploitation of the working class",
     "level": "C2"
@@ -48455,7 +48455,7 @@ const wordsData = [
   },
   {
     "term": "utter",
-    "meaning": "Katılma",
+    "meaning": "Katılmamış",
     "hint": "articulate; either verbally or with a cry, shout, or noise",
     "example": "She expressed her anger",
     "level": "C1"
@@ -48476,7 +48476,7 @@ const wordsData = [
   },
   {
     "term": "vacant",
-    "meaning": "Boş",
+    "meaning": "Boşmuş",
     "hint": "void of thought or knowledge",
     "example": "a vacant mind",
     "level": "B1"
@@ -48784,7 +48784,7 @@ const wordsData = [
   },
   {
     "term": "varieties",
-    "meaning": "Çeşi",
+    "meaning": "Çeşidi",
     "hint": "a collection containing a variety of sorts of things",
     "example": "a great assortment of cars was on display",
     "level": "C1"
@@ -49099,7 +49099,7 @@ const wordsData = [
   },
   {
     "term": "verified",
-    "meaning": "Doğrulan",
+    "meaning": "Doğrulandı",
     "hint": "confirm the truth of",
     "example": "Please verify that the doors are closed",
     "level": "B1"
@@ -49414,7 +49414,7 @@ const wordsData = [
   },
   {
     "term": "viewing",
-    "meaning": "İzlemek",
+    "meaning": "İzlemeye",
     "hint": "the display of a motion picture",
     "example": "The term 'viewing' plays a significant role in various contexts.",
     "level": "C1"
@@ -49505,7 +49505,7 @@ const wordsData = [
   },
   {
     "term": "villain",
-    "meaning": "Kötü adam",
+    "meaning": "Ca",
     "hint": "a wicked or evil person; someone who does evil deliberately",
     "example": "The term 'villain' plays a significant role in various contexts.",
     "level": "B2"
@@ -49568,7 +49568,7 @@ const wordsData = [
   },
   {
     "term": "violate",
-    "meaning": "İhlal etmek",
+    "meaning": "İhlal etmek",
     "hint": "fail to agree with; be in violation of; as of rules or patterns",
     "example": "This sentence violates the rules of syntax",
     "level": "B2"
@@ -49603,7 +49603,7 @@ const wordsData = [
   },
   {
     "term": "violence",
-    "meaning": "Şidde",
+    "meaning": "Şiddeti",
     "hint": "an act of aggression (as one against a person who resists)",
     "example": "he may accomplish by craft in the long run what he cannot do by force and violence in the short one",
     "level": "B1"
@@ -49736,7 +49736,7 @@ const wordsData = [
   },
   {
     "term": "visions",
-    "meaning": "Görüler",
+    "meaning": "İmgelemler",
     "hint": "a vivid mental image",
     "example": "he had a vision of his own death",
     "level": "B1"
@@ -49827,7 +49827,7 @@ const wordsData = [
   },
   {
     "term": "vivid",
-    "meaning": "Canlı",
+    "meaning": "Canlıydı",
     "hint": "evoking lifelike images within the mind",
     "example": "pictorial poetry and prose",
     "level": "B1"
@@ -49988,14 +49988,14 @@ const wordsData = [
   },
   {
     "term": "vomiting",
-    "meaning": "Kusmak",
+    "meaning": "Kusuyor",
     "hint": "the reflex act of ejecting the contents of the stomach through the mouth",
     "example": "The term 'vomiting' plays a significant role in various contexts.",
     "level": "B2"
   },
   {
     "term": "vote",
-    "meaning": "Oy vermek",
+    "meaning": "Oy",
     "hint": "a choice that is made by counting the number of people in favor of each alternative",
     "example": "there were only 17 votes in favor of the motion",
     "level": "B1"
@@ -50072,7 +50072,7 @@ const wordsData = [
   },
   {
     "term": "vulnerable",
-    "meaning": "Savunmasız, hassasmak",
+    "meaning": "Savunmasız, hassas",
     "hint": "susceptible to attack",
     "example": "a vulnerable bridge",
     "level": "B1"
@@ -50142,7 +50142,7 @@ const wordsData = [
   },
   {
     "term": "waking",
-    "meaning": "Uyanmak",
+    "meaning": "Uyanıyor",
     "hint": "the state of remaining awake",
     "example": "days of danger and nights of waking",
     "level": "B1"
@@ -50240,7 +50240,7 @@ const wordsData = [
   },
   {
     "term": "wanted",
-    "meaning": "İstenen",
+    "meaning": "Istiyordu",
     "hint": "feel or have a desire for; want strongly",
     "example": "I want to go home now",
     "level": "C1"
@@ -50254,7 +50254,7 @@ const wordsData = [
   },
   {
     "term": "wants",
-    "meaning": "İstemek",
+    "meaning": "Istiyormuş",
     "hint": "a state of extreme poverty",
     "example": "The term 'wants' plays a significant role in various contexts.",
     "level": "C1"
@@ -50366,7 +50366,7 @@ const wordsData = [
   },
   {
     "term": "was",
-    "meaning": "Ney",
+    "meaning": "Neydi",
     "hint": "a state in northwestern United States on the Pacific",
     "example": "The term 'was' plays a significant role in various contexts.",
     "level": "A1"
@@ -50408,7 +50408,7 @@ const wordsData = [
   },
   {
     "term": "wasted",
-    "meaning": "Harcan",
+    "meaning": "Harcanmış",
     "hint": "spend thoughtlessly; throw away",
     "example": "He wasted his inheritance on his insincere friends",
     "level": "B1"
@@ -50520,7 +50520,7 @@ const wordsData = [
   },
   {
     "term": "weaker",
-    "meaning": "Zayıflayan",
+    "meaning": "Zayıflıyor",
     "hint": "wanting in physical strength",
     "example": "a weak pillar",
     "level": "B1"
@@ -50569,14 +50569,14 @@ const wordsData = [
   },
   {
     "term": "wearing",
-    "meaning": "Giyen, Takan",
+    "meaning": "Takıyordu",
     "hint": "(geology) the mechanical process of wearing or grinding something down (as by particles washing over it)",
     "example": "The term 'wearing' plays a significant role in various contexts.",
     "level": "B2"
   },
   {
     "term": "wears",
-    "meaning": "Giyinmek",
+    "meaning": "Takıyor",
     "hint": "impairment resulting from long use",
     "example": "the tires showed uneven wear",
     "level": "B1"
@@ -50597,7 +50597,7 @@ const wordsData = [
   },
   {
     "term": "website",
-    "meaning": "Web sitesi",
+    "meaning": "İnternetmak",
     "hint": "a computer connected to the internet that maintains a series of web pages on the World Wide Web",
     "example": "the Israeli web site was damaged by hostile hackers",
     "level": "B2"
@@ -50681,7 +50681,7 @@ const wordsData = [
   },
   {
     "term": "weird",
-    "meaning": "Tuhaf",
+    "meaning": "Tuhaftı",
     "hint": "fate personified; any one of the three Weird Sisters",
     "example": "The term 'weird' plays a significant role in various contexts.",
     "level": "B2"
@@ -50695,7 +50695,7 @@ const wordsData = [
   },
   {
     "term": "welcomed",
-    "meaning": "Karşıla",
+    "meaning": "Karşıladı",
     "hint": "accept gladly",
     "example": "I welcome your proposals",
     "level": "B1"
@@ -50842,7 +50842,7 @@ const wordsData = [
   },
   {
     "term": "white",
-    "meaning": "Beyaz",
+    "meaning": "Beyazdı",
     "hint": "a member of the Caucasoid race",
     "example": "The term 'white' plays a significant role in various contexts.",
     "level": "C1"
@@ -50954,7 +50954,7 @@ const wordsData = [
   },
   {
     "term": "wilderness",
-    "meaning": "Değme",
+    "meaning": "Değmemiş",
     "hint": "(politics) a state of disfavor",
     "example": "he led the Democratic party back from the wilderness",
     "level": "C1"
@@ -50968,7 +50968,7 @@ const wordsData = [
   },
   {
     "term": "will",
-    "meaning": "İrade",
+    "meaning": "Olmayacak",
     "hint": "the capability of conscious choice and decision and intention",
     "example": "the exercise of their volition we construe as revolt",
     "level": "C1"
@@ -50982,7 +50982,7 @@ const wordsData = [
   },
   {
     "term": "willing",
-    "meaning": "İstekli",
+    "meaning": "İstekli, hevesli",
     "hint": "the act of making a choice",
     "example": "followed my father of my own volition",
     "level": "B2"
@@ -51192,7 +51192,7 @@ const wordsData = [
   },
   {
     "term": "within",
-    "meaning": "İçinde",
+    "meaning": "48",
     "hint": "on the inside",
     "example": "inside, the car is a mess",
     "level": "C2"
@@ -51311,7 +51311,7 @@ const wordsData = [
   },
   {
     "term": "wont",
-    "meaning": "Alışkanlık",
+    "meaning": "K",
     "hint": "an established custom",
     "example": "it was their habit to dine at 7 every evening",
     "level": "B1"
@@ -51374,7 +51374,7 @@ const wordsData = [
   },
   {
     "term": "worked",
-    "meaning": "Yara",
+    "meaning": "Yaradı",
     "hint": "exert oneself by doing mental or physical work for a purpose or out of necessity",
     "example": "I will work hard to improve my grades",
     "level": "B2"
@@ -51402,7 +51402,7 @@ const wordsData = [
   },
   {
     "term": "working",
-    "meaning": "Çalışmak",
+    "meaning": "Çalışıyor",
     "hint": "a mine or quarry that is being or has been worked",
     "example": "The term 'working' plays a significant role in various contexts.",
     "level": "C1"
@@ -51458,7 +51458,7 @@ const wordsData = [
   },
   {
     "term": "worn",
-    "meaning": "Yıpran",
+    "meaning": "Yıpranmış",
     "hint": "be dressed in",
     "example": "She was wearing yellow that day",
     "level": "C1"
@@ -51514,7 +51514,7 @@ const wordsData = [
   },
   {
     "term": "worth",
-    "meaning": "Değ",
+    "meaning": "Değdi",
     "hint": "an indefinite quantity of something having a specified value",
     "example": "10 dollars worth of gasoline",
     "level": "B1"
@@ -51563,7 +51563,7 @@ const wordsData = [
   },
   {
     "term": "wrapped",
-    "meaning": "Sarıl",
+    "meaning": "Sarılmış",
     "hint": "arrange or fold as a cover or protection",
     "example": "wrap the baby before taking her out",
     "level": "B2"
@@ -51640,7 +51640,7 @@ const wordsData = [
   },
   {
     "term": "written",
-    "meaning": "Yazılmış",
+    "meaning": "Yazılmıştı",
     "hint": "produce a literary work",
     "example": "She composed a poem",
     "level": "B1"
@@ -51850,7 +51850,7 @@ const wordsData = [
   },
   {
     "term": "yelled",
-    "meaning": "Bağır",
+    "meaning": "Bağırdı",
     "hint": "utter a sudden loud cry",
     "example": "she cried with pain when the doctor inserted the needle",
     "level": "B1"
@@ -52256,4 +52256,4 @@ const wordsData = [
   }
 ];
 
-export default wordsData;
+module.exports = wordsData;
