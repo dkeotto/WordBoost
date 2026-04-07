@@ -3518,7 +3518,7 @@ app.post("/api/ai/image/generate", aiLimiter, async (req, res) => {
         model,
         prompt,
         size: okSize,
-        response_format: "b64_json",
+        // Not sending response_format — some providers don't support it (default is URL)
       }),
     });
 
@@ -3533,10 +3533,16 @@ app.post("/api/ai/image/generate", aiLimiter, async (req, res) => {
       const msg = String(json?.error?.message || json?.message || "image_gen_error");
       return res.status(r.status).json({ error: msg });
     }
+    // Handle both b64_json and url response formats
     const b64 = String(json?.data?.[0]?.b64_json || "").trim();
-    if (!b64) return res.status(502).json({ error: "image_empty" });
-    // PNG varsayımı (OpenAI Images genelde png döndürür)
-    return res.json({ ok: true, imageDataUrl: `data:image/png;base64,${b64}` });
+    const imageUrl = String(json?.data?.[0]?.url || "").trim();
+    if (b64) {
+      return res.json({ ok: true, imageDataUrl: `data:image/png;base64,${b64}` });
+    }
+    if (imageUrl) {
+      return res.json({ ok: true, imageUrl });
+    }
+    return res.status(502).json({ error: "image_empty" });
   } catch (e) {
     const msg = String(e?.message || "image_gen_failed");
     res.status(500).json({ error: msg });

@@ -12,21 +12,21 @@ export const PLAN_FALLBACK_TR = {
     label: "WordBoost Premium",
     description:
       "Sınırsız kelime pratiği, AI Writing Mode, akıllı tekrar sistemi, detaylı istatistikler ve reklamsız öğrenme.",
-    displayPrice: "₺129 / ay · yıllık ₺1.290 (temsilî — Paddle displayPrice ile güncelle)",
+    displayPrice: "₺39.99",
     features: ["AI+ özellikleri dahil", "Sınırsız kelime erişimi", "İlerleme takibi", "Reklamsız deneyim"],
   },
   aiPlus: {
     label: "WordBoost AI+",
     description:
       "Yapay zekâ ile anlık düzeltme, cümle geliştirme ve yazılı İngilizce pratiği. Tek seferlik ödeme, kalıcı erişim.",
-    displayPrice: "₺349 tek seferlik (temsilî — Paddle displayPrice ile güncelle)",
+    displayPrice: "₺25",
     features: ["AI yazım ve pratik", "Anlık geri bildirim", "Tek seferlik lisans"],
   },
   classroom: {
     label: "WordBoost Okul / Sınıf",
     description:
       "Öğretmen paneli, sınıf kodu, toplu öğrenci yönetimi ve sınıf analitiği. İhtiyaca göre lisans adedi.",
-    displayPrice: "Okul: öğrenci başına ~₺39/ay · toplu lisans (30+): teklif — wordboost.team@gmail.com",
+    displayPrice: "Okul: öğrenci başına ~₺9.99/ay · toplu lisans (30+): teklif — wordboost.team@gmail.com",
     features: ["Sınıf oluşturma ve kod", "CSV ile toplu hesap", "Öğrenci analitiği", "Esnek lisans sayısı"],
   },
 };

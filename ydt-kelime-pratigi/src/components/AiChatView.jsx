@@ -605,14 +605,17 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
       });
       const d = await readResponseJson(r);
       if (!r.ok) throw new Error(d?.message || d?.error || `HTTP ${r.status}`);
+      // Support both base64 (imageDataUrl) and URL (imageUrl) responses
       const dataUrl = String(d?.imageDataUrl || "");
-      if (!dataUrl.startsWith("data:image/")) throw new Error("Görsel üretilemedi (boş çıktı).");
+      const remoteUrl = String(d?.imageUrl || "");
+      const imgSrc = dataUrl.startsWith("data:image/") ? dataUrl : remoteUrl;
+      if (!imgSrc) throw new Error("Görsel üretilemedi (boş çıktı).");
       setMessages((prev) => [
         ...prev,
         {
           id: `tool-imagegen-${Date.now()}`,
           role: "assistant",
-          content: `**Görsel üretildi**\n\n![Üretilen görsel](${dataUrl})\n\nİstersen bu görsel üzerinden soru da hazırlayabilirim.`,
+          content: `**Görsel üretildi** ✨\n\n![Üretilen görsel](${imgSrc})\n\nİstersen bu görsel hakkında soru da hazırlayabilirim.`,
           createdAt: new Date().toISOString(),
         },
       ]);
@@ -737,6 +740,19 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
                 ✍️ Yazım
               </button>
             ) : null}
+            <button
+              type="button"
+              className="ai-chat-link-btn ai-chat-link-btn--compact"
+              onClick={() => {
+                const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+                if (!lastAssistant) return;
+                downloadPdf(threadTitle || "AI sohbet", lastAssistant.content || "");
+              }}
+              disabled={!messages.some((m) => m.role === "assistant")}
+              title="Son yanıtı PDF olarak indir"
+            >
+              📄 PDF
+            </button>
             <button type="button" className="ai-chat-link-btn ai-chat-link-btn--compact" onClick={renameThread}>
               ✎ Ad
             </button>
@@ -820,16 +836,6 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
                   )}
                   {m.role === "assistant" ? (
                     <div className="ai-chat-md">
-                      <div className="ai-chat-bubble-tools">
-                        <button
-                          type="button"
-                          className="ai-chat-mini-btn"
-                          onClick={() => downloadPdf(threadTitle || "AI sohbet", m.content || "")}
-                          title="Bu yanıtı PDF indir"
-                        >
-                          PDF
-                        </button>
-                      </div>
                       <ReactMarkdown>{m.content || ""}</ReactMarkdown>
                     </div>
                   ) : (

@@ -1310,7 +1310,7 @@ const wordsData = [
   },
   {
     "term": "after",
-    "meaning": "Öldük",
+    "meaning": "Sonra",
     "hint": "located farther aft",
     "example": "The term 'after' plays a significant role in various contexts.",
     "level": "C2"
@@ -4992,7 +4992,7 @@ const wordsData = [
   },
   {
     "term": "beautiful",
-    "meaning": "Güzeller",
+    "meaning": "Güzel",
     "hint": "delighting the senses or exciting intellectual or emotional admiration",
     "example": "a beautiful child",
     "level": "B2"
@@ -5174,7 +5174,7 @@ const wordsData = [
   },
   {
     "term": "behavior",
-    "meaning": "Hal",
+    "meaning": "Davranış",
     "hint": "manner of acting or controlling yourself",
     "example": "The term 'behavior' plays a significant role in various contexts.",
     "level": "C1"
@@ -6798,7 +6798,7 @@ const wordsData = [
   },
   {
     "term": "bringing",
-    "meaning": "Getiriyorlarmak",
+    "meaning": "Getiren",
     "hint": "the act of delivering or distributing something (as goods or mail)",
     "example": "his reluctant delivery of bad news",
     "level": "B2"
@@ -10179,7 +10179,7 @@ const wordsData = [
   },
   {
     "term": "coming",
-    "meaning": "Geliyorlarmak",
+    "meaning": "Gelen",
     "hint": "the act of drawing spatially closer to something",
     "example": "the hunter's approach scattered the geese",
     "level": "B1"
@@ -11950,7 +11950,7 @@ const wordsData = [
   },
   {
     "term": "control",
-    "meaning": "Kontrolmak",
+    "meaning": "Kontrol",
     "hint": "power to direct or determine",
     "example": "under control",
     "level": "B2"
@@ -15590,7 +15590,7 @@ const wordsData = [
   },
   {
     "term": "died",
-    "meaning": "Öldülermak",
+    "meaning": "Öldü",
     "hint": "pass from physical life and lose all bodily attributes and functions necessary to sustain life",
     "example": "She died from cancer",
     "level": "B2"
@@ -16654,7 +16654,7 @@ const wordsData = [
   },
   {
     "term": "district",
-    "meaning": "Bölgesin",
+    "meaning": "Bölge",
     "hint": "a region marked off for administrative or other purposes",
     "example": "The term 'district' plays a significant role in various contexts.",
     "level": "B2"
@@ -16941,7 +16941,7 @@ const wordsData = [
   },
   {
     "term": "dollar",
-    "meaning": "Dollarmak",
+    "meaning": "Dolar",
     "hint": "the basic monetary unit in many countries; equal to 100 cents",
     "example": "The term 'dollar' plays a significant role in various contexts.",
     "level": "B1"
@@ -17963,7 +17963,7 @@ const wordsData = [
   },
   {
     "term": "edge",
-    "meaning": "Kenarın",
+    "meaning": "Kenar",
     "hint": "the boundary of a surface",
     "example": "The term 'edge' plays a significant role in various contexts.",
     "level": "B1"
@@ -20938,7 +20938,7 @@ const wordsData = [
   },
   {
     "term": "existed",
-    "meaning": "Varlığın",
+    "meaning": "Var olmak",
     "hint": "have an existence, be extant",
     "example": "Is there a God?",
     "level": "C1"
@@ -20966,7 +20966,7 @@ const wordsData = [
   },
   {
     "term": "exists",
-    "meaning": "Varlığın",
+    "meaning": "Var olmak",
     "hint": "have an existence, be extant",
     "example": "Is there a God?",
     "level": "B1"
@@ -24564,7 +24564,7 @@ const wordsData = [
   },
   {
     "term": "future",
-    "meaning": "Gelecekmak",
+    "meaning": "Gelecek",
     "hint": "the time yet to come",
     "example": "The term 'future' plays a significant role in various contexts.",
     "level": "B1"
@@ -27063,7 +27063,7 @@ const wordsData = [
   },
   {
     "term": "heart",
-    "meaning": "Kalbin",
+    "meaning": "Kalp",
     "hint": "the locus of feelings and intuitions",
     "example": "in your heart you know it is true",
     "level": "B2"
@@ -27147,7 +27147,7 @@ const wordsData = [
   },
   {
     "term": "heights",
-    "meaning": "Yüksek",
+    "meaning": "Yükseklikler",
     "hint": "a high place",
     "example": "they stood on high and observed the countryside",
     "level": "B2"
@@ -28071,7 +28071,7 @@ const wordsData = [
   },
   {
     "term": "house",
-    "meaning": "Evim",
+    "meaning": "Ev",
     "hint": "a dwelling that serves as living quarters for one or more families",
     "example": "he has a house on Cape Cod",
     "level": "B2"
@@ -34532,7 +34532,7 @@ const wordsData = [
   },
   {
     "term": "loving",
-    "meaning": "Sevmek",
+    "meaning": "Sevme",
     "hint": "have a great affection or liking for",
     "example": "I love French food",
     "level": "B1"
@@ -35582,7 +35582,7 @@ const wordsData = [
   },
   {
     "term": "midnight",
-    "meaning": "Yarısın",
+    "meaning": "Gece yarısı",
     "hint": "12 o'clock at night; the middle of the night",
     "example": "young children should not be allowed to stay up until midnight",
     "level": "B2"
@@ -35603,7 +35603,7 @@ const wordsData = [
   },
   {
     "term": "mile",
-    "meaning": "Ötemek",
+    "meaning": "Mil",
     "hint": "a unit of length equal to 1,760 yards or 5,280 feet; exactly 1609.344 meters",
     "example": "The term 'mile' plays a significant role in various contexts.",
     "level": "C1"
@@ -38263,7 +38263,7 @@ const wordsData = [
   },
   {
     "term": "off",
-    "meaning": "Üstüm",
+    "meaning": "Kapalı, Uzak",
     "hint": "kill intentionally and with premeditation",
     "example": "The mafia boss ordered his enemies murdered",
     "level": "A1"
@@ -39180,7 +39180,7 @@ const wordsData = [
   },
   {
     "term": "outer",
-    "meaning": "Dışın",
+    "meaning": "Dış",
     "hint": "being on the outside or further from a center",
     "example": "spent hours adorning the outer man",
     "level": "B2"
@@ -39334,7 +39334,7 @@ const wordsData = [
   },
   {
     "term": "overlooked",
-    "meaning": "Gözmak",
+    "meaning": "Göz ardı edilmiş",
     "hint": "look past, fail to notice",
     "example": "The term 'overlooked' plays a significant role in various contexts.",
     "level": "B1"
@@ -40510,7 +40510,7 @@ const wordsData = [
   },
   {
     "term": "pounds",
-    "meaning": "Kilo",
+    "meaning": "Pound",
     "hint": "16 ounces avoirdupois",
     "example": "he got a hernia when he tried to lift 100 pounds",
     "level": "B1"
@@ -41168,7 +41168,7 @@ const wordsData = [
   },
   {
     "term": "province",
-    "meaning": "Eyaletin",
+    "meaning": "Eyalet, İl",
     "hint": "the territory occupied by one of the constituent administrative districts of a nation",
     "example": "his state is in the deep south",
     "level": "B2"
@@ -44416,7 +44416,7 @@ const wordsData = [
   },
   {
     "term": "somewhere",
-    "meaning": "Yerler",
+    "meaning": "Bir yer",
     "hint": "an indefinite or unknown location",
     "example": "they moved to somewhere in Spain",
     "level": "A2"
@@ -44486,7 +44486,7 @@ const wordsData = [
   },
   {
     "term": "source",
-    "meaning": "Kaynakmak",
+    "meaning": "Kaynak",
     "hint": "the place where something begins, where it springs into being",
     "example": "the Italian beginning of the Renaissance",
     "level": "B2"
@@ -44591,7 +44591,7 @@ const wordsData = [
   },
   {
     "term": "spending",
-    "meaning": "Geçirmektenmek",
+    "meaning": "Harcama",
     "hint": "the act of spending or disbursing money",
     "example": "The term 'spending' plays a significant role in various contexts.",
     "level": "B1"
@@ -45158,7 +45158,7 @@ const wordsData = [
   },
   {
     "term": "sure",
-    "meaning": "Olmadığın",
+    "meaning": "Emin",
     "hint": "having or feeling no doubt or uncertainty; confident and assured",
     "example": "felt certain of success",
     "level": "C1"
@@ -46019,7 +46019,7 @@ const wordsData = [
   },
   {
     "term": "throwing",
-    "meaning": "Atıyorlar",
+    "meaning": "Fırlatan",
     "hint": "propel through the air",
     "example": "throw a frisbee",
     "level": "B2"
@@ -47216,7 +47216,7 @@ const wordsData = [
   },
   {
     "term": "undergone",
-    "meaning": "Muayene",
+    "meaning": "Geçirmek",
     "hint": "pass through",
     "example": "The chemical undergoes a sudden change",
     "level": "C2"
@@ -47692,7 +47692,7 @@ const wordsData = [
   },
   {
     "term": "unleashed",
-    "meaning": "Zincirlerin",
+    "meaning": "Serbest bırakılmış",
     "hint": "release or vent",
     "example": "unleash one's anger",
     "level": "B1"
@@ -47776,7 +47776,7 @@ const wordsData = [
   },
   {
     "term": "unnoticed",
-    "meaning": "Edilme",
+    "meaning": "Fark edilmemiş",
     "hint": "not noticed",
     "example": "hoped his departure had passed unnoticed",
     "level": "B2"
@@ -51010,14 +51010,14 @@ const wordsData = [
   },
   {
     "term": "window",
-    "meaning": "Penceremek",
+    "meaning": "Pencere",
     "hint": "a framework of wood or metal that contains a glass windowpane and is built into a wall or roof to admit light or air",
     "example": "The term 'window' plays a significant role in various contexts.",
     "level": "B2"
   },
   {
     "term": "windows",
-    "meaning": "Pencereleri",
+    "meaning": "Windows",
     "hint": "(trademark) an operating system with a graphical user interface",
     "example": "The term 'windows' plays a significant role in various contexts.",
     "level": "B1"
@@ -51066,7 +51066,7 @@ const wordsData = [
   },
   {
     "term": "winning",
-    "meaning": "Kazanmak",
+    "meaning": "Kazanma",
     "hint": "succeeding with great difficulty",
     "example": "winning is not everything",
     "level": "B1"
@@ -51346,14 +51346,14 @@ const wordsData = [
   },
   {
     "term": "word",
-    "meaning": "Kelimesine",
+    "meaning": "Kelime",
     "hint": "a unit of language that native speakers can identify",
     "example": "words are the blocks from which sentences are made",
     "level": "B2"
   },
   {
     "term": "words",
-    "meaning": "Kelimeleri",
+    "meaning": "Kelimeler",
     "hint": "the words that are spoken",
     "example": "I listened to his words very closely",
     "level": "B2"
@@ -52207,35 +52207,35 @@ const wordsData = [
   },
   {
     "term": "zombies",
-    "meaning": "Zombilermak",
+    "meaning": "Zombiler",
     "hint": "a dead body that has been brought back to life by a supernatural force",
     "example": "The term 'zombies' plays a significant role in various contexts.",
     "level": "C1"
   },
   {
     "term": "zone",
-    "meaning": "Bölgesin",
+    "meaning": "Bölge",
     "hint": "a locally circumscribed place characterized by some distinctive features",
     "example": "The term 'zone' plays a significant role in various contexts.",
     "level": "B2"
   },
   {
     "term": "zones",
-    "meaning": "Bölgeleri",
+    "meaning": "Bölgeler",
     "hint": "a locally circumscribed place characterized by some distinctive features",
     "example": "The term 'zones' plays a significant role in various contexts.",
     "level": "B1"
   },
   {
     "term": "zoning",
-    "meaning": "Zoningmak",
+    "meaning": "İmar",
     "hint": "dividing an area into zones or sections reserved for different purposes such as residence and business and manufacturing etc",
     "example": "The term 'zoning' plays a significant role in various contexts.",
     "level": "B1"
   },
   {
     "term": "zoo",
-    "meaning": "Hayvanat",
+    "meaning": "Hayvanat bahçesi",
     "hint": "the facility where wild animals are housed for exhibition",
     "example": "The term 'zoo' plays a significant role in various contexts.",
     "level": "A1"
