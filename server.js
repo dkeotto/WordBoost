@@ -328,9 +328,16 @@ function buildChatSystemPrompt(memorySummary, userDisplayName, userDoc) {
 
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
-  limit: 12,
+  limit: 30,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      error: "rate_limit",
+      message: "Çok fazla istek. Lütfen bir dakika bekleyin.",
+      retryAfter: 60,
+    });
+  },
 });
 
 // getAuthTokenFromHeader, isPremiumUser, todayKey, applyDailyAiUsage, isFreeAiAllowed, guardAiPromptLogging
@@ -3547,6 +3554,16 @@ app.post("/api/ai/image/generate", aiLimiter, async (req, res) => {
       return res.json({ ok: true, imageDataUrl: `data:image/png;base64,${b64}` });
     }
     if (imageUrl) {
+      // Server-side proxy: fetch the URL and convert to base64 so client never hits CORS
+      try {
+        const imgResp = await fetch(imageUrl, { headers: { "Accept": "image/*" } });
+        if (imgResp.ok) {
+          const contentType = imgResp.headers.get("content-type") || "image/png";
+          const arrayBuf = await imgResp.arrayBuffer();
+          const b64Proxied = Buffer.from(arrayBuf).toString("base64");
+          return res.json({ ok: true, imageDataUrl: `data:${contentType};base64,${b64Proxied}` });
+        }
+      } catch (_) { /* fall through to returning URL */ }
       return res.json({ ok: true, imageUrl });
     }
     return res.status(502).json({ error: "image_empty" });

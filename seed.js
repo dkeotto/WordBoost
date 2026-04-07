@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const words = require('./words');
+
 
     
 const WordSchema = new mongoose.Schema({

@@ -4,14 +4,19 @@ import "./AdminPanel.css";
 const STORAGE_TOKEN_KEY = "wb_admin_token";
 
 function aiLegLabel(id) {
-  if (id === "groq") return "Groq";
+  if (id === "groq") return "Groq (Llama)";
   if (id === "ai_gateway") return "AI Gateway (Vercel)";
-  if (id === "anthropic") return "Anthropic";
+  if (id === "anthropic") return "Anthropic Claude";
+  if (id === "gemini_pro") return "Gemini 1.5 Pro 💎";
+  if (id === "gemini_flash_1") return "Gemini 2.0 Flash (Key 1)";
+  if (id === "gemini_flash_3") return "Gemini 2.0 Flash (Key 3)";
   return String(id || "—");
 }
 
 function aiRuntimeLabel(name) {
   if (name === "failover") return "Otomatik yedekleme (Groq ↔ Gateway)";
+  if (name === "multi_failover") return "Genişleştirilmiş çoklu yedekleme (Groq + Gateway + Gemini Flash)";
+  if (name === "premium_gemini_pro") return "Premium — Gemini 1.5 Pro öncelikli";
   if (name === "groq") return "Yalnız Groq";
   if (name === "ai_gateway") return "Yalnız AI Gateway";
   if (name === "anthropic") return "Anthropic Claude";

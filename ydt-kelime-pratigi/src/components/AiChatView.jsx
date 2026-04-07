@@ -49,9 +49,12 @@ function WordyAssistantLabel() {
 }
 
 function humanizeAiErrorMessage(raw, payload) {
-  const code = payload?.code;
-  if (code === "groq_auth_invalid" || code === "groq_rate_limit") {
-    return String(payload?.error || raw || "Groq API hatası");
+  const code = payload?.code || payload?.error;
+  if (code === "groq_auth_invalid" || code === "groq_rate_limit" || code === "rate_limit") {
+    if (code === "rate_limit") {
+      return "Çok fazla istek gönderildi. Lütfen bir dakika bekleyip tekrar deneyin.";
+    }
+    return String(payload?.message || payload?.error || raw || "Yapay zeka servis limitine takıldı.");
   }
   if (payload?.error === "ai_chat_premium_required" || code === "ai_chat_premium_required") {
     return String(payload?.message || "AI Sohbet için Premium veya AI+ gerekir.");
