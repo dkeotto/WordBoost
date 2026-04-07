@@ -5,6 +5,36 @@ function customUrlTransform(url) {
   if (url.startsWith("data:image/")) return url;
   return defaultUrlTransform(url);
 }
+
+const MarkdownImage = ({ src, alt, ...props }) => {
+  const downloadImage = () => {
+    if (!src) return;
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = (alt || "gorsel").replace(/[^a-zA-Z0-9_\-]/g, "_") + ".png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  return (
+    <div className="ai-chat-image-wrapper">
+      <img src={src} alt={alt} {...props} />
+      <button
+        type="button"
+        title="Görseli indir"
+        className="ai-chat-img-download-btn"
+        onClick={(e) => {
+          e.preventDefault();
+          downloadImage();
+        }}
+      >
+        <span aria-hidden="true">⬇</span> İndir
+      </button>
+    </div>
+  );
+};
+
 import { apiUrl } from "../utils/apiUrl";
 import { readResponseJson } from "../utils/httpJson";
 import { hasUnlimitedAiClient } from "../utils/premiumDisplay";
@@ -844,7 +874,12 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
                   )}
                   {m.role === "assistant" ? (
                     <div className="ai-chat-md">
-                      <ReactMarkdown urlTransform={customUrlTransform}>{m.content || ""}</ReactMarkdown>
+                      <ReactMarkdown
+                        urlTransform={customUrlTransform}
+                        components={{ img: MarkdownImage }}
+                      >
+                        {m.content || ""}
+                      </ReactMarkdown>
                     </div>
                   ) : (
                     <>

@@ -2178,6 +2178,9 @@ app.get('/api/health', (req, res) => {
 
 app.get('/api/words', async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     console.log("Fetching words...");
     // Sadece practice/list için gerekli alanları çekiyoruz.
     const words = await Word.find()
