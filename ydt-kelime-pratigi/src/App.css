@@ -5827,3 +5827,62 @@ button:disabled {
   margin-top: 8px;
   font-style: italic;
 }
+
+/* Game Menu Polish */
+.draw-reveal-game.menu-view {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.game-icon-banner {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 0 30px rgba(255, 159, 28, 0.4);
+  animation: float 3s ease-in-out infinite;
+}
+
+.game-start-screen h2 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+.game-start-screen p {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+.game-rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+.rule-item {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.rule-item:hover {
+  background: rgba(255, 159, 28, 0.1);
+  border-color: var(--primary-color);
+  transform: translateY(-5px);
+}
+
+.rule-item .icon {
+  font-size: 2rem;
+}
+
+.rule-item span:not(.icon) {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+}

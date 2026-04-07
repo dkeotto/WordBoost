@@ -17,10 +17,11 @@ const FAMOUS_PAINTINGS = [
 
 const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [], toggleFavorite, playSound }) => {
   const [currentPainting, setCurrentPainting] = useState(null);
+  const [lastPaintingId, setLastPaintingId] = useState(null);
   const [revealedTiles, setRevealedTiles] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [options, setOptions] = useState([]);
-  const [gameState, setGameState] = useState('loading'); // loading, playing, finished
+  const [gameState, setGameState] = useState('menu'); // menu, playing, finished
   const [feedback, setFeedback] = useState(null);
   const [score, setScore] = useState(0);
 
@@ -28,13 +29,19 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
   const totalTiles = gridSize * gridSize;
 
   const startNewGame = useCallback(() => {
-    const randomPainting = FAMOUS_PAINTINGS[Math.floor(Math.random() * FAMOUS_PAINTINGS.length)];
+    let availablePaintings = FAMOUS_PAINTINGS;
+    if (lastPaintingId && availablePaintings.length > 1) {
+        availablePaintings = availablePaintings.filter(p => p.id !== lastPaintingId);
+    }
+    const randomPainting = availablePaintings[Math.floor(Math.random() * availablePaintings.length)];
+    
     setCurrentPainting(randomPainting);
+    setLastPaintingId(randomPainting.id);
     setRevealedTiles([]);
     setScore(0);
     setGameState('playing');
     generateNextQuestion();
-  }, [words]);
+  }, [words, lastPaintingId]);
 
   const generateNextQuestion = useCallback(() => {
     if (words.length < 4) return;
@@ -58,11 +65,8 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
     setOptions(allOptions);
   }, [words]);
 
-  useEffect(() => {
-    if (words.length > 0 && gameState === 'loading') {
-      startNewGame();
-    }
-  }, [words, gameState, startNewGame]);
+  // Removed direct start effect to allow menu to show first
+
 
   const handleAnswer = (selectedWord) => {
     if (gameState !== 'playing' || feedback) return;
@@ -123,7 +127,36 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
     }
   };
 
-  if (gameState === 'loading') return <div className="loading">Yükleniyor...</div>;
+  if (gameState === 'menu') {
+    return (
+      <div className="draw-reveal-game menu-view">
+        <div className="game-start-screen">
+          <div className="game-icon-banner">🖼️</div>
+          <h2>Resim Bulmaca</h2>
+          <p>9 soruyu doğru cevaplayarak gizli tabloyu keşfet!</p>
+          
+          <div className="game-rules">
+            <div className="rule-item">
+              <span className="icon">🎨</span>
+              <span>Tabloyu Aç</span>
+            </div>
+            <div className="rule-item">
+              <span className="icon">🧠</span>
+              <span>Kelime Dağarcığını Test Et</span>
+            </div>
+            <div className="rule-item">
+              <span className="icon">🏆</span>
+              <span>Ressam Rozetini Kazan</span>
+            </div>
+          </div>
+
+          <button className="start-game-btn" onClick={startNewGame}>
+            OYUNU BAŞLAT
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="draw-reveal-game">
