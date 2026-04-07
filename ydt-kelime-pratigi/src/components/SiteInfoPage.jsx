@@ -56,8 +56,7 @@ const FEATURE_SECTIONS = [
             belirlersiniz.
           </li>
           <li>
-            <strong>Favoriler:</strong> Kelime, synonym ve phrasal öğelerini ayrı kümelerde saklayın. Sınav öncesi veya
-            iş İngilizcesi için kendi müfredatınızı oluşturun; tek dokunuşla çalışmaya dönün.
+            <strong>Favoriler:</strong> Kelime, synonym ve phrasal öğelerini ayrı kümelerde saklayın. Artık oyunlar (Resim Açmaca vb.) içinden de tek tıkla favori ekleyebilirsiniz. Sınav öncesi kendi müfredatınızı oluşturun.
           </li>
           <li>
             <strong>Yanlışlar ve tekrar:</strong> Test ve pratikte takıldığınız maddeler birikir; unutmadan, planlı

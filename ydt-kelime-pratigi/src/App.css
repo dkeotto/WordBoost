@@ -5787,3 +5787,43 @@ button:disabled {
   from { transform: translate(-50%, 20px); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }
 }
+/* Circular Action Buttons for Game Cards */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.game-action-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 1.2rem;
+  color: white;
+  padding: 0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.game-action-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 159, 28, 0.15);
+  border-color: var(--primary-color);
+  box-shadow: 0 6px 20px rgba(255, 159, 28, 0.3);
+}
+
+.game-action-btn.favorite {
+  color: #ff9f1c;
+}
+
+.question-hint {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-top: 8px;
+  font-style: italic;
+}

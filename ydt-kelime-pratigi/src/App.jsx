@@ -2644,6 +2644,8 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
         <DrawRevealGame 
           words={words} 
           user={user} 
+          favorites={favorites.words}
+          toggleFavorite={toggleFavorite}
           onUpdateStats={(isKnown, wordTerm) => {
             // Minimal stats update for the game
             if (user && user.token) {

@@ -28,9 +28,11 @@ async function seed() {
     await Word.deleteMany({});
 
     console.log("Yeni kelimeler ekleniyor...");
-    await Word.insertMany(words);
+    const rawWords = require('./words').default || [];
+    const validWords = rawWords.filter(w => w && w.term && w.meaning);
+    await Word.insertMany(validWords);
 
-    console.log(`🔥 ${words.length} kelime Mongo'ya eklendi!`);
+    console.log(`🔥 ${validWords.length} kelime Mongo'ya eklendi!`);
 
     mongoose.disconnect();
   } catch (err) {
