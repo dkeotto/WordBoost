@@ -21,9 +21,15 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
   const [revealedTiles, setRevealedTiles] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [options, setOptions] = useState([]);
-  const [gameState, setGameState] = useState('menu'); // menu, playing, finished
+  const [gameState, setGameState] = useState('menu');
   const [feedback, setFeedback] = useState(null);
   const [score, setScore] = useState(0);
+
+  useEffect(() => {
+    console.log("DrawRevealGame mounted. Initial state:", gameState);
+    // Explicitly resetting to menu on mount just in case of HMR carryover
+    setGameState('menu');
+  }, []);
 
   const gridSize = 3; // 3x3 = 9 questions
   const totalTiles = gridSize * gridSize;

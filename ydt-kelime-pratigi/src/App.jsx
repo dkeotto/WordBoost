@@ -2642,6 +2642,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
       {currentView === 'classroom' && <ClassroomView user={user} />}
       {currentView === 'draw-reveal' && (
         <DrawRevealGame 
+          key={currentView}
           words={words} 
           user={user} 
           favorites={favorites.words}

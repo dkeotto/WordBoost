@@ -6,12 +6,21 @@ const scrubbed = wordsData.map(word => {
   let term = word.term.toLowerCase();
 
   // 1. Specific Fixes (Truncation/Errors)
-  if (term === 'jellyfish' && meaning === 'anası') meaning = 'Deniz anası';
-  if (term === 'brought' && meaning === 'getirmişsin') meaning = 'Getirmek';
-  if (term === 'bring' && meaning === 'getirmişsin') meaning = 'Getirmek';
+  if (term === 'jellyfish' && meaning.toLowerCase().includes('anası')) meaning = 'Deniz anası';
+  if (term === 'brought') meaning = 'Getirmek';
+  if (term === 'bring') meaning = 'Getirmek';
+  if (term === 'abandon') meaning = 'Terk etmek';
+  if (term === 'abrogate') meaning = 'Yürürlükten kaldırmak';
 
-  // 2. Verb Normalization (Turkish suffixes)
-  // Fix conjugated endings to infinitives
+  // 2. Fragment Removal (Fixing cut-off suffixes at end of strings)
+  const fragments = [' maya', ' meye', ' dan', ' den', ' tan', ' ten', ' gibi', ' olan'];
+  fragments.forEach(f => {
+    if (meaning.endsWith(f)) {
+      meaning = meaning.substring(0, meaning.length - f.length);
+    }
+  });
+
+  // 3. Verb Normalization (Turkish suffixes)
   const verbEnds = [
     { from: 'mişsin', to: 'mek' },
     { from: 'mişler', to: 'mek' },
@@ -20,42 +29,39 @@ const scrubbed = wordsData.map(word => {
     { from: 'iyor', to: 'mek' },
     { from: 'uyor', to: 'mak' },
     { from: 'üyor', to: 'mek' },
-    { from: 'muşlar', to: 'mak' },
-    { from: 'müşler', to: 'mek' },
-    { from: 'acaklar', to: 'mak' },
-    { from: 'ecekler', to: 'mek' }
+    { from: 'umuş', to: 'mak' },
+    { from: 'ümüş', to: 'mek' },
+    { from: 'mış', to: 'mak' },
+    { from: 'miş', to: 'mek' },
+    { from: 'muş', to: 'mak' },
+    { from: 'müş', to: 'mek' },
+    { from: 'acaktı', to: 'mak' },
+    { from: 'ecekti', to: 'mek' }
   ];
 
-  verbEnds.forEach(rule => {
-      // If it ends with a conjugated form and is likely a verb (has 'to ' in hint)
-      if (meaning.endsWith(rule.from) && word.hint.toLowerCase().includes('to ')) {
-          meaning = meaning.substring(0, meaning.length - rule.from.length) + rule.to;
-      }
-  });
+  const isVerb = word.hint.toLowerCase().includes('to ') || meaning.endsWith('mek') || meaning.endsWith('mak');
 
-  // 3. Manual verb cleanup (e.g., 'getirmiş' -> 'getirmek')
-  if (word.hint.toLowerCase().includes('to ')) {
-      if (meaning.endsWith('miş') || meaning.endsWith('mış') || meaning.endsWith('muş') || meaning.endsWith('müş')) {
-          const base = meaning.substring(0, meaning.length - 3);
-          // Simple heuristic for mek/mak
-          if (['e', 'i', 'ö', 'ü'].some(v => base.slice(-1) === v || (base.length > 1 && base.slice(-2,-1) === v))) {
-              meaning = base + 'mek';
-          } else {
-              meaning = base + 'mak';
-          }
-      }
-      // Guaranteeing mek/mak for known verbs
-      if (!meaning.endsWith('mek') && !meaning.endsWith('mak') && !meaning.includes(' ')) {
-          if (['e', 'i', 'ö', 'ü'].some(v => meaning.slice(-1) === v)) {
-              meaning += 'mek';
-          } else {
-              meaning += 'mak';
-          }
-      }
+  if (isVerb) {
+    verbEnds.forEach(rule => {
+        if (meaning.toLowerCase().endsWith(rule.from)) {
+            meaning = meaning.substring(0, meaning.length - rule.from.length) + rule.to;
+        }
+    });
+
+    // Ensure ending is mek/mak if it sounds like a verb
+    if (!meaning.toLowerCase().endsWith('mek') && !meaning.toLowerCase().endsWith('mak') && !meaning.includes(' ')) {
+        const lastVowel = meaning.match(/[aeıioöuü]/g)?.pop();
+        if (['e', 'i', 'ö', 'ü'].includes(lastVowel)) {
+            meaning += 'mek';
+        } else {
+            meaning += 'mak';
+        }
+    }
   }
 
-  // 4. Case fix
+  // 4. Proper Capitalization
   if (meaning.length > 0) {
+      meaning = meaning.trim();
       meaning = meaning.charAt(0).toUpperCase() + meaning.slice(1);
   }
 

@@ -148,7 +148,7 @@ const wordsData = [
   },
   {
     "term": "abrogate",
-    "meaning": "Feshetmek",
+    "meaning": "Yürürlükten kaldırmak",
     "hint": "repeal or do away with",
     "example": "The treaty was abrogated by the new government.",
     "level": "C1"
@@ -4271,7 +4271,7 @@ const wordsData = [
   },
   {
     "term": "avuncular",
-    "meaning": "Amca gibi",
+    "meaning": "Amca",
     "hint": "kind and friendly",
     "example": "He has an avuncular manner.",
     "level": "C2"
@@ -6791,7 +6791,7 @@ const wordsData = [
   },
   {
     "term": "bring",
-    "meaning": "About sebep olmak",
+    "meaning": "Getirmek",
     "hint": "take something or somebody with oneself somewhere",
     "example": "Bring me the box from the other room",
     "level": "C1"
@@ -7477,7 +7477,7 @@ const wordsData = [
   },
   {
     "term": "cadaverous",
-    "meaning": "Ceset gibi",
+    "meaning": "Ceset",
     "hint": "resembling a corpse",
     "example": "His cadaverous appearance shocked us.",
     "level": "C1"
@@ -11404,7 +11404,7 @@ const wordsData = [
   },
   {
     "term": "consequent",
-    "meaning": "Sonuç olan",
+    "meaning": "Sonuç",
     "hint": "following as a result",
     "example": "The rise in prices and consequent unemployment.",
     "level": "C1"
