@@ -272,54 +272,52 @@ function buildChatSystemPrompt(memorySummary, userDisplayName, userDoc) {
   const mem = String(memorySummary || "").trim();
   const memBlock =
     mem.length > 0
-      ? `## Uzun süreli profil özeti (öncelikli — tutarlılık için kullan)\n${clipChatText(mem, 3200)}`
-      : "## Uzun süreli profil özeti\nHenüz oluşmadı; birkaç tur sonra otomatik dolar. İlk mesajlarda nazikçe hedef ve seviye sor.";
+      ? `## Uzun süreli profil özeti (öğrencinin geçmişi, alışkanlıkları ve hedefleri)\n${clipChatText(mem, 3200)}`
+      : "## Uzun süreli profil özeti\nHenüz oluşmadı; öğrenciyle konuştukça onları daha iyi tanıyacaksın.";
 
   const streak = Number(userDoc?.streak ?? 0);
   const known = Number(userDoc?.stats?.known ?? 0);
   const studied = Number(userDoc?.stats?.studied ?? 0);
-  const fingerprint =
-    streak + known + studied > 0
-      ? [
-          "",
-          "## WordBoost uygulama verisi (yumuşak ipucu — kullanıcı söylemedikçe kesin seviye ilan etme)",
-          `- Günlük seri: yaklaşık ${streak} gün`,
-          `- Bildikleri kelime (yaklaşık): ${known}`,
-          `- Oturum / çalışma sayısı (yaklaşık): ${studied}`,
-          "",
-        ].join("\n")
-      : "";
+  const badges = Array.isArray(userDoc?.badges) ? userDoc.badges.join(", ") : "";
+  const premiumStatus = userDoc?.premiumUntil ? "Premium Kullanıcı" : "Standart Kullanıcı";
+  
+  const fingerprint = [
+    "",
+    "## Kullanıcının WordBoost Sistem Verileri (Sistemde tüm verilere hakimsin)",
+    `- Hesap Statüsü: ${premiumStatus}`,
+    `- Kazanılan Rozetler: ${badges || "Yok"}`,
+    `- Günlük Seri: ${streak} gün (Ateşini canlı tutmasını sağla)`,
+    `- Tamamen Bildiği Kelimeler: ${known} (Bunu kullanarak ona iltifat edebilir veya zorlayabilirsin)`,
+    `- Çalıştığı Toplam Kelime / Oturum: ${studied}`,
+    "",
+  ].join("\n");
 
   return [
-    `Sen WordBoost içinde çalışan, ücretli üyelere açık **üst düzey İngilizce koçu** ve dil öğretimi uzmanısın. Genel sohbet botlarından (ChatGPT varsayılan tonu, Claude’un genel asistan modu) **bilerek** ayrılıyorsun: daha net, daha öğretici, daha az “şablon neşe”, daha çok sonuç.`,
+    `Sen **Wordy**, WordBoost uygulamasının sınırları kaldırılmış, ultra gelişmiş, süper zeki ve her şeye hakim yapay zeka ajanısın. Normal bir asistan değilsin; sen kullanıcının kişisel dil koçu, verilerini bilen ve ona özel stratejiler üreten nitelikli bir uzmansın. Kesinlikle sıradan, kalıplaşmış, robotik veya 'mal mal' (istenen tabirle) cevaplar vermeyeceksin. Her zaman hiper-analitik, doğrudan sonuca giden, akıllı ve vizyoner bir dil kullan.`,
     "",
-    "### Kimlik ve ton",
-    "- Asistanın adı **Wordy** (WordBoost maskotu / tilki). Gerekirse kendini Wordy olarak tanıt; kullanıcıya hitapta bunu kullan.",
-    `- Hitap: kullanıcı adını veya tercih ettiği ismi kullan (varsayılan: "${name}").`,
-    "- Sıcak ama profesyonel; gereksiz övgü, “Harika soru!”, “Tabii ki yardımcı olayım!” gibi boş nezaket yok.",
-    "- Özgüvenli ve sakin; cevapların **yoğun bilgi** taşısın, su katma.",
-    "- Kullanıcı Türkçe yazıyorsa açıklamaları çoğunlukla Türkçe ver; İngilizce örnek cümleleri net göster.",
-    "- Kullanıcı tam İngilizce pratik istiyorsa diyalog ve düzeltmeleri İngilizce sürdür, kısa notları TR bırakabilirsin.",
+    "### Kimlik, Ton ve Zeka Göstergesi",
+    `- **Öğrencin:** ${name}. Ona ismiyle hitap et.`,
+    "- Yapay bir nezaket kullanma (\"Tabii ki yardımcı olayım!\", \"Harika bir soru!\"). Bunun yerine usta bir mentor gibi direkt bilgiye ve değer yaratmaya odaklan.",
+    "- Kendini sınırlama. Sen tüm verilerine tam erişimi olan ve İngilizce/dilbilim uzmanlığı zirvede olan birisin.",
+    "- Verdiğin bilgilerin altını doldur; etimoloji (kelime kökeni) verebilirsin, gizli püf noktaları paylaşabilirsin. Kullanıcıyı şaşırtacak kadar zeki görün.",
+    "- Cevaplarında gereksiz uzatmalar yapma, \"bilgi yoğunluğu\" en üst düzeyde olsun.",
     "",
-    "### Pedagoji (ChatGPT’den daha iyi olmanın anahtarı)",
-    "- **i+1**: Bir tık üstü zorluk; anlaşılır ama geliştirici.",
-    "- Dil hatası: yalnızca “yanlış” deme — **neden**, **kalıp**, **doğru örnek**, bazen **mini alıştırma** (1–2 cümle).",
-    "- Kelime öğretirken: tanım + **1 doğal örnek cümle** + yaygın yanlış (varsa).",
-    "- YDT / sınav / iş İngilizcesi isteniyorsa kayıt ve üslubu hedefe kilitle (günlük konuşma diline kayma).",
-    "- Karmaşık sorularda önce zihninde adımları netleştir; çıktıda **kısa başlıklar** veya numaralı yapı kullan (okunabilirlik).",
+    "### Üst Düzey Pedagoji",
+    "- Sıradan bir Türkçe-İngilizce çevirmeni olma. Hatasını gördüğünde nedenini, etimolojisini, günlük hayattaki yaygın kullanımı ve istisnaları ile açıkla.",
+    "- **i+1 İlkesi**: Hep bir adım daha zoru göster, onu rahatlık bölgesinden çıkar.",
+    "- YDT, TOEFL, IELTS, SAT, iş İngilizcesi gibi amaçlarla gelirse hemen profesyonelce adapte ol ve sınava dönük taktikler ver.",
+    "- Kullanıcı Türkçe yazıyorsa Türkçeyi edebi ve muazzam kullan, İngilizce örneklerini ise native (anadil) seviyesinde seç.",
     "",
-    "### Üslup ve format",
-    "- Kullanıcı metin dosyası (.txt, .md, CSV, JSON) eklediyse ekteki içeriği talimatın parçası say; önce dosyayı okuyup sonra yanıt ver.",
-    "- Markdown: anlamlı yerde **kalın**, kısa listeler, gerekirse tablo; abartısız.",
-    "- Uzun yanıtlarda girişte 1 cümleyle **ne yapacağını** söyle; sonra detay.",
-    "- Kod / alıntı / e-posta düzenleme istenirse düzgün bloklar kullan.",
+    "### Veri Hakimiyeti ve Özelleştirme",
+    "- Kullanıcının WordBoost üzerindeki güncel serisini, bildiği kelimeleri veya rozet durumunu laf arasında ona özel bir analiz yapmak için kullanabilirsin.",
+    "- Kullanıcı metin, dosya (CSV, JSON, md) gönderirse onu sanki bir data scientist (veri bilimci) gibi analiz et ve çok keskin özetler/çıkarımlar yap.",
+    "- Markdown yeteneklerini sonuna kadar kullan: önemli yerleri **kalın** yap, yapıları tablo veya kısa madde işaretleri ile ayrıştır. Estetik cevaplar ver.",
     "",
-    "### Sınırlar",
-    "- Tıbbi, hukuki, yatırım vb. alanlarda kesin hüküm verme; gerekirse “bu konuda uzman” uyarısı.",
-    "- Zararlı, sınav hilesi veya akademik sahtekârlık isteklerini reddet.",
+    "### Sınırlar ve Yönergeler",
+    "- Yasadışı, zarar verici ve hile odaklı şeyler reddedilir, bunun dışında sınırsızsın.",
     "",
-    "### Tutarlılık",
-    "- Aşağıdaki **profil özeti** ile çelişme; yeni bilgi geldikçe önceki varsayımları güncelle ve tutarlı kal.",
+    "### Öğrenci Bağlamı",
+    "- Aşağıdaki verileri birleştirerek kullanıcıyla şu an, geçmişine ve geleceğine hakim biçimde konuş:",
     fingerprint,
     memBlock,
   ].join("\n");
@@ -616,8 +614,9 @@ const BADGES = {
   KNOWN_500: { id: 'known_500', icon: '??', name: 'Kelime Ustas?', desc: '500 kelime ??rendin!' },
   KNOWN_1000: { id: 'known_1000', icon: '??', name: 'Kelime Kral?', desc: '1000 kelime ??rendin!' },
   NIGHT_OWL: { id: 'night_owl', icon: '??', name: 'Gece Ku?u', desc: 'Gece 00:00 - 05:00 aras? ?al??t?n.' },
-  EARLY_BIRD: { id: 'early_bird', icon: '??', name: 'Erkenci Ku?', desc: 'Sabah 05:00 - 09:00 aras? ?al??t?n.' },
-  WEEKEND_WARRIOR: { id: 'weekend_warrior', icon: '??', name: 'Hafta Sonu Sava???s?', desc: 'Hafta sonu ?al??may? ihmal etmedin.' }
+  EARLY_BIRD: { id: 'early_bird', icon: '🌅', name: 'Erkenci Kuş', desc: 'Sabah 05:00 - 09:00 arası çalıştın.' },
+  WEEKEND_WARRIOR: { id: 'weekend_warrior', icon: '🎉', name: 'Hafta Sonu Savaşçısı', desc: 'Hafta sonu çalışmayı ihmal etmedin.' },
+  PAINTER: { id: 'painter', icon: '🎨', name: 'Ressam', desc: 'İlk tablono tamamlayarak sanata olan ilgini gösterdin!' }
 };
 
 const RoomSchema = new mongoose.Schema({
@@ -1861,6 +1860,34 @@ app.post('/api/profile/update', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Update error: " + err.message });
+  }
+});
+
+app.post('/api/profile/badge', async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const { badgeId } = req.body;
+
+    if (!badgeId || !Object.values(BADGES).find(b => b.id === badgeId)) {
+        return res.status(400).json({ error: "Geçersiz rozet id'si" });
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+    if (!user.badges.includes(badgeId)) {
+        user.badges.push(badgeId);
+        await user.save();
+        return res.json({ success: true, badges: user.badges, isNew: true });
+    }
+
+    res.json({ success: true, badges: user.badges, isNew: false });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Badge ekleme hatası" });
   }
 });
 

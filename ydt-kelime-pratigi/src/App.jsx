@@ -18,6 +18,7 @@ import PricingPage from "./components/PricingPage";
 import TermsPage from "./components/TermsPage";
 import PrivacyPage from "./components/PrivacyPage";
 import SiteInfoPage from "./components/SiteInfoPage";
+import DrawRevealGame from "./components/DrawRevealGame";
 import { sanitizeWordList } from "./utils/wordQuality";
 import { readResponseJson } from "./utils/httpJson";
 import { apiUrl } from "./utils/apiUrl";
@@ -44,6 +45,7 @@ function readInitialViewFromUrl() {
   if (p === "/terms") return "terms";
   if (p === "/privacy") return "privacy";
   if (p === "/bilgi" || p === "/info") return "site-info";
+  if (p === "/draw" || p === "/resim") return "draw-reveal";
   const h = window.location.hash.replace("#", "").toLowerCase();
   if (h === "admin") return "admin";
   return "practice";
@@ -60,7 +62,8 @@ const BADGES = {
   known_1000: { id: 'known_1000', icon: '👑', name: 'Kelime Kralı', desc: '1000 kelime öğrendin!' },
   night_owl: { id: 'night_owl', icon: '🦉', name: 'Gece Kuşu', desc: 'Gece 00:00 - 05:00 arası çalıştın.' },
   early_bird: { id: 'early_bird', icon: '🌅', name: 'Erkenci Kuş', desc: 'Sabah 05:00 - 09:00 arası çalıştın.' },
-  weekend_warrior: { id: 'weekend_warrior', icon: '🎉', name: 'Hafta Sonu Savaşçısı', desc: 'Hafta sonu çalışmayı ihmal etmedin.' }
+  weekend_warrior: { id: 'weekend_warrior', icon: '🎉', name: 'Hafta Sonu Savaşçısı', desc: 'Hafta sonu çalışmayı ihmal etmedin.' },
+  painter: { id: 'painter', icon: '🎨', name: 'Ressam', desc: 'İlk tablono tamamlayarak sanata olan ilgini gösterdin!' }
 };
 
 const socket = io(SOCKET_URL, {
@@ -2637,6 +2640,45 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
         />
       )}
       {currentView === 'classroom' && <ClassroomView user={user} />}
+      {currentView === 'draw-reveal' && (
+        <DrawRevealGame 
+          words={words} 
+          user={user} 
+          onUpdateStats={(isKnown, wordTerm) => {
+            // Minimal stats update for the game
+            if (user && user.token) {
+              fetch(apiUrl('/api/stats/update'), {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': user.token
+                },
+                body: JSON.stringify({
+                  studied: 1,
+                  known: isKnown ? 1 : 0,
+                  unknown: isKnown ? 0 : 1,
+                  wordTerm: wordTerm
+                })
+              }).then(async r => {
+                const data = await readResponseJson(r);
+                if (data.success) {
+                  setUser(prev => ({ ...prev, stats: data.stats, streak: data.streak, badges: data.badges }));
+                  if (data.newBadges && data.newBadges.length > 0) {
+                    setNewBadgeNotification({ badges: data.newBadges });
+                  }
+                }
+              }).catch(err => console.error("Game stats update failed:", err));
+            }
+            // Also update local stats if needed (optional for game)
+            setStats(prev => ({
+              studied: prev.studied + 1,
+              known: isKnown ? prev.known + 1 : prev.known,
+              unknown: isKnown ? prev.unknown : prev.unknown + 1
+            }));
+          }} 
+          speakWord={speakWord} 
+        />
+      )}
       {currentView === 'room-menu' && <RoomMenuView username={username} createRoom={createRoom} joinRoom={joinRoom} loading={loading} error={error} />}
       {currentView === 'room' && <RoomView roomCode={roomCode} users={users} username={username} isHost={isHost} setCurrentView={setCurrentView} leaveRoom={leaveRoom} />}
       {currentView === 'admin' && <AdminPanel setCurrentView={setCurrentView} />}

@@ -213,6 +213,12 @@ const Navbar = ({
             🎮 Eşleştirme
           </button>
           <button
+            className={`nav-link ${currentView === 'draw-reveal' ? 'active' : ''}`}
+            onClick={() => handleNavClick('draw-reveal')}
+          >
+            🎨 Resim Açmaca
+          </button>
+          <button
             className={`nav-link ${currentView === 'leaderboard' ? 'active' : ''}`}
             onClick={() => handleNavClick('leaderboard')}
           >
