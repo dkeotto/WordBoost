@@ -11,9 +11,15 @@ export const PLAN_FALLBACK_TR = {
   premium: {
     label: "WordBoost Premium",
     description:
-      "Sınırsız kelime pratiği, AI Writing Mode, akıllı tekrar sistemi, detaylı istatistikler ve reklamsız öğrenme.",
+      "Sınırsız kelime pratiği, AI Writing Mode, akıllı tekrar sistemi, detaylı istatistikler ve reklamsız öğrenme. Ayrıca yapay zekâ sohbetinde gelişmiş Gemini 1.5 Pro modeline özel erişim.",
     displayPrice: "₺39.99",
-    features: ["AI+ özellikleri dahil", "Sınırsız kelime erişimi", "İlerleme takibi", "Reklamsız deneyim"],
+    features: [
+      "✨ Gelişmiş AI: Gemini 1.5 Pro özel erişim",
+      "AI+ özellikleri dahil",
+      "Sınırsız kelime erişimi",
+      "İlerleme takibi",
+      "Reklamsız deneyim",
+    ],
   },
   aiPlus: {
     label: "WordBoost AI+",

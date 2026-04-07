@@ -22,6 +22,8 @@ const os = require('os');
 const rateLimit = require('express-rate-limit');
 const {
   createAiRuntime,
+  createStandardAiRuntime,
+  createPremiumAiRuntime,
   getAiModel,
   formatAiError,
   normalizeAnthropicApiKey,
@@ -138,7 +140,8 @@ function getAdminJwtSecret() {
   return JWT_SECRET;
 }
 
-const { provider: aiProvider, name: aiProviderName } = createAiRuntime();
+const { provider: aiProvider, name: aiProviderName } = createStandardAiRuntime();
+const { provider: aiProviderPremium, name: aiProviderPremiumName } = createPremiumAiRuntime();
 
 if (!process.env.RAILWAY_PUBLIC_DOMAIN && !process.env.RENDER_EXTERNAL_URL) {
   const ak = normalizeAnthropicApiKey(process.env.ANTHROPIC_API_KEY);
@@ -3309,7 +3312,11 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
       (user.username && String(user.username).trim()) ||
       "öğrenci";
     const system = buildChatSystemPrompt(thread.memorySummary, display, user);
-    const model = getAiModel(aiProviderName);
+    // Premium abonelik kullanıcıları Gemini Pro'yu kullanır; diğerleri standart havuzu
+    const isPremiumSub = isPremiumUser(user);
+    const activeProvider = isPremiumSub ? aiProviderPremium : aiProvider;
+    const activeProviderName = isPremiumSub ? aiProviderPremiumName : aiProviderName;
+    const model = getAiModel(isPremiumSub ? "gemini_pro" : activeProviderName);
 
     setSseHeaders(res);
     sseWrite(res, "meta", {
@@ -3319,7 +3326,7 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
     });
 
     const startedAt = Date.now();
-    const streamRaw = await aiProvider.createMessageStream({
+    const streamRaw = await activeProvider.createMessageStream({
       model,
       max_tokens: 4096,
       temperature: 0.82,
@@ -3327,7 +3334,7 @@ app.post("/api/ai/chat/stream", aiLimiter, async (req, res) => {
       messages: apiMessages,
     });
     const { iterable: stream, metaRef: chatStreamMeta } = normalizeAiStreamResult(streamRaw);
-    const logProvider = chatStreamMeta?.provider || aiProviderName;
+    const logProvider = chatStreamMeta?.provider || activeProviderName;
     const logModel = chatStreamMeta?.model || model;
 
     let out = "";

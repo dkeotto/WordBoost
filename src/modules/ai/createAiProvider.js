@@ -1,6 +1,7 @@
 const { createAnthropicProvider } = require("./providers/anthropicProvider");
 const { createGroqProvider, createOpenAiChatProvider } = require("./providers/groqProvider");
 const { createAiGatewayFetchProvider } = require("./providers/aiGatewayFetchProvider");
+const { createGeminiFlashProvider, createGeminiProProvider } = require("./providers/geminiProvider");
 const { createFailoverAiProvider } = require("./failoverAiProvider");
 const metrics = require("./aiProviderMetrics");
 
@@ -36,6 +37,38 @@ function failoverDisabled() {
 function getFailoverPrimary() {
   const p = String(process.env.AI_FAILOVER_PRIMARY || "groq").toLowerCase();
   return p === "gateway" || p === "ai_gateway" || p === "vercel" ? "ai_gateway" : "groq";
+}
+
+// ─── Gemini key helpers ─────────────────────────────────────────────────────
+function getGeminiKey(n) {
+  return String(process.env[`GEMINI_API_KEY_${n}`] || "").trim();
+}
+
+/**
+ * Gemini Pro (key2) leg — sadece Premium abonelik kullanıcılar için.
+ * @returns {{ id, client, model } | null}
+ */
+function buildGeminiProLeg() {
+  const key2 = getGeminiKey(2);
+  if (!key2) return null;
+  return {
+    id: "gemini_pro",
+    client: createGeminiProProvider({ apiKey: key2 }),
+    model: "gemini-1.5-pro",
+  };
+}
+
+/**
+ * Flash legs (key1 + key3) — tüm premium kullanıcılar için.
+ * @returns {Array<{ id, client, model }>}
+ */
+function buildGeminiFlashLegs() {
+  const legs = [];
+  const key1 = getGeminiKey(1);
+  const key3 = getGeminiKey(3);
+  if (key1) legs.push({ id: "gemini_flash_1", client: createGeminiFlashProvider({ apiKey: key1 }), model: "gemini-2.0-flash" });
+  if (key3) legs.push({ id: "gemini_flash_3", client: createGeminiFlashProvider({ apiKey: key3 }), model: "gemini-2.0-flash" });
+  return legs;
 }
 
 /**
@@ -123,6 +156,55 @@ function createAiRuntime() {
     provider: createAnthropicProvider({ apiKey: anthropicKey }),
     name: "anthropic",
   };
+}
+
+/**
+ * Standart failover provider — Groq + AI Gateway + Gemini Flash keys.
+ * Tüm Premium/AI+ kullanıcılar için.
+ */
+function createStandardAiRuntime() {
+  const groqKey = String(process.env.GROQ_API_KEY || "").trim();
+  const gatewayKey = getGatewayKey();
+  const geminiFlashLegs = buildGeminiFlashLegs();
+  const legs = [];
+
+  if (groqKey) legs.push({ id: "groq", client: createOpenAiChatProvider({ apiKey: groqKey }), model: String(process.env.GROQ_MODEL || "llama-3.3-70b-versatile") });
+  if (gatewayKey) legs.push({ id: "ai_gateway", client: createAiGatewayFetchProvider({ apiKey: gatewayKey, baseURL: getGatewayBase() }), model: getGatewayModel() });
+  for (const gl of geminiFlashLegs) legs.push(gl);
+
+  const legIds = legs.map((l) => l.id);
+  if (legs.length >= 2) {
+    metrics.initAiMetricsMeta({ legIds, failoverPrimary: legIds[0], runtimeName: "multi_failover" });
+    return { provider: createFailoverAiProvider(legs, { primary: legIds[0] }), name: "multi_failover" };
+  }
+  if (legs.length === 1) {
+    metrics.initAiMetricsMeta({ legIds, failoverPrimary: legIds[0], runtimeName: legIds[0] });
+    return { provider: legs[0].client, name: legIds[0] };
+  }
+  return createAiRuntime();
+}
+
+/**
+ * Premium abonelik runtime — Gemini Pro (key2) öncelikli, sonra standart havuz.
+ * Sadece isPremiumUser(user) === true kullanıcılar için.
+ */
+function createPremiumAiRuntime() {
+  const proLeg = buildGeminiProLeg();
+  if (!proLeg) return createStandardAiRuntime();
+
+  const groqKey = String(process.env.GROQ_API_KEY || "").trim();
+  const gatewayKey = getGatewayKey();
+  const geminiFlashLegs = buildGeminiFlashLegs();
+  const standardLegs = [];
+
+  if (groqKey) standardLegs.push({ id: "groq", client: createOpenAiChatProvider({ apiKey: groqKey }), model: String(process.env.GROQ_MODEL || "llama-3.3-70b-versatile") });
+  if (gatewayKey) standardLegs.push({ id: "ai_gateway", client: createAiGatewayFetchProvider({ apiKey: gatewayKey, baseURL: getGatewayBase() }), model: getGatewayModel() });
+  for (const gl of geminiFlashLegs) standardLegs.push(gl);
+
+  const legs = [proLeg, ...standardLegs];
+  const legIds = legs.map((l) => l.id);
+  metrics.initAiMetricsMeta({ legIds, failoverPrimary: "gemini_pro", runtimeName: "premium_gemini_pro" });
+  return { provider: createFailoverAiProvider(legs, { primary: "gemini_pro" }), name: "premium_gemini_pro" };
 }
 
 function getAiModel(providerName) {
@@ -218,6 +300,8 @@ function getAiAdminSnapshot() {
 
 module.exports = {
   createAiRuntime,
+  createStandardAiRuntime,
+  createPremiumAiRuntime,
   getAiModel,
   formatAiError,
   normalizeAnthropicApiKey,
