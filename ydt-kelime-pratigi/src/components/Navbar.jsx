@@ -5,13 +5,13 @@ import './Navbar.css';
 
 const MOBILE_MQ = '(max-width: 1320px)';
 
-const Navbar = ({ 
-  currentView, 
-  setCurrentView, 
-  user, 
-  onLogoutClick, 
+const Navbar = ({
+  currentView,
+  setCurrentView,
+  user,
+  onLogoutClick,
   onLoginClick,
-  onOpenSiteInfo = () => {},
+  onOpenSiteInfo = () => { },
   siteInfoTab = "features",
   isInRoom,
   wordsCount,
@@ -216,7 +216,7 @@ const Navbar = ({
             className={`nav-link ${currentView === 'draw-reveal' ? 'active' : ''}`}
             onClick={() => handleNavClick('draw-reveal')}
           >
-            🎨 Resim Açmaca
+            🎨 Resim Bulmaca
           </button>
           <button
             className={`nav-link ${currentView === 'leaderboard' ? 'active' : ''}`}
@@ -274,18 +274,16 @@ const Navbar = ({
           </button>
           <button
             type="button"
-            className={`nav-link ${
-              currentView === "privacy" || (currentView === "site-info" && siteInfoTab === "privacy") ? "active" : ""
-            }`}
+            className={`nav-link ${currentView === "privacy" || (currentView === "site-info" && siteInfoTab === "privacy") ? "active" : ""
+              }`}
             onClick={() => handleSiteInfo("privacy")}
           >
             🔒 Gizlilik
           </button>
           <button
             type="button"
-            className={`nav-link ${
-              currentView === "terms" || (currentView === "site-info" && siteInfoTab === "terms") ? "active" : ""
-            }`}
+            className={`nav-link ${currentView === "terms" || (currentView === "site-info" && siteInfoTab === "terms") ? "active" : ""
+              }`}
             onClick={() => handleSiteInfo("terms")}
           >
             📜 Şartlar
