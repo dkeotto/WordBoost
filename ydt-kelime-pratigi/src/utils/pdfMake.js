@@ -1,7 +1,20 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
+
+function replaceTurkishChars(text) {
+  return String(text || "")
+    .replace(/ğ/g, "g").replace(/Ğ/g, "G")
+    .replace(/ş/g, "s").replace(/Ş/g, "S")
+    .replace(/ı/g, "i").replace(/İ/g, "I")
+    .replace(/ç/g, "c").replace(/Ç/g, "C")
+    .replace(/ö/g, "o").replace(/Ö/g, "O")
+    .replace(/ü/g, "u").replace(/Ü/g, "U")
+    // Replace markdown stars/backticks and other non-standard chars
+    .replace(/[^\x20-\x7E\r\n]/g, ""); 
+}
+
 function wrapText(text, maxChars) {
-  const s = String(text || "").replace(/\r\n/g, "\n");
+  const s = replaceTurkishChars(text).replace(/\r\n/g, "\n");
   const out = [];
   for (const rawLine of s.split("\n")) {
     let line = rawLine;

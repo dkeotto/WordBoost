@@ -1,5 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
+
+function customUrlTransform(url) {
+  if (url.startsWith("data:image/")) return url;
+  return defaultUrlTransform(url);
+}
 import { apiUrl } from "../utils/apiUrl";
 import { readResponseJson } from "../utils/httpJson";
 import { hasUnlimitedAiClient } from "../utils/premiumDisplay";
@@ -839,7 +844,7 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
                   )}
                   {m.role === "assistant" ? (
                     <div className="ai-chat-md">
-                      <ReactMarkdown>{m.content || ""}</ReactMarkdown>
+                      <ReactMarkdown urlTransform={customUrlTransform}>{m.content || ""}</ReactMarkdown>
                     </div>
                   ) : (
                     <>
