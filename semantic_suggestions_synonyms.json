@@ -1,0 +1,29 @@
+[
+  {
+    "id_index": 71,
+    "reason": "Doğru cevap 'pragmatic' değil, 'useful' kelimesinin eş anlamlısı 'helpful' veya 'beneficial' olabilir. 'pragmatic' kelimesi daha çok 'pratik' veya 'uygulamalı' anlamlarına gelir.",
+    "original": {
+      "id_index": 71,
+      "level": "C2",
+      "question": "useful",
+      "correct": "pragmatic",
+      "options": [
+        "pragmatic",
+        "optional",
+        "fragile",
+        "hostile"
+      ]
+    },
+    "correction": {
+      "level": "C2",
+      "question": "useful",
+      "correct": "helpful",
+      "options": [
+        "helpful",
+        "harmful",
+        "optional",
+        "inefficient"
+      ]
+    }
+  }
+]
