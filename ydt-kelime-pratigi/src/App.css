@@ -7,12 +7,10 @@
 
 /* ──────────────────────────────────────────────────────────────
    PAGE WITH ADS — Çalışma & Test sayfaları için sidebar layout
-   Sidebar'lar absolute konumlu — içerik layout'unu bozmaz
-   PC (≥1200px): sol ve sağ boş alanlarda kayan reklamlar
-   Tablet/Mobil: sadece içerik altında banner
+   Sidebar'lar fixed konumlu — sayfanın en sol ve en sağ boşluğunda durur
+   İçerik (main) max-width: 1200px içinde kalır, düzeni bozulmaz.
 ────────────────────────────────────────────────────────────── */
 .page-with-ads {
-  position: relative;
   width: 100%;
 }
 
@@ -21,18 +19,19 @@
 }
 
 .pwa-sidebar {
-  position: absolute;
-  top: 16px;
+  position: fixed;
+  top: 120px;
   width: 160px;
   pointer-events: auto;
+  z-index: 5;
 }
 
 .pwa-sidebar--left {
-  left: 8px;
+  left: 16px;
 }
 
 .pwa-sidebar--right {
-  right: 8px;
+  right: 16px;
 }
 
 .ad-sidebar-vert {
