@@ -237,7 +237,6 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
               src={currentPainting.url}
               alt="Keşfediliyor..."
               className="painting-image"
-              style={{ filter: revealedTiles.length === totalTiles ? 'none' : 'blur(5px)' }}
               onLoad={() => setImgLoaded(true)}
             />
           )}
