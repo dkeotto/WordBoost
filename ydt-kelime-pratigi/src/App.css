@@ -7,64 +7,49 @@
 
 /* ──────────────────────────────────────────────────────────────
    PAGE WITH ADS — Çalışma & Test sayfaları için sidebar layout
-   PC (≥1140px): [sol reklam] [içerik] [sağ reklam]
-   Tablet (768-1139px): [içerik] [sağ reklam]
-   Mobil (<768px): [içerik] + alt banner
+   Sidebar'lar absolute konumlu — içerik layout'unu bozmaz
+   PC (≥1200px): sol ve sağ boş alanlarda kayan reklamlar
+   Tablet/Mobil: sadece içerik altında banner
 ────────────────────────────────────────────────────────────── */
 .page-with-ads {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  position: relative;
   width: 100%;
-  min-height: 100%;
-  gap: 0;
 }
 
 .pwa-content {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  width: 100%;
 }
 
 .pwa-sidebar {
-  flex: 0 0 160px;
+  position: absolute;
+  top: 16px;
   width: 160px;
-  min-width: 160px;
-  position: sticky;
-  top: 80px;
-  max-height: calc(100vh - 100px);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 8px;
+  pointer-events: auto;
 }
 
 .pwa-sidebar--left {
-  order: -1;
+  left: 8px;
 }
 
 .pwa-sidebar--right {
-  order: 1;
+  right: 8px;
 }
 
 .ad-sidebar-vert {
   width: 160px;
-  min-height: 600px;
+  min-height: 400px;
 }
 
 .pwa-bottom-ad {
   width: 100%;
   max-width: 728px;
   margin: 24px auto 12px;
-  display: none; /* Sadece tablet/mobil breakpoint'te göster */
+  display: none;
 }
 
-/* Tablet: sol sidebar gizlenir, sağ kalır, alt banner gösterilir */
-@media (max-width: 1139px) {
-  .pwa-sidebar--left {
+/* Tablet: sidebar'lar gizlenir, alt banner gösterilir */
+@media (max-width: 1199px) {
+  .pwa-sidebar {
     display: none;
   }
   .pwa-bottom-ad {
@@ -72,14 +57,8 @@
   }
 }
 
-/* Mobil: sağ sidebar da gizlenir, sadece alt banner kalır */
+/* Mobil */
 @media (max-width: 767px) {
-  .pwa-sidebar--right {
-    display: none;
-  }
-  .pwa-sidebar--left {
-    display: none;
-  }
   .pwa-bottom-ad {
     display: block;
     max-width: 100%;
@@ -87,12 +66,13 @@
   }
 }
 
-/* PC'de yeterli alan varsa sidebar göster */
-@media (min-width: 1140px) {
+/* PC'de alt banner gizlenir */
+@media (min-width: 1200px) {
   .pwa-bottom-ad {
     display: none;
   }
 }
+
 
 
 /* Pricing modal (Paddle) — portal ile document.body’de; global button { uppercase } burada sıfırlanır */
