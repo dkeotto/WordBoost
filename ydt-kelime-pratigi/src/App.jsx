@@ -1,24 +1,25 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
 import LoginModal from "./components/LoginModal";
-import AdminPanel from "./components/AdminPanel";
+const AdminPanel = lazy(() => import("./components/AdminPanel"));
 import Navbar from "./components/Navbar";
 import Flashcard from "./components/Flashcard";
 import StatsPanel from "./components/StatsPanel";
 import AvatarBuilder from "./components/AvatarBuilder";
-import DashboardView from "./components/DashboardView";
-import SynonymsView from "./components/SynonymsView";
-import PhrasalVerbsView from "./components/PhrasalVerbsView";
-import AiWritingView from "./components/AiWritingView";
-import AiChatView from "./components/AiChatView";
 import ConsentBanner from "./components/ConsentBanner";
-import ClassroomView from "./components/ClassroomView";
 import PricingModal from "./components/PricingModal";
 import StartupScreen from "./components/StartupScreen";
-import PricingPage from "./components/PricingPage";
-import TermsPage from "./components/TermsPage";
-import PrivacyPage from "./components/PrivacyPage";
-import SiteInfoPage from "./components/SiteInfoPage";
-import DrawRevealGame from "./components/DrawRevealGame";
+
+const DashboardView = lazy(() => import("./components/DashboardView"));
+const SynonymsView = lazy(() => import("./components/SynonymsView"));
+const PhrasalVerbsView = lazy(() => import("./components/PhrasalVerbsView"));
+const AiWritingView = lazy(() => import("./components/AiWritingView"));
+const AiChatView = lazy(() => import("./components/AiChatView"));
+const ClassroomView = lazy(() => import("./components/ClassroomView"));
+const PricingPage = lazy(() => import("./components/PricingPage"));
+const TermsPage = lazy(() => import("./components/TermsPage"));
+const PrivacyPage = lazy(() => import("./components/PrivacyPage"));
+const SiteInfoPage = lazy(() => import("./components/SiteInfoPage"));
+const DrawRevealGame = lazy(() => import("./components/DrawRevealGame"));
 import AdSlot from "./components/AdSlot";
 import { sanitizeWordList } from "./utils/wordQuality";
 import { readResponseJson } from "./utils/httpJson";
@@ -2543,6 +2544,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     </header>
 
     <main>
+      <Suspense fallback={<div style={{ padding: "50px", textAlign: "center", color: "var(--text-color)" }}>Yükleniyor...</div>}>
       {currentView === 'practice' && (
         <PageWithAds
           slotLeft={import.meta.env.VITE_ADSENSE_SLOT_PRACTICE_LEFT}
@@ -2756,6 +2758,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
       {currentView === 'room-menu' && <RoomMenuView username={username} createRoom={createRoom} joinRoom={joinRoom} loading={loading} error={error} />}
       {currentView === 'room' && <RoomView roomCode={roomCode} users={users} username={username} isHost={isHost} setCurrentView={setCurrentView} leaveRoom={leaveRoom} />}
       {currentView === 'admin' && <AdminPanel setCurrentView={setCurrentView} />}
+      </Suspense>
     </main>
 
     {showLogin && (
