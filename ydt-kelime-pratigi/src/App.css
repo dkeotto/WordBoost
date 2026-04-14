@@ -4074,6 +4074,10 @@ button:disabled {
   max-width: 1100px;
   margin: 0 auto;
   padding: 22px 16px 40px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .ai-header h2 {
@@ -4130,6 +4134,8 @@ button:disabled {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
+  min-width: 0;
+  width: 100%;
 }
 
 .ai-card {
@@ -4137,6 +4143,9 @@ button:disabled {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 16px;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .ai-card--output {
@@ -4157,6 +4166,7 @@ button:disabled {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 10px;
+  min-width: 0;
 }
 
 .ai-row--4 {
@@ -4182,6 +4192,7 @@ button:disabled {
   color: #ddd;
   font-size: 0.9rem;
   position: relative;
+  min-width: 0;
 }
 
 .ai-char-count {
@@ -4194,6 +4205,8 @@ button:disabled {
 .ai-textarea-main {
   min-height: 200px;
   resize: vertical;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .ai-card input,
@@ -4205,6 +4218,10 @@ button:disabled {
   color: #fff;
   padding: 10px 12px;
   font-size: 0.95rem;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .ai-actions {
@@ -4533,12 +4550,29 @@ button:disabled {
   .ai-grid {
     grid-template-columns: 1fr;
   }
+
+  .ai-row {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 640px) {
   .ai-writing {
-    padding: 14px max(12px, env(safe-area-inset-left, 0px)) max(28px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-right, 0px));
-    overflow-x: clip;
+    padding: 12px 12px max(28px, env(safe-area-inset-bottom, 0px));
+    overflow-x: hidden;
+  }
+
+  .ai-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .ai-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-row--4 {
+    grid-template-columns: 1fr 1fr;
   }
 
   .ai-header h2 {
@@ -4567,6 +4601,11 @@ button:disabled {
     min-height: 48px;
   }
 
+  .ai-output-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .ai-output-toolbar {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -4582,16 +4621,36 @@ button:disabled {
     min-height: 44px;
     font-size: 0.8rem;
     padding: 8px 10px;
+    text-align: center;
+  }
+
+  .ai-card {
+    padding: 14px 12px;
   }
 
   .ai-output {
-    max-height: min(42vh, 420px);
-    max-height: min(42dvh, 420px);
+    max-height: min(45vh, 400px);
+    max-height: min(45dvh, 400px);
+    min-height: 160px;
   }
 
   .ai-rewrite-row button {
     min-height: 44px;
     flex: 1 1 calc(50% - 4px);
+  }
+
+  .ai-chat-mode-switch {
+    margin-top: 4px;
+  }
+}
+
+@media (max-width: 400px) {
+  .ai-row--4 {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-rewrite-row button {
+    flex: 1 1 100%;
   }
 }
 
@@ -6066,11 +6125,41 @@ button:disabled {
   width: 100%;
   aspect-ratio: 1;
   display: grid;
-  background: #000;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   border: 2px solid rgba(255, 159, 28, 0.3);
+}
+
+.painting-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.painting-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 159, 28, 0.2);
+  border-top-color: rgba(255, 159, 28, 0.8);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .painting-image {
@@ -6080,20 +6169,24 @@ button:disabled {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: filter 1s ease;
+  transition: filter 1s ease, opacity 0.5s ease;
+  display: block;
+  z-index: 0;
 }
 
 .painting-tile {
-  background: #222;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2rem;
   font-weight: bold;
-  color: #444;
+  color: rgba(255, 255, 255, 0.2);
   z-index: 2;
   transition: opacity 0.5s ease, transform 0.5s ease;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 .painting-tile.revealed {
@@ -6164,28 +6257,41 @@ button:disabled {
 }
 
 .game-finished-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(10px);
+  grid-column: 1 / -1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 100;
-  border-radius: 12px;
+  gap: 2rem;
+  padding: 1rem;
   animation: fadeIn 0.5s ease;
 }
 
+.game-finished-painting {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(255, 159, 28, 0.25), 0 0 0 2px rgba(255, 159, 28, 0.4);
+  aspect-ratio: 1;
+}
+
+.game-finished-painting img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .finished-card {
-  background: #1e1e1e;
-  padding: 3rem;
+  background: linear-gradient(135deg, rgba(30, 25, 15, 0.98) 0%, rgba(20, 18, 12, 0.98) 100%);
+  padding: 2.5rem 2rem;
   border-radius: 24px;
   text-align: center;
-  border: 2px solid var(--primary-color);
-  max-width: 400px;
+  border: 2px solid rgba(255, 159, 28, 0.55);
+  box-shadow: 0 0 60px rgba(255, 159, 28, 0.15), 0 20px 40px rgba(0, 0, 0, 0.5);
+  max-width: 480px;
+  width: 100%;
 }
 
 .game-feedback {

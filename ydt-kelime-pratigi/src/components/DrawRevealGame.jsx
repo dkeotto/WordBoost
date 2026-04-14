@@ -2,17 +2,78 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { apiUrl } from '../utils/apiUrl';
 
+// Using Wikimedia thumbnail API for reliable, correctly-sized images
 const FAMOUS_PAINTINGS = [
-  { id: 1, title: "Mona Lisa", artist: "Leonardo da Vinci", url: "https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg" },
-  { id: 2, title: "The Starry Night", artist: "Vincent van Gogh", url: "https://upload.wikimedia.org/wikipedia/commons/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg" },
-  { id: 3, title: "Girl with a Pearl Earring", artist: "Johannes Vermeer", url: "https://upload.wikimedia.org/wikipedia/commons/0/0f/1665_Girl_with_a_Pearl_Earring.jpg" },
-  { id: 4, title: "The Scream", artist: "Edvard Munch", url: "https://upload.wikimedia.org/wikipedia/commons/f/f4/The_Scream.jpg" },
-  { id: 5, title: "The Birth of Venus", artist: "Sandro Botticelli", url: "https://upload.wikimedia.org/wikipedia/commons/0/0b/Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project.jpg" },
-  { id: 6, title: "The Night Watch", artist: "Rembrandt van Rijn", url: "https://upload.wikimedia.org/wikipedia/commons/5/5a/The_Night_Watch_-_HD.jpg" },
-  { id: 7, title: "The Kiss", artist: "Gustav Klimt", url: "https://upload.wikimedia.org/wikipedia/commons/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Art_Project.jpg" },
-  { id: 8, title: "American Gothic", artist: "Grant Wood", url: "https://upload.wikimedia.org/wikipedia/commons/c/cc/Grant_Wood_-_American_Gothic_-_Google_Art_Project.jpg" },
-  { id: 9, title: "The Last Supper", artist: "Leonardo da Vinci", url: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Ultima_Cena_-_Restored_-_Lightened.jpg" },
-  { id: 10, title: "Great Wave off Kanagawa", artist: "Hokusai", url: "https://upload.wikimedia.org/wikipedia/commons/0/0a/The_Great_Wave_off_Kanagawa.jpg" }
+  {
+    id: 1,
+    title: "Mona Lisa",
+    artist: "Leonardo da Vinci",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/800px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg",
+    fallback: "https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg"
+  },
+  {
+    id: 2,
+    title: "The Starry Night",
+    artist: "Vincent van Gogh",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/800px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg",
+    fallback: "https://upload.wikimedia.org/wikipedia/commons/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg"
+  },
+  {
+    id: 3,
+    title: "Girl with a Pearl Earring",
+    artist: "Johannes Vermeer",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/1665_Girl_with_a_Pearl_Earring.jpg/800px-1665_Girl_with_a_Pearl_Earring.jpg",
+    fallback: "https://upload.wikimedia.org/wikipedia/commons/0/0f/1665_Girl_with_a_Pearl_Earring.jpg"
+  },
+  {
+    id: 4,
+    title: "The Scream",
+    artist: "Edvard Munch",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/The_Scream.jpg/800px-The_Scream.jpg",
+    fallback: "https://upload.wikimedia.org/wikipedia/commons/f/f4/The_Scream.jpg"
+  },
+  {
+    id: 5,
+    title: "The Birth of Venus",
+    artist: "Sandro Botticelli",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project.jpg/800px-Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project.jpg",
+    fallback: "https://upload.wikimedia.org/wikipedia/commons/0/0b/Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project.jpg"
+  },
+  {
+    id: 6,
+    title: "The Night Watch",
+    artist: "Rembrandt van Rijn",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/The_Night_Watch_-_HD.jpg/800px-The_Night_Watch_-_HD.jpg",
+    fallback: "https://upload.wikimedia.org/wikipedia/commons/5/5a/The_Night_Watch_-_HD.jpg"
+  },
+  {
+    id: 7,
+    title: "The Kiss",
+    artist: "Gustav Klimt",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Art_Project.jpg/800px-The_Kiss_-_Gustav_Klimt_-_Google_Art_Project.jpg",
+    fallback: "https://upload.wikimedia.org/wikipedia/commons/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Art_Project.jpg"
+  },
+  {
+    id: 8,
+    title: "American Gothic",
+    artist: "Grant Wood",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Grant_Wood_-_American_Gothic_-_Google_Art_Project.jpg/800px-Grant_Wood_-_American_Gothic_-_Google_Art_Project.jpg",
+    fallback: "https://upload.wikimedia.org/wikipedia/commons/c/cc/Grant_Wood_-_American_Gothic_-_Google_Art_Project.jpg"
+  },
+  {
+    id: 9,
+    title: "The Last Supper",
+    artist: "Leonardo da Vinci",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Ultima_Cena_-_Restored_-_Lightened.jpg/800px-Ultima_Cena_-_Restored_-_Lightened.jpg",
+    fallback: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Ultima_Cena_-_Restored_-_Lightened.jpg"
+  },
+  {
+    id: 10,
+    title: "Great Wave off Kanagawa",
+    artist: "Hokusai",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/The_Great_Wave_off_Kanagawa.jpg/800px-The_Great_Wave_off_Kanagawa.jpg",
+    fallback: "https://upload.wikimedia.org/wikipedia/commons/0/0a/The_Great_Wave_off_Kanagawa.jpg"
+  }
 ];
 
 const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [], toggleFavorite, playSound }) => {
@@ -24,69 +85,64 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
   const [gameState, setGameState] = useState('menu');
   const [feedback, setFeedback] = useState(null);
   const [score, setScore] = useState(0);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgSrc, setImgSrc] = useState('');
 
   useEffect(() => {
-    console.log("DrawRevealGame mounted. Initial state:", gameState);
-    // Explicitly resetting to menu on mount just in case of HMR carryover
     setGameState('menu');
   }, []);
+
+  // When painting changes, reset image state
+  useEffect(() => {
+    if (currentPainting) {
+      setImgLoaded(false);
+      setImgSrc(currentPainting.url);
+    }
+  }, [currentPainting]);
 
   const gridSize = 3; // 3x3 = 9 questions
   const totalTiles = gridSize * gridSize;
 
+  const generateNextQuestion = useCallback(() => {
+    if (words.length < 4) return;
+    const randomIndex = Math.floor(Math.random() * words.length);
+    const correctWord = words[randomIndex];
+    let otherOptions = [];
+    const pool = [...words];
+    pool.splice(randomIndex, 1);
+    while (otherOptions.length < 3 && pool.length > 0) {
+      const idx = Math.floor(Math.random() * pool.length);
+      otherOptions.push(pool.splice(idx, 1)[0]);
+    }
+    const allOptions = [correctWord, ...otherOptions].sort(() => Math.random() - 0.5);
+    setCurrentQuestion(correctWord);
+    setOptions(allOptions);
+  }, [words]);
+
   const startNewGame = useCallback(() => {
     let availablePaintings = FAMOUS_PAINTINGS;
     if (lastPaintingId && availablePaintings.length > 1) {
-        availablePaintings = availablePaintings.filter(p => p.id !== lastPaintingId);
+      availablePaintings = availablePaintings.filter(p => p.id !== lastPaintingId);
     }
     const randomPainting = availablePaintings[Math.floor(Math.random() * availablePaintings.length)];
-    
     setCurrentPainting(randomPainting);
     setLastPaintingId(randomPainting.id);
     setRevealedTiles([]);
     setScore(0);
     setGameState('playing');
     generateNextQuestion();
-  }, [words, lastPaintingId]);
-
-  const generateNextQuestion = useCallback(() => {
-    if (words.length < 4) return;
-    
-    const randomIndex = Math.floor(Math.random() * words.length);
-    const correctWord = words[randomIndex];
-    
-    // Generate options
-    let otherOptions = [];
-    const pool = [...words];
-    pool.splice(randomIndex, 1);
-    
-    while (otherOptions.length < 3 && pool.length > 0) {
-      const idx = Math.floor(Math.random() * pool.length);
-      otherOptions.push(pool.splice(idx, 1)[0]);
-    }
-    
-    const allOptions = [correctWord, ...otherOptions].sort(() => Math.random() - 0.5);
-    
-    setCurrentQuestion(correctWord);
-    setOptions(allOptions);
-  }, [words]);
-
-  // Removed direct start effect to allow menu to show first
-
+  }, [words, lastPaintingId, generateNextQuestion]);
 
   const handleAnswer = (selectedWord) => {
     if (gameState !== 'playing' || feedback) return;
-
     const isCorrect = selectedWord.term === currentQuestion.term;
-    
+
     if (isCorrect) {
       if (playSound) playSound('correct');
       setFeedback({ type: 'correct', message: 'Doğru!' });
       setScore(prev => prev + 10);
-      
       const newRevealed = [...revealedTiles, revealedTiles.length];
       setRevealedTiles(newRevealed);
-      
       if (newRevealed.length === totalTiles) {
         setTimeout(() => {
           setGameState('finished');
@@ -104,7 +160,6 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
       setFeedback({ type: 'wrong', message: `Yanlış! Doğru cevap: ${currentQuestion.meaning}` });
     }
 
-    // Update global stats
     if (onUpdateStats) {
       onUpdateStats(isCorrect, currentQuestion.term);
     }
@@ -140,7 +195,6 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
           <div className="game-icon-banner">🖼️</div>
           <h2>Resim Bulmaca</h2>
           <p>9 soruyu doğru cevaplayarak gizli tabloyu keşfet!</p>
-          
           <div className="game-rules">
             <div className="rule-item">
               <span className="icon">🎨</span>
@@ -155,10 +209,53 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
               <span>Ressam Rozetini Kazan</span>
             </div>
           </div>
-
           <button className="start-game-btn" onClick={startNewGame}>
             OYUNU BAŞLAT
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Finished state: show full revealed painting + congratulations card
+  if (gameState === 'finished' && currentPainting) {
+    return (
+      <div className="draw-reveal-game">
+        <div className="game-header">
+          <h2>🎨 Tabloyu Keşfet</h2>
+          <div className="game-stats">
+            <span className="game-score">Puan: {score}</span>
+            <span className="game-progress">İlerleme: {totalTiles}/{totalTiles}</span>
+          </div>
+        </div>
+
+        <div className="game-finished-overlay">
+          <div className="game-finished-painting">
+            <img
+              src={imgSrc}
+              alt={currentPainting.title}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => {
+                if (imgSrc !== currentPainting.fallback) {
+                  setImgSrc(currentPainting.fallback);
+                }
+              }}
+              style={{ opacity: imgLoaded ? 1 : 0, transition: 'opacity 0.5s ease' }}
+            />
+          </div>
+          <div className="finished-card">
+            <h3>🎉 Tebrikler!</h3>
+            <p>
+              <strong>"{currentPainting.title}"</strong><br />
+              <span style={{ color: '#aaa', fontSize: '0.9rem' }}>{currentPainting.artist}</span>
+            </p>
+            <p style={{ color: '#ffcc80', fontWeight: 700, fontSize: '1.1rem', margin: '0.5rem 0' }}>
+              {score} puan kazandın!
+            </p>
+            <div className="finished-buttons">
+              <button className="btn-primary" onClick={startNewGame}>Yeni Tablo</button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -177,16 +274,28 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
       <div className="game-container">
         <div className="painting-canvas" style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}>
           {currentPainting && (
-            <img 
-              src={currentPainting.url} 
-              alt="Discovering..." 
+            <img
+              src={imgSrc}
+              alt="Keşfediliyor..."
               className="painting-image"
               style={{ filter: revealedTiles.length === totalTiles ? 'none' : 'blur(5px)' }}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => {
+                if (imgSrc !== currentPainting.fallback) {
+                  setImgSrc(currentPainting.fallback);
+                }
+              }}
             />
           )}
+          {!imgLoaded && (
+            <div className="painting-loading">
+              <div className="painting-spinner" />
+              <span>Tablo yükleniyor…</span>
+            </div>
+          )}
           {Array.from({ length: totalTiles }).map((_, idx) => (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className={`painting-tile ${revealedTiles.includes(idx) ? 'revealed' : ''}`}
             >
               {!revealedTiles.includes(idx) && <div className="tile-placeholder">?</div>}
@@ -197,33 +306,33 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
         {gameState === 'playing' && currentQuestion && (
           <div className="question-area">
             <div className="question-card">
-               <div className="question-term-row">
-                 <div className="action-buttons">
-                    <button 
-                      className="game-action-btn speak" 
-                      onClick={() => speakWord(currentQuestion)}
-                      title="Telaffuz"
-                    >
-                      🔊
-                    </button>
-                    <button 
-                      className="game-action-btn favorite" 
-                      onClick={() => toggleFavorite(currentQuestion)}
-                      title="Favorilere Ekle"
-                    >
-                      {favorites.find(w => w.term === currentQuestion.term) ? "⭐" : "☆"}
-                    </button>
-                 </div>
-                 <span className="question-level">{currentQuestion.level}</span>
-               </div>
-               <h3>{currentQuestion.term}</h3>
-               <p className="question-hint">Anlamı nedir?</p>
+              <div className="question-term-row">
+                <div className="action-buttons">
+                  <button
+                    className="game-action-btn speak"
+                    onClick={() => speakWord(currentQuestion)}
+                    title="Telaffuz"
+                  >
+                    🔊
+                  </button>
+                  <button
+                    className="game-action-btn favorite"
+                    onClick={() => toggleFavorite(currentQuestion)}
+                    title="Favorilere Ekle"
+                  >
+                    {favorites.find(w => w.term === currentQuestion.term) ? '⭐' : '☆'}
+                  </button>
+                </div>
+                <span className="question-level">{currentQuestion.level}</span>
+              </div>
+              <h3>{currentQuestion.term}</h3>
+              <p className="question-hint">Anlamı nedir?</p>
             </div>
 
             <div className="options-grid">
               {options.map((opt, idx) => (
-                <button 
-                  key={idx} 
+                <button
+                  key={idx}
                   className={`option-btn ${feedback && opt.term === currentQuestion.term ? 'correct' : ''}`}
                   onClick={() => handleAnswer(opt)}
                   disabled={!!feedback}
@@ -234,25 +343,13 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
             </div>
           </div>
         )}
-
-        {gameState === 'finished' && (
-          <div className="game-finished-overlay">
-            <div className="finished-card">
-              <h3>Tebrikler!</h3>
-              <p>"{currentPainting.title}" ( {currentPainting.artist} ) tablosunu başarıyla açtın!</p>
-              <div className="finished-buttons">
-                <button className="btn-primary" onClick={startNewGame}>Yeni Tablo</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {feedback && (
-          <div className={`game-feedback ${feedback.type}`}>
-            {feedback.message}
-          </div>
-        )}
       </div>
+
+      {feedback && (
+        <div className={`game-feedback ${feedback.type}`}>
+          {feedback.message}
+        </div>
+      )}
     </div>
   );
 };
