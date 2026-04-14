@@ -160,6 +160,16 @@ const PageWithAds = ({ children, slotLeft, slotRight, slotBottom, isPremium }) =
   const hasRight  = Boolean(adsClient && slotRight);
   const hasBottom = Boolean(adsClient && slotBottom);
 
+  if (isPremium) {
+    return (
+      <div className="page-with-ads">
+        <div className="pwa-content">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-with-ads">
       {/* Sol sidebar — sadece PC'de görünür (CSS ile) */}
