@@ -29,7 +29,7 @@ export const buildSynonymQuestionPool = (words) => {
   const generated = [];
   const seen = new Set();
   /** Ana thread’i kilitlememek için üretim üst sınırı (havuz yine curated+gold ile dolu kalır) */
-  const MAX_GENERATED_SYN = 2800;
+  const MAX_GENERATED_SYN = 0; // Devre disi! Sadece saf AI onayli Curated ve Gold data kullanilacak.
   const wrongPool = shuffle(allTerms.filter(Boolean));
   let wrongCursor = 0;
   const pickWrong = (exclude1, exclude2) => {
@@ -91,7 +91,7 @@ export const buildPhrasalQuestionPool = (words) => {
 
   const generated = [];
   const seen = new Set();
-  const MAX_GENERATED_PHR = 3200;
+  const MAX_GENERATED_PHR = 0; // Devre disi! Sadece saf AI onayli Curated ve Gold data kullanilacak.
   baseWords.forEach((base, idx) => {
     if (generated.length >= MAX_GENERATED_PHR) return;
     const lv = LEVELS[idx % LEVELS.length];
