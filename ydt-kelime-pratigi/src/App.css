@@ -8,14 +8,16 @@
 /* ──────────────────────────────────────────────────────────────
    PAGE WITH ADS — Çalışma & Test sayfaları için sidebar layout
    Sidebar'lar fixed konumlu — sayfanın en sol ve en sağ boşluğunda durur
-   İçerik (main) max-width: 1200px içinde kalır, düzeni bozulmaz.
-────────────────────────────────────────────────────────────── */
+ ────────────────────────────────────────────────────────────── */
 .page-with-ads {
   width: 100%;
 }
 
 .pwa-content {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .pwa-sidebar {
