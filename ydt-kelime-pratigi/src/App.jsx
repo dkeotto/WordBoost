@@ -19,6 +19,7 @@ import TermsPage from "./components/TermsPage";
 import PrivacyPage from "./components/PrivacyPage";
 import SiteInfoPage from "./components/SiteInfoPage";
 import DrawRevealGame from "./components/DrawRevealGame";
+import AdSlot from "./components/AdSlot";
 import { sanitizeWordList } from "./utils/wordQuality";
 import { readResponseJson } from "./utils/httpJson";
 import { apiUrl } from "./utils/apiUrl";
@@ -145,6 +146,49 @@ const speakWord = (word) => {
     utterance.rate = 0.8; 
     window.speechSynthesis.cancel(); 
     window.speechSynthesis.speak(utterance);
+};
+
+/**
+ * Çalışma ve Test sayfaları için reklam layout'u.
+ * PC (≥1024px): sol + sağ sidebar reklamlar
+ * Tablet (768-1023px): sağ sidebar + içerik altı
+ * Mobil (<768px): içerik altında banner
+ */
+const PageWithAds = ({ children, slotLeft, slotRight, slotBottom, isPremium }) => {
+  const adsClient = import.meta.env.VITE_ADSENSE_CLIENT;
+  const hasLeft   = Boolean(adsClient && slotLeft);
+  const hasRight  = Boolean(adsClient && slotRight);
+  const hasBottom = Boolean(adsClient && slotBottom);
+
+  return (
+    <div className="page-with-ads">
+      {/* Sol sidebar — sadece PC'de görünür (CSS ile) */}
+      {hasLeft && (
+        <aside className="pwa-sidebar pwa-sidebar--left" aria-hidden="true">
+          <AdSlot slot={slotLeft} format="vertical" className="ad-slot ad-sidebar-vert" isPremium={isPremium} />
+        </aside>
+      )}
+
+      {/* Ana içerik */}
+      <div className="pwa-content">
+        {children}
+
+        {/* Tablet ve mobil alt banner */}
+        {hasBottom && (
+          <div className="pwa-bottom-ad">
+            <AdSlot slot={slotBottom} format="auto" className="ad-slot ad-inline" isPremium={isPremium} />
+          </div>
+        )}
+      </div>
+
+      {/* Sağ sidebar — PC ve tablette görünür (CSS ile) */}
+      {hasRight && (
+        <aside className="pwa-sidebar pwa-sidebar--right" aria-hidden="true">
+          <AdSlot slot={slotRight} format="vertical" className="ad-slot ad-sidebar-vert" isPremium={isPremium} />
+        </aside>
+      )}
+    </div>
+  );
 };
 
 const PracticeView = ({ 
@@ -2490,36 +2534,52 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
 
     <main>
       {currentView === 'practice' && (
-        <PracticeView 
-          isInRoom={isInRoom}
-          stats={stats}
-          users={users}
-          roomStats={roomStats}
-          username={username}
-          currentWordIndex={currentWordIndex}
-          practiceWords={practiceWords}
-          currentWord={currentWord}
-          handleAnswer={handleAnswer}
-          buttonCooldown={buttonCooldown}
-          prevWord={prevWord}
-          nextWord={nextWord}
-          resetStats={resetStats}
-          setPracticeLevel={setPracticeLevel}
-          practiceLevel={practiceLevel}
-          isFlipped={isFlipped}
-          flipCard={flipCard}
-          showHint={showHint}
-          setShowHint={setShowHint}
-          showExample={showExample}
-          setShowExample={setShowExample}
-          feedback={feedback}
-          feedbackMessage={feedbackMessage}
-          favorites={favorites.words}
-          toggleFavorite={toggleFavorite}
-          speakWord={speakWord}
-        />
+        <PageWithAds
+          slotLeft={import.meta.env.VITE_ADSENSE_SLOT_PRACTICE_LEFT}
+          slotRight={import.meta.env.VITE_ADSENSE_SLOT_PRACTICE_RIGHT}
+          slotBottom={import.meta.env.VITE_ADSENSE_SLOT_PRACTICE_BOTTOM}
+          isPremium={isUserPremium(user)}
+        >
+          <PracticeView 
+            isInRoom={isInRoom}
+            stats={stats}
+            users={users}
+            roomStats={roomStats}
+            username={username}
+            currentWordIndex={currentWordIndex}
+            practiceWords={practiceWords}
+            currentWord={currentWord}
+            handleAnswer={handleAnswer}
+            buttonCooldown={buttonCooldown}
+            prevWord={prevWord}
+            nextWord={nextWord}
+            resetStats={resetStats}
+            setPracticeLevel={setPracticeLevel}
+            practiceLevel={practiceLevel}
+            isFlipped={isFlipped}
+            flipCard={flipCard}
+            showHint={showHint}
+            setShowHint={setShowHint}
+            showExample={showExample}
+            setShowExample={setShowExample}
+            feedback={feedback}
+            feedbackMessage={feedbackMessage}
+            favorites={favorites.words}
+            toggleFavorite={toggleFavorite}
+            speakWord={speakWord}
+          />
+        </PageWithAds>
       )}
-      {currentView === 'test' && <TestManager words={words} setCurrentView={setCurrentView} setWrongWords={setWrongWords} />}
+      {currentView === 'test' && (
+        <PageWithAds
+          slotLeft={import.meta.env.VITE_ADSENSE_SLOT_TEST_LEFT}
+          slotRight={import.meta.env.VITE_ADSENSE_SLOT_TEST_RIGHT}
+          slotBottom={import.meta.env.VITE_ADSENSE_SLOT_TEST_BOTTOM}
+          isPremium={isUserPremium(user)}
+        >
+          <TestManager words={words} setCurrentView={setCurrentView} setWrongWords={setWrongWords} />
+        </PageWithAds>
+      )}
       {currentView === 'favorites' && (
         <FavoritesView
           wordFavorites={favorites.words}
