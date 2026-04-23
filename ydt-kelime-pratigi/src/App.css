@@ -6561,11 +6561,90 @@ button:disabled {
   filter: none;
 }
 
-/* Main card override for speaking */
+/* ── Speaking — Global overflow guards ───────────────────────────────────── */
 .sp-card {
+  /* prevent any child from breaking card boundary */
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
   transition: box-shadow 0.35s ease, border-color 0.35s ease;
 }
 
+.sp-word {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  text-shadow: 0 0 30px rgba(255, 159, 28, 0.35);
+  line-height: 1.2;
+  /* clamp to viewport on any screen */
+  max-width: 100%;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  /* fluid font: never overflow container */
+  font-size: clamp(1.2rem, 5.5vw, 2.4rem);
+}
+
+.sp-word-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;   /* buttons wrap below word on tiny screens */
+  row-gap: 0.4rem;
+}
+
+.sp-prompt-section {
+  text-align: center;
+  margin: 0.75rem 0;
+  /* prevent text pushing card */
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.sp-info-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.5rem 0;
+  /* ensure text wraps */
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.sp-info-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.5;
+  /* label + text wrap naturally */
+  flex-wrap: wrap;
+}
+
+.sp-result-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.35rem;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.sp-spoken {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.55);
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ── Restored base rules ────────────────────────────────────────────────── */
 .sp-card--correct {
   border-color: rgba(46, 204, 113, 0.55) !important;
   box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2), 0 20px 60px rgba(0, 0, 0, 0.5) !important;
@@ -6576,7 +6655,6 @@ button:disabled {
   box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.18), 0 20px 60px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Mode badge */
 .sp-mode-badge {
   font-size: 0.75rem;
   font-weight: 700;
@@ -6589,33 +6667,11 @@ button:disabled {
   margin-left: auto;
 }
 
-/* Prompt area */
-.sp-prompt-section {
-  text-align: center;
-  margin: 0.75rem 0;
-}
-
 .sp-prompt-label {
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.55);
   margin-bottom: 0.6rem;
   font-style: italic;
-}
-
-.sp-word-display {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-}
-
-.sp-word {
-  font-size: 2.4rem;
-  font-weight: 800;
-  color: var(--primary-color);
-  text-shadow: 0 0 30px rgba(255, 159, 28, 0.35);
-  line-height: 1.1;
 }
 
 .sp-tts-btn {
@@ -6645,7 +6701,6 @@ button:disabled {
   filter: none;
 }
 
-/* Favorite star button */
 .sp-fav-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -6698,31 +6753,12 @@ button:disabled {
   font-size: 0.88rem;
   color: rgba(255, 255, 255, 0.4);
   margin-top: 0.35rem;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .sp-target-hint strong {
   color: rgba(255, 255, 255, 0.75);
-}
-
-/* Info section */
-.sp-info-section {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 14px;
-  padding: 0.9rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  margin: 0.5rem 0;
-}
-
-.sp-info-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: flex-start;
-  font-size: 0.88rem;
-  color: rgba(255, 255, 255, 0.72);
-  line-height: 1.5;
 }
 
 .sp-info-label {
@@ -6734,9 +6770,10 @@ button:disabled {
 .sp-example {
   font-style: italic;
   color: rgba(255, 255, 255, 0.6);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
-/* Mic section */
 .sp-mic-section {
   display: flex;
   flex-direction: column;
@@ -6745,7 +6782,6 @@ button:disabled {
   margin: 1rem 0 0.5rem;
 }
 
-/* Mic Wave Animation */
 .sp-mic-wave {
   display: flex;
   align-items: center;
@@ -6781,7 +6817,6 @@ button:disabled {
   100% { height: 10px; opacity: 0.7; }
 }
 
-/* Mic Button */
 .sp-mic-btn {
   padding: 0.9rem 2.4rem;
   font-size: 1.1rem;
@@ -6831,9 +6866,9 @@ button:disabled {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.45);
   font-style: italic;
+  text-align: center;
 }
 
-/* Mic error */
 .sp-mic-error {
   background: rgba(231, 76, 60, 0.12);
   border: 1px solid rgba(231, 76, 60, 0.35);
@@ -6842,9 +6877,10 @@ button:disabled {
   font-size: 0.85rem;
   color: #ff9b8e;
   text-align: center;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
-/* Result feedback */
 .sp-result {
   border-radius: 14px;
   padding: 1rem 1.2rem;
@@ -6862,18 +6898,6 @@ button:disabled {
   border: 1px solid rgba(231, 76, 60, 0.3);
 }
 
-.sp-result-text {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 0.35rem;
-}
-
-.sp-spoken {
-  font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.55);
-}
-
 .sp-spoken-label {
   font-weight: 700;
   color: rgba(255, 255, 255, 0.7);
@@ -6884,7 +6908,6 @@ button:disabled {
   to   { opacity: 1; transform: translateY(0);    }
 }
 
-/* Unsupported browser */
 .sp-unsupported {
   text-align: center;
   padding: 3rem 1.5rem;
@@ -6909,25 +6932,100 @@ button:disabled {
   font-size: 0.95rem;
 }
 
-/* Responsive */
+/* ── Responsive — ≤600px ────────────────────────────────────────────────── */
 @media (max-width: 600px) {
+  /* Mode tabs */
   .sp-mode-tabs {
-    gap: 6px;
+    gap: 5px;
   }
 
   .sp-mode-tab {
-    padding: 0.45rem 0.9rem;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  /* Meta row: allow wrapping so level badge doesn't push off */
+  .syn-meta {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* Prompt label smaller */
+  .sp-prompt-label {
+    font-size: 0.82rem;
+  }
+
+  /* Word — controlled by clamp above; extra safety */
+  .sp-word {
+    font-size: clamp(1.1rem, 7vw, 1.8rem);
+    max-width: calc(100vw - 120px); /* leave room for 2 buttons */
+  }
+
+  /* TTS + fav buttons smaller on mobile */
+  .sp-tts-btn,
+  .sp-fav-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 1.05rem;
+  }
+
+  /* target hint compact */
+  .sp-target-hint {
     font-size: 0.8rem;
   }
 
+  /* info rows font */
+  .sp-info-row {
+    font-size: 0.82rem;
+  }
+
+  /* Mic button full-width on mobile to avoid overflow */
+  .sp-mic-btn {
+    padding: 0.8rem 1.2rem;
+    font-size: 0.95rem;
+    min-width: 0;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  /* Sentence trigger full width */
+  .sp-sentence-trigger {
+    font-size: 0.83rem;
+    padding: 0.65rem 0.9rem;
+  }
+
+  /* Result text smaller to avoid overflow */
+  .sp-result-text {
+    font-size: 0.88rem;
+  }
+
+  .sp-spoken {
+    font-size: 0.78rem;
+  }
+}
+
+/* ── Responsive — ≤400px (very small phones) ────────────────────────────── */
+@media (max-width: 400px) {
   .sp-word {
-    font-size: 1.8rem;
+    font-size: clamp(1rem, 8vw, 1.5rem);
+    max-width: calc(100vw - 100px);
+  }
+
+  .sp-mode-tab {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.72rem;
+  }
+
+  .sp-tts-btn,
+  .sp-fav-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 0.95rem;
   }
 
   .sp-mic-btn {
-    padding: 0.8rem 1.8rem;
-    font-size: 1rem;
-    min-width: 150px;
+    font-size: 0.88rem;
+    padding: 0.7rem 1rem;
   }
 }
 
