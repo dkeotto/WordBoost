@@ -1979,6 +1979,10 @@ function App() {
   useEffect(() => {
     setCurrentWordIndex(0);
     setIsFlipped(false);
+    // Eğer seviye CUSTOM değilse (yani hoca destesinden normal modlara dönülüyorsa) temizle
+    if (practiceLevel !== "CUSTOM") {
+      setCustomDeckWords(null);
+    }
   }, [practiceLevel]);
   const [isFlipped, setIsFlipped] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -2611,6 +2615,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
         return;
      }
      setCustomDeckWords(deckWords);
+     setPracticeLevel("CUSTOM");
      setCurrentWordIndex(0);
      setCurrentView("practice");
   };
