@@ -144,7 +144,8 @@ function buildPhrasalPool() {
     level: q.level || "B1",
     target: q.correct,
     display: q.base,
-    hint: q.meaning || "",
+    // meaning field doesn't exist in data → build a descriptive fallback
+    hint: q.meaning || `"${q.correct}" — phrasal verb of "${q.base}"`,
     example: q.example || "",
     phrase: q.correct,
     _favKey: `${q.base}__${q.correct}__${q.level || "B1"}`,

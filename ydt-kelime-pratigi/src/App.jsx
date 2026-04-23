@@ -1941,6 +1941,7 @@ function App() {
     loadFromStorage("moduleStats", {
       synonyms: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
       phrasal: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+      speaking: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
     })
   );
   const wrongWordsCount = wrongWords.length; // Add this derived state
@@ -2500,6 +2501,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     setModuleStats({
       synonyms: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
       phrasal: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+      speaking: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
     });
     localStorage.removeItem('ydt_stats');
     localStorage.removeItem('ydt_wrongWords');

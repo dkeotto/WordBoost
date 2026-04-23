@@ -109,10 +109,16 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
   }, [practiceHistory]);
 
   const syn = moduleStats?.synonyms || { attempted: 0, correct: 0, wrong: 0, bestStreak: 0 };
-  const phr = moduleStats?.phrasal || { attempted: 0, correct: 0, wrong: 0, bestStreak: 0 };
+  const phr = moduleStats?.phrasal  || { attempted: 0, correct: 0, wrong: 0, bestStreak: 0 };
+  const spk = moduleStats?.speaking  || { attempted: 0, correct: 0, wrong: 0, bestStreak: 0 };
   const synRate = syn.attempted ? Math.round((syn.correct / syn.attempted) * 100) : 0;
   const phrRate = phr.attempted ? Math.round((phr.correct / phr.attempted) * 100) : 0;
-  const donutRate = Math.round((successRate + synRate + phrRate) / 3);
+  const spkRate = spk.attempted ? Math.round((spk.correct / spk.attempted) * 100) : 0;
+  // Only include modules that have been used in the donut average
+  const activeRates = [successRate, synRate, phrRate, spkRate].filter((_, i) =>
+    i === 0 || [syn, phr, spk][i - 1].attempted > 0
+  );
+  const donutRate = activeRates.length ? Math.round(activeRates.reduce((a, b) => a + b, 0) / activeRates.length) : 0;
   const donutGradient = `conic-gradient(#ffb300 0% ${donutRate}%, rgba(255,255,255,0.08) ${donutRate}% 100%)`;
 
   const showAdsHint =
@@ -180,11 +186,12 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
             </div>
             <div className="dash-donut-info">
               <h3>Genel Başarı Özeti</h3>
-              <p>Kelime, Synonyms ve Phrasal Verbs performanslarının birleşik göstergesi.</p>
+              <p>Kelime, Synonyms, Phrasal Verbs ve Speaking performanslarının birleşik göstergesi.</p>
               <div className="dash-donut-legend">
                 <span>Kelime: %{successRate}</span>
                 <span>Synonyms: %{synRate}</span>
                 <span>Phrasal: %{phrRate}</span>
+                <span>Speaking: %{spkRate}</span>
               </div>
             </div>
           </div>
@@ -238,6 +245,12 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
                 <p>Toplam Soru: {phr.attempted}</p>
                 <p>Başarı: %{phrRate}</p>
                 <p>En İyi Seri: {phr.bestStreak}</p>
+              </div>
+              <div className="module-card">
+                <h4>🎙️ Speaking</h4>
+                <p>Toplam Soru: {spk.attempted}</p>
+                <p>Başarı: %{spkRate}</p>
+                <p>En İyi Seri: {spk.bestStreak}</p>
               </div>
             </div>
           </div>
