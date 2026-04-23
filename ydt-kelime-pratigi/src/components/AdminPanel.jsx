@@ -83,7 +83,8 @@ export default function AdminPanel({ setCurrentView }) {
     lastStudyDate: "",
     badgesText: "",
     premiumUntilLocal: "",
-    aiPlus: false
+    aiPlus: false,
+    role: "student"
   });
   const [editSaving, setEditSaving] = useState(false);
   const [premiumSaving, setPremiumSaving] = useState(false);
@@ -596,7 +597,8 @@ export default function AdminPanel({ setCurrentView }) {
       lastStudyDate: u?.lastStudyDate ? new Date(u.lastStudyDate).toISOString().slice(0, 16) : "",
       badgesText: (u?.badges || []).join(", "),
       premiumUntilLocal: u?.premiumUntil ? new Date(u.premiumUntil).toISOString().slice(0, 16) : "",
-      aiPlus: Boolean(u?.entitlements?.aiPlus)
+      aiPlus: Boolean(u?.entitlements?.aiPlus),
+      role: u?.role || "student"
     });
   };
 
@@ -632,7 +634,16 @@ export default function AdminPanel({ setCurrentView }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Kaydetme başarısız");
-      setMsg(`İstatistik güncellendi: ${editUser.username}`);
+      if (editForm.role && editForm.role !== editUser.role) {
+        const roleRes = await fetch(`/api/admin/users/${editUser._id}/role`, {
+          method: "PUT",
+          headers: h,
+          body: JSON.stringify({ role: editForm.role })
+        });
+        if (!roleRes.ok) throw new Error("İstatistikler kaydedildi ancak rol güncellenemedi.");
+      }
+
+      setMsg(`İstatistik ve profil güncellendi: ${editUser.username}`);
       closeEdit();
       loadUsers();
     } catch (e) {
@@ -1067,6 +1078,7 @@ export default function AdminPanel({ setCurrentView }) {
                   <th>Kullanıcı</th>
                   <th>Rumuz</th>
                   <th>E-posta</th>
+                  <th>Rol</th>
                   <th>Doğr.</th>
                   <th>Google</th>
                   <th>Şifre</th>
@@ -1095,6 +1107,7 @@ export default function AdminPanel({ setCurrentView }) {
                     </td>
                     <td>{u.nickname || "—"}</td>
                     <td className="admin-td-mono">{u.email || "—"}</td>
+                    <td><span className="admin-mini-tag">{u.role || "student"}</span></td>
                     <td>{u.isVerified ? "✓" : "—"}</td>
                     <td>{u.hasGoogle ? "✓" : "—"}</td>
                     <td>{u.hasPassword ? "✓" : "—"}</td>
@@ -1235,6 +1248,18 @@ export default function AdminPanel({ setCurrentView }) {
                   onChange={(e) => setEditForm((f) => ({ ...f, badgesText: e.target.value }))}
                   placeholder="newbie, streak_7, known_100"
                 />
+              </label>
+              <label>
+                Kullanıcı Rolü
+                <select
+                  className="admin-select admin-select--fluid"
+                  value={editForm.role}
+                  onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}
+                >
+                  <option value="student">Öğrenci (student)</option>
+                  <option value="teacher">Öğretmen (teacher)</option>
+                  <option value="admin">Yönetici (admin)</option>
+                </select>
               </label>
             </div>
 
