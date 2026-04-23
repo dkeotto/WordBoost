@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { readResponseJson } from "../utils/httpJson";
 
-export default function ClassroomView({ user }) {
+export default function ClassroomView({ user, setCurrentView, startCustomPractice }) {
   const token = user?.token || "";
   const role = user?.role || "student";
   const isTeacher = role === "teacher" || role === "admin";
@@ -28,9 +28,17 @@ export default function ClassroomView({ user }) {
   const [newAnnouncement, setNewAnnouncement] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
 
+  // Activity & Analytics
+  const [failedWords, setFailedWords] = useState([]);
+  const [activityFeed, setActivityFeed] = useState([]);
+
+  // Custom Decks
+  const [customDecks, setCustomDecks] = useState([]);
+  const [deckForm, setDeckForm] = useState({ name: "", terms: "" });
+
   // Assignment state
   const [assignments, setAssignments] = useState([]);
-  const [assignmentForm, setAssignmentForm] = useState({ title: "", taskType: "general_practice", targetCount: 50, rewardXp: 50, dueDate: "" });
+  const [assignmentForm, setAssignmentForm] = useState({ title: "", taskType: "general_practice", targetCount: 50, rewardXp: 50, customDeckId: "", dueDate: "" });
 
   const headers = useMemo(
     () => ({
@@ -137,6 +145,27 @@ export default function ClassroomView({ user }) {
     setAnnouncements(data.items || []);
   };
 
+  const loadFailedWords = async (classId) => {
+    if (!token || !classId || !isTeacher) return;
+    const res = await fetch(`/api/classes/${classId}/analytics/failed-words`, { headers });
+    const data = await readResponseJson(res);
+    if (res.ok) setFailedWords(data.items || []);
+  };
+
+  const loadActivityFeed = async (classId) => {
+    if (!token || !classId) return;
+    const res = await fetch(`/api/classes/${classId}/activity-feed`, { headers });
+    const data = await readResponseJson(res);
+    if (res.ok) setActivityFeed(data.items || []);
+  };
+
+  const loadCustomDecks = async (classId) => {
+    if (!token || !classId) return;
+    const res = await fetch(`/api/classes/${classId}/custom-decks`, { headers });
+    const data = await readResponseJson(res);
+    if (res.ok) setCustomDecks(data.items || []);
+  };
+
   useEffect(() => {
     if (!selectedClassId) return;
     setLoading(true);
@@ -145,7 +174,10 @@ export default function ClassroomView({ user }) {
       loadAnalytics(selectedClassId), 
       loadAssignments(selectedClassId),
       loadLeaderboard(selectedClassId),
-      loadAnnouncements(selectedClassId)
+      loadAnnouncements(selectedClassId),
+      loadFailedWords(selectedClassId),
+      loadActivityFeed(selectedClassId),
+      loadCustomDecks(selectedClassId)
     ])
       .catch((e) => setErr(e.message || "Yükleme hatası"))
       .finally(() => setLoading(false));
@@ -207,6 +239,50 @@ export default function ClassroomView({ user }) {
        setMsg("Duyuru silindi.");
        await loadAnnouncements(selectedClassId);
     } catch(e) { setErr(e.message); } finally { setLoading(false); }
+  };
+
+  const createCustomDeck = async () => {
+    if (!selectedClassId || !deckForm.name || !deckForm.terms) return;
+    setLoading(true); setErr(""); setMsg("");
+    try {
+      const termsArray = deckForm.terms.split(',').map(t => t.trim()).filter(Boolean);
+      const res = await fetch(`/api/classes/${selectedClassId}/custom-decks`, {
+        method: "POST", headers, body: JSON.stringify({ name: deckForm.name, terms: termsArray })
+      });
+      const data = await readResponseJson(res);
+      if (!res.ok) throw new Error(data.error || "Deste oluşturulamadı");
+      setMsg("Deste başarıyla kaydedildi!");
+      setDeckForm({ name: "", terms: "" });
+      await loadCustomDecks(selectedClassId);
+    } catch(e) { setErr(e.message); } finally { setLoading(false); }
+  };
+
+  const deleteCustomDeck = async (id) => {
+    if (!window.confirm("Bu desteyi silmek istediğinize emin misiniz?")) return;
+    setLoading(true); setErr(""); setMsg("");
+    try {
+       const res = await fetch(`/api/classes/${selectedClassId}/custom-decks/${id}`, { method: "DELETE", headers });
+       if (!res.ok) throw new Error("Silinemedi");
+       setMsg("Deste silindi.");
+       await loadCustomDecks(selectedClassId);
+    } catch(e) { setErr(e.message); } finally { setLoading(false); }
+  };
+
+  const deleteClass = async () => {
+    if (!selectedClassId) return;
+    const cls = teacherClasses.find(c => String(c._id) === String(selectedClassId));
+    if (!window.confirm(`"${cls?.name}" sınıfını ve içindeki TÜM verileri (ödevler, üyelikler) silmek istediğine emin misin? Bu işlem geri alınamaz.`)) return;
+    
+    setLoading(true); setErr(""); setMsg("");
+    try {
+      const res = await fetch(`/api/classes/${selectedClassId}`, { method: "DELETE", headers });
+      const data = await readResponseJson(res);
+      if (!res.ok) throw new Error(data.error || "Sınıf silinemedi");
+      setMsg("Sınıf başarıyla silindi.");
+      setSelectedClassId("");
+      await loadTeacherClasses();
+    } catch (e) { setErr(e.message); }
+    finally { setLoading(false); }
   };
 
   const createClass = async () => {
@@ -320,13 +396,16 @@ export default function ClassroomView({ user }) {
             {teacherClasses.length === 0 ? (
               <p className="dash-muted">Henüz sınıf yok.</p>
             ) : (
-              <select value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)}>
-                {teacherClasses.map((c) => (
-                  <option key={String(c._id)} value={String(c._id)}>
-                    {c.name} (Kod: {c.code})
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <select value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)} style={{ flex: 1 }}>
+                  {teacherClasses.map((c) => (
+                    <option key={String(c._id)} value={String(c._id)}>
+                      {c.name} (Kod: {c.code})
+                    </option>
+                  ))}
+                </select>
+                <button type="button" onClick={deleteClass} style={{ padding: "8px 12px", background: "rgba(255,50,50,0.2)", border: "1px solid #ff3232", color: "#ff3232", fontSize: "0.85rem" }}>Sınıfı Sil</button>
+              </div>
             )}
 
             {selectedClassId ? (
@@ -404,6 +483,12 @@ export default function ClassroomView({ user }) {
             )}
           </div>
 
+          <div className="classroom-card" style={{ background: "linear-gradient(135deg, #FF6B6B 0%, #C83232 100%)", color: "white", padding: "20px", borderRadius: "16px", boxShadow: "0 8px 16px rgba(200, 50, 50, 0.4)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gridColumn: "1 / -1" }}>
+            <h3 style={{ margin: "0 0 10px 0", fontSize: "1.5rem" }}>🎮 Canlı Sınıf Yarışması (Kahoot Modu)</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: "0.95rem", opacity: 0.9 }}>Öğrencilerinizle akıllı tahtadan eş zamanlı, yüksek çözünürlüklü canlı kelime savaşı başlatın!</p>
+            <button onClick={() => setCurrentView('room-menu')} style={{ background: "white", color: "#C83232", padding: "12px 24px", fontSize: "1.1rem", borderRadius: "30px", border: "none", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.2)" }}>🚀 Savaş Odanızı Kurun</button>
+          </div>
+
           <div className="classroom-card">
             <h3>Ödev / Görev Yönetimi</h3>
             {!selectedClassId ? <p className="dash-muted">Önce sınıf seçin.</p> : (
@@ -414,6 +499,12 @@ export default function ClassroomView({ user }) {
                     <select className="admin-select" value={assignmentForm.taskType} onChange={e=>setAssignmentForm(f=>({...f, taskType: e.target.value}))}>
                       <option value="general_practice">Genel Pratik Çözme</option>
                       <option value="speaking_practice">Speaking Pratiği</option>
+                    </select>
+                  </label>
+                  <label>Özel Deste Sınırı (Opsiyonel)
+                    <select className="admin-select" value={assignmentForm.customDeckId} onChange={e=>setAssignmentForm(f=>({...f, customDeckId: e.target.value}))}>
+                      <option value="">-- Tüm Havuzu Kullan --</option>
+                      {customDecks.map(d => <option key={String(d._id)} value={String(d._id)}>{d.name} ({d.terms?.length} kelime)</option>)}
                     </select>
                   </label>
                   <label>Hedef Soru/Kelime Sayısı <input type="number" value={assignmentForm.targetCount} onChange={e=>setAssignmentForm(f=>({...f, targetCount: Number(e.target.value)}))} /></label>
@@ -450,6 +541,29 @@ export default function ClassroomView({ user }) {
                     </div>
                   </div>
                 ))}
+
+                <div style={{ marginTop: "2rem", padding: "16px", borderRadius: "12px", border: "1px dashed #666", background: "rgba(0,0,0,0.2)" }}>
+                  <h4>🃏 Yeni Özel Kelime Destesi Oluştur</h4>
+                  <p className="dash-muted" style={{ fontSize: "0.85rem", marginBottom: "10px" }}>Öğrencilerinize sadece kendi seçtiğiniz kelimeleri ödev vermek için buradan liste hazırlayın (Virgülle ayırın, Örn: abandon, yield, tedious).</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <input value={deckForm.name} onChange={e=>setDeckForm(f=>({...f, name: e.target.value}))} placeholder="Deste Adı (örn: Hafta Sonu Denemesi)" />
+                    <textarea value={deckForm.terms} onChange={e=>setDeckForm(f=>({...f, terms: e.target.value}))} placeholder="abandon, submit, alter, modify..." rows={3}></textarea>
+                    <button type="button" onClick={createCustomDeck} disabled={loading || !deckForm.name || !deckForm.terms} style={{ background: "#a855f7" }}>Desteyi Kaydet</button>
+                  </div>
+                  {customDecks.length > 0 && (
+                    <div style={{ marginTop: "1rem" }}>
+                      <h5 style={{ margin: "5px 0" }}>Hocanın Desteleri</h5>
+                      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                        {customDecks.map(d => (
+                           <div key={String(d._id)} style={{ padding: "6px 12px", background: "rgba(168,85,247,0.2)", borderRadius: "20px", display: "flex", gap: "8px", alignItems: "center", fontSize: "0.85rem" }}>
+                             <span>{d.name} ({d.terms?.length} ke.)</span>
+                             <button onClick={()=>deleteCustomDeck(d._id)} style={{ padding: "2px 5px", background: "red", border: "none", borderRadius: "50%", color: "white", cursor: "pointer" }}>x</button>
+                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>
@@ -483,6 +597,50 @@ export default function ClassroomView({ user }) {
                   ))}
                 </div>
               </>
+            )}
+          </div>
+
+          <div className="classroom-card">
+            <h3>📊 Sınıf Zorlanma Analizi (Zayıf Halka)</h3>
+            {!selectedClassId ? <p className="dash-muted">Önce sınıf seçin.</p> : failedWords.length === 0 ? <p className="dash-muted">Yeterli veri yok.</p> : (
+              <div className="classroom-table" style={{ background: "rgba(0,0,0,0.2)", borderRadius: "12px", overflow: "hidden" }}>
+                <div className="classroom-row head" style={{ background: "#c83232", color: "white" }}>
+                  <span>Kelime</span>
+                  <span>Toplam Hata Sayısı</span>
+                </div>
+                {failedWords.map((fw, idx) => (
+                  <div key={fw._id} className="classroom-row" style={{ borderBottom: "1px solid #333" }}>
+                    <strong style={{ color: idx < 3 ? "#ff6b6b" : "#fff", fontSize: "1.1rem" }}>{fw._id}</strong>
+                    <span>{fw.totalUnknown} Kere bilemediler</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="classroom-card">
+            <h3>⚡ Sınıf İçi Anlık Akış (Activity Feed)</h3>
+            {!selectedClassId ? <p className="dash-muted">Önce sınıf seçin.</p> : activityFeed.length === 0 ? <p className="dash-muted">Henüz aktivite yok.</p> : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "400px", overflowY: "auto", paddingRight: "5px" }}>
+                {activityFeed.map(log => {
+                   let icon = "🟢";
+                   if (log.type === "assignment_complete") icon = "🎯";
+                   else if (log.type === "streak") icon = "🔥";
+                   else if (log.type === "leader_board") icon = "🏆";
+                   else if (log.type === "announcement") icon = "📢";
+
+                   return (
+                     <div key={String(log._id)} style={{ display: "flex", gap: "10px", padding: "10px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", borderLeft: `3px solid ${icon === "🎯" ? "#58cc02" : "#1cb0f6"}` }}>
+                        <div style={{ fontSize: "1.5rem" }}>{icon}</div>
+                        <div>
+                          <strong style={{ fontSize: "0.95rem" }}>{log.studentId ? log.studentId.username : "Öğretmen"}</strong>
+                          <p style={{ margin: "2px 0 0 0", fontSize: "0.9rem", color: "#ccc" }}>{log.content}</p>
+                          <span style={{ fontSize: "0.7rem", color: "#888" }}>{new Date(log.createdAt).toLocaleTimeString("tr-TR")}</span>
+                        </div>
+                     </div>
+                   );
+                })}
+              </div>
             )}
           </div>
         </div>
@@ -520,6 +678,12 @@ export default function ClassroomView({ user }) {
             )}
           </div>
 
+          <div className="classroom-card" style={{ background: "linear-gradient(135deg, #1CB0F6 0%, #1480B5 100%)", color: "white", padding: "20px", borderRadius: "16px", boxShadow: "0 8px 16px rgba(28, 176, 246, 0.4)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gridColumn: "1 / -1" }}>
+             <h3 style={{ margin: "0 0 10px 0", fontSize: "1.5rem" }}>🎮 Sınıf Savaşlarına Katıl!</h3>
+             <p style={{ margin: "0 0 20px 0", fontSize: "0.95rem", opacity: 0.9 }}>Öğretmeninin başlattığı odaya girip şampiyonluğunu kanıtla!</p>
+             <button onClick={() => setCurrentView('room-menu')} style={{ background: "white", color: "#1480B5", padding: "12px 24px", fontSize: "1.1rem", borderRadius: "30px", border: "none", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.2)" }}>🚀 Savaş Arenasına Bağlan</button>
+          </div>
+
           <div className="classroom-card">
             <h3>Aktif Görevlerim</h3>
             {assignments.filter(a => new Date(a.dueDate) > new Date()).length === 0 ? (
@@ -552,6 +716,32 @@ export default function ClassroomView({ user }) {
                         <p style={{ marginTop: "10px", color: "#58cc02", fontWeight: "bold", fontSize: "0.95rem", textAlign: "center", marginBottom: 0 }}>
                           TEBRİKLER! Görevi tamamladın! 🎉
                         </p>
+                      )}
+                      
+                      {!a.progress?.isCompleted && (
+                        <button 
+                          onClick={() => {
+                            if (a.taskType === 'speaking_practice') {
+                              setCurrentView('speaking');
+                            } else {
+                              if (a.customDeckId) {
+                                // Try to find the deck terms if we have them loaded
+                                const deck = customDecks.find(d => d._id === a.customDeckId);
+                                if (deck && deck.terms) {
+                                  startCustomPractice(deck.terms);
+                                } else {
+                                  // As fallback if not loaded, just regular practice for now
+                                  setCurrentView('practice');
+                                }
+                              } else {
+                                setCurrentView('practice');
+                              }
+                            }
+                          }}
+                          style={{ marginTop: "15px", width: "100%", background: "#58cc02", color: "white", fontWeight: "bold", border: "none", padding: "10px", borderRadius: "10px", cursor: "pointer" }}
+                        >
+                          🚀 Göreve Başla!
+                        </button>
                       )}
                     </div>
                   );

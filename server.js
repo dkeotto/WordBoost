@@ -870,6 +870,7 @@ const AssignmentSchema = new mongoose.Schema(
     taskType: { type: String, enum: ["general_practice", "speaking_practice"], required: true },
     targetCount: { type: Number, required: true },
     rewardXp: { type: Number, default: 50 },
+    customDeckId: { type: mongoose.Schema.Types.ObjectId, ref: "CustomDeck" },
     dueDate: { type: Date, required: true },
   },
   { timestamps: true }
@@ -897,11 +898,33 @@ const AnnouncementSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const CustomDeckSchema = new mongoose.Schema(
+  {
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: "Classroom", required: true },
+    teacherId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    name: { type: String, required: true },
+    terms: [{ type: String }]
+  },
+  { timestamps: true }
+);
+
+const ActivityLogSchema = new mongoose.Schema(
+  {
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: "Classroom", required: true },
+    type: { type: String, enum: ["assignment_complete", "streak", "leader_board", "announcement"], required: true },
+    content: { type: String, required: true },
+    studentId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+  },
+  { timestamps: true }
+);
+
 const Classroom = mongoose.model("Classroom", ClassroomSchema);
 const ClassMembership = mongoose.model("ClassMembership", ClassMembershipSchema);
 const Assignment = mongoose.model("Assignment", AssignmentSchema);
 const AssignmentProgress = mongoose.model("AssignmentProgress", AssignmentProgressSchema);
 const Announcement = mongoose.model("Announcement", AnnouncementSchema);
+const CustomDeck = mongoose.model("CustomDeck", CustomDeckSchema);
+const ActivityLog = mongoose.model("ActivityLog", ActivityLogSchema);
 const WordStat = mongoose.model("WordStat", WordStatSchema);
 
 async function startServer() {
@@ -2688,6 +2711,24 @@ app.get('/api/classes/:id/students', async (req, res) => {
   }
 });
 
+app.delete('/api/classes/:id', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!ensureRole(user, "teacher")) return res.status(403).json({ error: "teacher_only" });
+  try {
+    const classroom = await Classroom.findById(req.params.id);
+    if (!classroom) return res.status(404).json({ error: "Sınıf bulunamadı" });
+    if (String(classroom.teacherId) !== String(user._id) && user.role !== "admin") {
+      return res.status(403).json({ error: "Yetkisiz" });
+    }
+    await Classroom.findByIdAndDelete(req.params.id);
+    await ClassMembership.deleteMany({ classId: req.params.id });
+    await Assignment.deleteMany({ classId: req.params.id });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 app.get('/api/classes/:id/dashboard', async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
@@ -2909,6 +2950,13 @@ app.post('/api/assignments/progress/increment', async (req, res) => {
           progressDoc.completedAt = new Date();
           // AWARD XP
           await User.findByIdAndUpdate(decoded.id, { $inc: { "stats.xp": assignment.rewardXp || 50 } });
+          
+          await ActivityLog.create({
+            classId: assignment.classId,
+            type: "assignment_complete",
+            studentId: decoded.id,
+            content: `🎯 Görevi tamamladı ve ${assignment.rewardXp || 50} XP kazandı! (${assignment.title})`
+          });
         }
         await progressDoc.save();
         updatedCount++;
@@ -2970,6 +3018,14 @@ app.post('/api/classes/:id/announcements', async (req, res) => {
     const { content } = req.body;
     if (!content) return res.status(400).json({ error: "Boş mesaj!" });
     const announcement = await Announcement.create({ classId: req.params.id, teacherId: user._id, content });
+    
+    await ActivityLog.create({
+      classId: req.params.id,
+      type: "announcement",
+      studentId: null,
+      content: `📢 Sınıfa yeni bir duyuru asıldı! ("${content.length > 20 ? content.substring(0, 20) + '...' : content}")`
+    });
+
     res.json({ announcement });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -2982,6 +3038,72 @@ app.delete('/api/classes/:classId/announcements/:id', async (req, res) => {
   try {
     await Announcement.findByIdAndDelete(req.params.id);
     res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/classes/:id/custom-decks
+app.get('/api/classes/:id/custom-decks', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  try {
+    const decks = await CustomDeck.find({ classId: req.params.id }).populate('teacherId', 'username');
+    res.json({ items: decks });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/classes/:id/custom-decks
+app.post('/api/classes/:id/custom-decks', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (user.role !== "teacher" && user.role !== "admin") return res.status(403).json({ error: "Yetkisiz" });
+  try {
+    const { name, terms } = req.body;
+    if (!name || !terms || !Array.isArray(terms)) return res.status(400).json({ error: "Geçersiz veriler" });
+    const deck = await CustomDeck.create({ classId: req.params.id, teacherId: user._id, name, terms });
+    res.json({ deck });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/classes/:classId/custom-decks/:id
+app.delete('/api/classes/:classId/custom-decks/:id', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (user.role !== "teacher" && user.role !== "admin") return res.status(403).json({ error: "Yetkisiz" });
+  try {
+    await CustomDeck.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/classes/:id/activity-feed
+app.get('/api/classes/:id/activity-feed', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  try {
+    const logs = await ActivityLog.find({ classId: req.params.id }).sort({ createdAt: -1 }).limit(50).populate('studentId', 'username avatar');
+    res.json({ items: logs });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/classes/:id/analytics/failed-words
+app.get('/api/classes/:id/analytics/failed-words', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  try {
+    const isTeacher = user.role === "teacher" || user.role === "admin";
+    if (!isTeacher) return res.status(403).json({ error: "Sadece öğretmenler görebilir" });
+
+    const memberships = await ClassMembership.find({ classId: req.params.id });
+    const studentIds = memberships.map(m => m.studentId);
+    
+    const wordStats = await WordStat.aggregate([
+      { $match: { userId: { $in: studentIds }, unknown: { $gt: 0 } } },
+      { $group: { _id: "$wordTerm", totalUnknown: { $sum: "$unknown" } } },
+      { $sort: { totalUnknown: -1 } },
+      { $limit: 10 }
+    ]);
+    
+    res.json({ items: wordStats });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

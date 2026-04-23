@@ -209,9 +209,20 @@ const PracticeView = ({
     handleAnswer, buttonCooldown, prevWord, nextWord, 
     resetStats, setPracticeLevel, practiceLevel,
     isFlipped, flipCard, showHint, setShowHint, showExample, setShowExample, 
-    feedback, feedbackMessage, favorites, toggleFavorite, speakWord 
+    feedback, feedbackMessage, favorites, toggleFavorite, speakWord,
+    isHost, isAutoAdvance, setIsAutoAdvance
   }) => (
     <div className="practice">
+      {isHost && isInRoom && (
+         <div className="host-controls" style={{ marginBottom: "15px", padding: "10px", background: "rgba(255,255,255,0.05)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.9rem", fontWeight: "bold" }}>Tahta Kontrolü:</span>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+               <input type="checkbox" checked={isAutoAdvance} onChange={e => setIsAutoAdvance(e.target.checked)} />
+               <span style={{ fontSize: "0.85rem" }}>Otomatik İlerlet (15sn)</span>
+            </label>
+            <button onClick={nextWord} style={{ padding: "5px 12px", fontSize: "0.8rem", background: "#1cb0f6" }}>Manuel Sonraki</button>
+         </div>
+      )}
       <h2>{isInRoom ? '👥 Yarış Modu' : 'Tek Kişilik Kelime Çalışması'}</h2>
       
       <StatsPanel stats={stats} resetStats={resetStats} isInRoom={isInRoom} practiceLevel={practiceLevel} setPracticeLevel={setPracticeLevel} />
@@ -1690,6 +1701,9 @@ function App() {
 
   const [selectedLevel,setSelectedLevel] = useState("ALL")
   const [practiceLevel, setPracticeLevel] = useState("ALL");
+  const [customDeckWords, setCustomDeckWords] = useState(null);
+  const [isAutoAdvance, setIsAutoAdvance] = useState(false);
+  const [words, setWords] = useState([]);
 
   const loadFromStorage = (key, defaultValue) => {
     try {
@@ -1738,7 +1752,6 @@ function App() {
   const [siteInfoTab, setSiteInfoTab] = useState(() =>
     readInitialViewFromUrl() === "site-info" ? readSiteInfoTabFromUrl() : "features"
   );
-  const [words, setWords] = useState([]);
   const [loadingWords, setLoadingWords] = useState(true);
   const splashStartRef = useRef(Date.now());
   const [splashExiting, setSplashExiting] = useState(false);
@@ -1911,7 +1924,31 @@ function App() {
     return () => clearTimeout(t);
   }, [splashExiting]);
 
+  useEffect(() => {
+    if (!splashExiting) return;
+    const timer = setTimeout(() => {
+      setFeedback(null);
+      setFeedbackMessage('');
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [feedback]);
+
+  // AUTO-ADVANCE EFFECT
+  useEffect(() => {
+    if (!isInRoom || !isHost || !isAutoAdvance || !practiceWords.length) return;
+    
+    const interval = setTimeout(() => {
+       nextWord();
+    }, 15000); // 15 seconds per word
+
+    return () => clearTimeout(interval);
+  }, [isInRoom, isHost, isAutoAdvance, currentWordIndex, practiceWords.length]);
+
   const practiceWords = useMemo(() => {
+    if (customDeckWords && customDeckWords.length > 0) {
+      return [...customDeckWords].sort(() => Math.random() - 0.5);
+    }
+
     let filtered = words;
     
     if (practiceLevel !== "ALL") {
@@ -1931,7 +1968,7 @@ function App() {
     
     // Shuffle filtered words on level change
     return [...filtered].sort(() => Math.random() - 0.5);
-  }, [words, practiceLevel]);
+  }, [words, practiceLevel, customDeckWords]);
 
   // Use practiceWords for index management
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -2563,6 +2600,25 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     localStorage.removeItem("ydt_moduleStats");
   };
 
+  const startCustomPractice = (terms = []) => {
+     if (!terms || terms.length === 0) return;
+     // Filter full word objects from the main 'words' array based on terms strings (case-insensitive)
+     const normalizedTerms = terms.map(t => t.toLowerCase());
+     const deckWords = words.filter(w => normalizedTerms.includes(w.term.toLowerCase()));
+     if (deckWords.length === 0) {
+        alert("Üzgünüm, bu destedeki hiçbir kelime veri havuzumuzda bulunamadı.");
+        return;
+     }
+     setCustomDeckWords(deckWords);
+     setCurrentWordIndex(0);
+     setCurrentView("practice");
+  };
+
+  const stopCustomPractice = () => {
+     setCustomDeckWords(null);
+     setCurrentWordIndex(0);
+  };
+
   const leaveRoom = () => {
     socket.emit('leave-room', { roomCode, username });
     setIsInRoom(false);
@@ -2636,6 +2692,9 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
             favorites={favorites.words}
             toggleFavorite={toggleFavorite}
             speakWord={speakWord}
+            isHost={isHost}
+            isAutoAdvance={isAutoAdvance}
+            setIsAutoAdvance={setIsAutoAdvance}
           />
         </PageWithAds>
       )}
@@ -2779,7 +2838,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
           onGoWriting={() => setCurrentView("ai-writing")}
         />
       )}
-      {currentView === 'classroom' && <ClassroomView user={user} />}
+      {currentView === 'classroom' && <ClassroomView user={user} setCurrentView={setCurrentView} startCustomPractice={startCustomPractice} />}
       {currentView === 'draw-reveal' && (
         <DrawRevealGame 
           key={currentView}
