@@ -1788,6 +1788,12 @@ function App() {
           const fullUser = { ...data, token };
           setUser(fullUser);
           localStorage.setItem("wb_user", JSON.stringify(fullUser));
+          
+          if (data.favorites && Object.keys(data.favorites).length > 0) setFavorites(data.favorites);
+          if (data.wrongWords && data.wrongWords.length > 0) setWrongWords(data.wrongWords);
+          if (data.moduleStats && Object.keys(data.moduleStats).length > 0) setModuleStats(data.moduleStats);
+          if (data.practiceHistory && data.practiceHistory.length > 0) setPracticeHistory(data.practiceHistory);
+
           window.history.replaceState({}, document.title, "/");
         })
         .catch((err) => {
@@ -1813,6 +1819,11 @@ function App() {
                   const merged = { ...parsedUser, ...me.user, token: parsedUser.token };
                   setUser(merged);
                   localStorage.setItem("wb_user", JSON.stringify(merged));
+
+                  if (me.user.favorites && Object.keys(me.user.favorites).length > 0) setFavorites(me.user.favorites);
+                  if (me.user.wrongWords && me.user.wrongWords.length > 0) setWrongWords(me.user.wrongWords);
+                  if (me.user.moduleStats && Object.keys(me.user.moduleStats).length > 0) setModuleStats(me.user.moduleStats);
+                  if (me.user.practiceHistory && me.user.practiceHistory.length > 0) setPracticeHistory(me.user.practiceHistory);
                 }
               })
               .catch(() => {});
@@ -1982,6 +1993,36 @@ function App() {
   useEffect(() => {
     localStorage.setItem("ydt_moduleStats", JSON.stringify(moduleStats));
   }, [moduleStats]);
+
+  // Cloud Sync Debounce
+  const syncTimeoutRef = useRef(null);
+  useEffect(() => {
+    if (!user || !user.token) return;
+    
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+    
+    syncTimeoutRef.current = setTimeout(() => {
+      fetch(apiUrl('/api/profile/sync'), {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': user.token
+        },
+        body: JSON.stringify({
+          wrongWords,
+          favorites,
+          moduleStats,
+          practiceHistory
+        })
+      }).catch(err => console.error("Cloud sync err", err));
+    }, 2500);
+
+    return () => {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    };
+  }, [wrongWords, favorites, moduleStats, practiceHistory, user]);
 
   useEffect(() => {
     const openAdminShortcut = (e) => {

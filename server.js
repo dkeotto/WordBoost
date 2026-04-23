@@ -427,6 +427,12 @@ const UserSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: null }
   },
 
+  // Cloud Sync Fields
+  wrongWords: { type: [String], default: [] },
+  favorites: { type: Object, default: {} },
+  moduleStats: { type: Object, default: {} },
+  practiceHistory: { type: Array, default: [] },
+
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -1784,6 +1790,10 @@ app.get('/api/profile', async (req, res) => {
       streak: user.streak,
       badges: user.badges,
       createdAt: user.createdAt,
+      wrongWords: user.wrongWords || [],
+      favorites: user.favorites || {},
+      moduleStats: user.moduleStats || {},
+      practiceHistory: user.practiceHistory || [],
       premiumUntil: user.premiumUntil || null,
       isPremium: isPremiumUser(user)
     });
@@ -1798,7 +1808,7 @@ app.get('/api/me', async (req, res) => {
     const token = req.headers.authorization;
     if (!token) return res.status(401).json({ error: "Token gerekli" });
     const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
-    const user = await User.findById(decoded.id).select("username nickname email avatar bio stats streak badges role premiumUntil paddleCustomerId entitlements aiUsage createdAt isVerified");
+    const user = await User.findById(decoded.id).select("username nickname email avatar bio stats streak badges role premiumUntil paddleCustomerId entitlements aiUsage createdAt isVerified wrongWords favorites moduleStats practiceHistory");
     if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
     res.json({
       ok: true,
@@ -1818,11 +1828,39 @@ app.get('/api/me', async (req, res) => {
         streak: user.streak ?? 0,
         badges: user.badges || [],
         aiUsage: user.aiUsage || { dayKey: "", count: 0, updatedAt: null },
-        createdAt: user.createdAt || null
+        createdAt: user.createdAt || null,
+        wrongWords: user.wrongWords || [],
+        favorites: user.favorites || {},
+        moduleStats: user.moduleStats || {},
+        practiceHistory: user.practiceHistory || []
       }
     });
   } catch (err) {
     res.status(401).json({ error: "Auth error" });
+  }
+});
+app.post('/api/profile/sync', async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: "Token gerekli" });
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+
+    const { wrongWords, favorites, moduleStats, practiceHistory } = req.body;
+
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+
+    if (Array.isArray(wrongWords)) user.wrongWords = wrongWords;
+    if (typeof favorites === "object" && favorites !== null) user.favorites = favorites;
+    if (typeof moduleStats === "object" && moduleStats !== null) user.moduleStats = moduleStats;
+    if (Array.isArray(practiceHistory)) {
+      user.practiceHistory = practiceHistory.slice(-1000);
+    }
+
+    await user.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Sync error: " + err.message });
   }
 });
 
