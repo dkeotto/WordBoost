@@ -11,6 +11,22 @@ export default function ClassroomView({ user, setCurrentView, startCustomPractic
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const handleDeleteClass = async (classId) => {
+    if (!window.confirm("Bu sınıfı ve tüm verilerini silmek istediğine emin misin?")) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || ""}/api/classes/${classId}`, {
+        method: "DELETE",
+        headers,
+      });
+      if (!res.ok) throw new Error("Silinemedi");
+      setTeacherClasses((prev) => prev.filter((c) => c._id !== classId));
+      setErr("");
+      setMsg("Sınıf başarıyla silindi");
+    } catch (e) {
+      setErr(e.message);
+    }
+  };
+
   // Teacher state
   const [className, setClassName] = useState("");
   const [teacherClasses, setTeacherClasses] = useState([]);
