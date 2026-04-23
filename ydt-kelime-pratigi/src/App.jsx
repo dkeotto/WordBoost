@@ -49,6 +49,7 @@ function readInitialViewFromUrl() {
   if (p === "/privacy") return "privacy";
   if (p === "/bilgi" || p === "/info") return "site-info";
   if (p === "/draw" || p === "/resim") return "draw-reveal";
+  if (p === "/classroom") return "classroom";
   const h = window.location.hash.replace("#", "").toLowerCase();
   if (h === "admin") return "admin";
   return "practice";

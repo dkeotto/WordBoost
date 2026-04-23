@@ -2724,6 +2724,7 @@ app.delete('/api/classes/:id', async (req, res) => {
     await Classroom.findByIdAndDelete(req.params.id);
     await ClassMembership.deleteMany({ classId: req.params.id });
     await Assignment.deleteMany({ classId: req.params.id });
+    await ActivityLog.deleteMany({ classId: req.params.id });
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
