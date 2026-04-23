@@ -1727,14 +1727,27 @@ function App() {
   const [user, setUser] = useState(null);
 
   const [favorites, setFavorites] = useState(() => {
-    const savedBundle = localStorage.getItem("ydt_favorites_bundle");
-    if (savedBundle) return JSON.parse(savedBundle);
-    const legacy = localStorage.getItem("ydt_favorites");
-    return {
-      words: legacy ? JSON.parse(legacy) : [],
-      synonyms: [],
-      phrasal: [],
-    };
+    try {
+      const savedBundle = localStorage.getItem("ydt_favorites_bundle");
+      if (savedBundle) {
+        const parsed = JSON.parse(savedBundle);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            words: Array.isArray(parsed.words) ? parsed.words : [],
+            synonyms: Array.isArray(parsed.synonyms) ? parsed.synonyms : [],
+            phrasal: Array.isArray(parsed.phrasal) ? parsed.phrasal : [],
+          };
+        }
+      }
+      const legacy = localStorage.getItem("ydt_favorites");
+      return {
+        words: legacy ? JSON.parse(legacy) : [],
+        synonyms: [],
+        phrasal: [],
+      };
+    } catch {
+      return { words: [], synonyms: [], phrasal: [] };
+    }
   });
 
   const logout = () => {
@@ -1934,17 +1947,6 @@ function App() {
     return () => clearTimeout(timer);
   }, [feedback]);
 
-  // AUTO-ADVANCE EFFECT
-  useEffect(() => {
-    if (!isInRoom || !isHost || !isAutoAdvance || !practiceWords.length) return;
-    
-    const interval = setTimeout(() => {
-       nextWord();
-    }, 15000); // 15 seconds per word
-
-    return () => clearTimeout(interval);
-  }, [isInRoom, isHost, isAutoAdvance, currentWordIndex, practiceWords.length]);
-
   const practiceWords = useMemo(() => {
     if (customDeckWords && customDeckWords.length > 0) {
       return [...customDeckWords].sort(() => Math.random() - 0.5);
@@ -1970,6 +1972,17 @@ function App() {
     // Shuffle filtered words on level change
     return [...filtered].sort(() => Math.random() - 0.5);
   }, [words, practiceLevel, customDeckWords]);
+
+  // AUTO-ADVANCE EFFECT
+  useEffect(() => {
+    if (!isInRoom || !isHost || !isAutoAdvance || !(practiceWords && practiceWords.length)) return;
+    
+    const interval = setTimeout(() => {
+       nextWord();
+    }, 15000); // 15 seconds per word
+
+    return () => clearTimeout(interval);
+  }, [isInRoom, isHost, isAutoAdvance, currentWordIndex, practiceWords?.length]);
 
   // Use practiceWords for index management
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -2658,7 +2671,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
           isInRoom={isInRoom}
           wordsCount={words.length}
           wrongWordsCount={wrongWordsCount}
-          favoritesCount={favorites.words.length + favorites.synonyms.length + favorites.phrasal.length}
+          favoritesCount={(favorites?.words?.length || 0) + (favorites?.synonyms?.length || 0) + (favorites?.phrasal?.length || 0)}
         />
     </header>
 
