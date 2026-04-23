@@ -130,6 +130,7 @@ const Navbar = ({
     'pricing',
     'synonyms',
     'phrasal-verbs',
+    'speaking',
     'classroom',
     'room-menu',
     'room',
@@ -242,6 +243,12 @@ const Navbar = ({
             onClick={() => handleNavClick('phrasal-verbs')}
           >
             🧩 Phrasal
+          </button>
+          <button
+            className={`nav-link ${currentView === 'speaking' ? 'active' : ''}`}
+            onClick={() => handleNavClick('speaking')}
+          >
+            🎙️ Speaking
           </button>
           <button
             className={`nav-link ${currentView === 'classroom' ? 'active' : ''}`}

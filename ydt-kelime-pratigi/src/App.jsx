@@ -20,6 +20,7 @@ const TermsPage = lazy(() => import("./components/TermsPage"));
 const PrivacyPage = lazy(() => import("./components/PrivacyPage"));
 const SiteInfoPage = lazy(() => import("./components/SiteInfoPage"));
 const DrawRevealGame = lazy(() => import("./components/DrawRevealGame"));
+const SpeakingView = lazy(() => import("./components/SpeakingView"));
 import AdSlot from "./components/AdSlot";
 import { sanitizeWordList } from "./utils/wordQuality";
 import { readResponseJson } from "./utils/httpJson";
@@ -2657,6 +2658,17 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
       )}
       {currentView === 'synonyms' && <SynonymsView words={words} playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
       {currentView === 'phrasal-verbs' && <PhrasalVerbsView words={words} playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
+      {currentView === 'speaking' && (
+        <SpeakingView
+          words={words}
+          playSound={playSound}
+          onTrackAnswer={trackModuleAnswer}
+          favorites={favorites}
+          toggleWordFavorite={toggleFavorite}
+          toggleSynFavorite={toggleSynFavorite}
+          togglePhrasalFavorite={togglePhrasalFavorite}
+        />
+      )}
       {currentView === 'word-list' && (
         <WordListView
           words={uniqueWords}
