@@ -862,8 +862,34 @@ const ClassMembershipSchema = new mongoose.Schema(
 
 ClassMembershipSchema.index({ classId: 1, studentId: 1 }, { unique: true });
 
+const AssignmentSchema = new mongoose.Schema(
+  {
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: "Classroom", required: true },
+    title: { type: String, required: true },
+    taskType: { type: String, enum: ["general_practice", "speaking_practice"], required: true },
+    targetCount: { type: Number, required: true },
+    dueDate: { type: Date, required: true },
+  },
+  { timestamps: true }
+);
+AssignmentSchema.index({ classId: 1 });
+
+const AssignmentProgressSchema = new mongoose.Schema(
+  {
+    assignmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Assignment", required: true },
+    studentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    progress: { type: Number, default: 0 },
+    isCompleted: { type: Boolean, default: false },
+    completedAt: { type: Date },
+  },
+  { timestamps: true }
+);
+AssignmentProgressSchema.index({ assignmentId: 1, studentId: 1 }, { unique: true });
+
 const Classroom = mongoose.model("Classroom", ClassroomSchema);
 const ClassMembership = mongoose.model("ClassMembership", ClassMembershipSchema);
+const Assignment = mongoose.model("Assignment", AssignmentSchema);
+const AssignmentProgress = mongoose.model("AssignmentProgress", AssignmentProgressSchema);
 const WordStat = mongoose.model("WordStat", WordStatSchema);
 
 async function startServer() {
@@ -2733,6 +2759,152 @@ app.get('/api/classes/:id/analytics', async (req, res) => {
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+/* ======================== ASSIGNMENT ROUTES ======================== */
+
+// GET /api/classes/:id/assignments
+app.get('/api/classes/:id/assignments', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  
+  try {
+    const classId = req.params.id;
+    const isTeacher = user.role === "teacher" || user.role === "admin";
+    
+    const classroom = await Classroom.findById(classId);
+    if (!classroom) return res.status(404).json({ error: "Sınıf bulunamadı" });
+    
+    if (!isTeacher) {
+      const membership = await ClassMembership.findOne({ classId, studentId: user._id });
+      if (!membership) return res.status(403).json({ error: "Bu sınıfa üye değilsiniz" });
+    }
+
+    const assignments = await Assignment.find({ classId }).sort({ createdAt: -1 }).lean();
+    
+    if (isTeacher) {
+      const assignmentIds = assignments.map(a => a._id);
+      const progresses = await AssignmentProgress.find({ assignmentId: { $in: assignmentIds } }).populate("studentId", "username nickname avatar");
+      
+      const enriched = assignments.map(a => {
+        const prog = progresses.filter(p => String(p.assignmentId) === String(a._id));
+        return { ...a, progressList: prog };
+      });
+      return res.json({ items: enriched });
+    } else {
+      const assignmentIds = assignments.map(a => a._id);
+      const progresses = await AssignmentProgress.find({ 
+        assignmentId: { $in: assignmentIds }, 
+        studentId: user._id 
+      }).lean();
+      
+      const enriched = assignments.map(a => {
+        const prog = progresses.find(p => String(p.assignmentId) === String(a._id));
+        return { ...a, progress: prog || { progress: 0, isCompleted: false } };
+      });
+      return res.json({ items: enriched });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/classes/:id/assignments
+app.post('/api/classes/:id/assignments', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (user.role !== "teacher" && user.role !== "admin") return res.status(403).json({ error: "Yetkisiz" });
+
+  try {
+    const { title, taskType, targetCount, dueDate } = req.body;
+    if (!title || !taskType || !targetCount || !dueDate) {
+      return res.status(400).json({ error: "Eksik bilgi" });
+    }
+
+    const assignment = await Assignment.create({
+      classId: req.params.id,
+      title,
+      taskType,
+      targetCount: Number(targetCount),
+      dueDate: new Date(dueDate)
+    });
+    
+    res.json({ assignment });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /api/classes/:classId/assignments/:assignmentId
+app.delete('/api/classes/:classId/assignments/:assignmentId', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (user.role !== "teacher" && user.role !== "admin") return res.status(403).json({ error: "Yetkisiz" });
+
+  try {
+    const assignment = await Assignment.findById(req.params.assignmentId);
+    if (!assignment) return res.status(404).json({ error: "Ödev bulunamadı" });
+    if (String(assignment.classId) !== String(req.params.classId)) return res.status(400).json({ error: "Geçersiz sınıf" });
+
+    await Assignment.findByIdAndDelete(req.params.assignmentId);
+    await AssignmentProgress.deleteMany({ assignmentId: req.params.assignmentId });
+    
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/assignments/progress/increment
+app.post('/api/assignments/progress/increment', async (req, res) => {
+  const token = req.headers.authorization;
+  if (!token) return res.status(401).json({ error: "Token required" });
+
+  try {
+    const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
+    const { taskType, amount = 1 } = req.body;
+    if (!taskType) return res.status(400).json({ error: "taskType required" });
+
+    const memberships = await ClassMembership.find({ studentId: decoded.id });
+    if (memberships.length === 0) return res.json({ success: true, updated: 0 });
+
+    const classIds = memberships.map(m => m.classId);
+    const activeAssignments = await Assignment.find({
+      classId: { $in: classIds },
+      taskType: taskType,
+      dueDate: { $gt: new Date() }
+    });
+
+    let updatedCount = 0;
+    for (const assignment of activeAssignments) {
+      let progressDoc = await AssignmentProgress.findOne({ assignmentId: assignment._id, studentId: decoded.id });
+      
+      if (!progressDoc) {
+        progressDoc = new AssignmentProgress({
+          assignmentId: assignment._id,
+          studentId: decoded.id,
+          progress: 0,
+          isCompleted: false
+        });
+      }
+
+      if (!progressDoc.isCompleted) {
+        progressDoc.progress += amount;
+        if (progressDoc.progress >= assignment.targetCount) {
+          progressDoc.progress = assignment.targetCount;
+          progressDoc.isCompleted = true;
+          progressDoc.completedAt = new Date();
+        }
+        await progressDoc.save();
+        updatedCount++;
+      }
+    }
+
+    res.json({ success: true, updated: updatedCount });
+  } catch (err) {
+    console.error("Assignment increment error", err);
+    res.status(500).json({ error: err.message });
   }
 });
 

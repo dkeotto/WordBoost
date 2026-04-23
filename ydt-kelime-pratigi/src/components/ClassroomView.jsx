@@ -23,6 +23,10 @@ export default function ClassroomView({ user }) {
   const [joinCode, setJoinCode] = useState("");
   const [myClasses, setMyClasses] = useState([]);
 
+  // Assignment state
+  const [assignments, setAssignments] = useState([]);
+  const [assignmentForm, setAssignmentForm] = useState({ title: "", taskType: "general_practice", targetCount: 50, dueDate: "" });
+
   const headers = useMemo(
     () => ({
       "Content-Type": "application/json",
@@ -62,6 +66,18 @@ export default function ClassroomView({ user }) {
     const data = await readResponseJson(res);
     if (!res.ok) throw new Error(data.error || "Sınıflarım yüklenemedi");
     setMyClasses(data.items || []);
+
+    let allAssig = [];
+    for (const cls of (data.items || [])) {
+       try {
+         const aRes = await fetch(`/api/classes/${cls.id}/assignments`, { headers });
+         const aData = await readResponseJson(aRes);
+         if (aRes.ok && aData.items) {
+            allAssig = [...allAssig, ...aData.items.map(x => ({ ...x, className: cls.name }))];
+         }
+       } catch (err) { console.error(err); }
+    }
+    setAssignments(allAssig);
   };
 
   useEffect(() => {
@@ -69,6 +85,7 @@ export default function ClassroomView({ user }) {
     setMsg("");
     setTeacherClasses([]);
     setMyClasses([]);
+    setAssignments([]);
     setSelectedClassId("");
     setClassStudents([]);
     if (!token) return;
@@ -83,14 +100,53 @@ export default function ClassroomView({ user }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, role]);
 
+  const loadAssignments = async (classId) => {
+    if (!token || !classId) return;
+    const res = await fetch(`/api/classes/${classId}/assignments`, { headers });
+    const data = await readResponseJson(res);
+    if (!res.ok) throw new Error(data.error || "Ödevler yüklenemedi");
+    setAssignments(data.items || []);
+  };
+
   useEffect(() => {
     if (!selectedClassId) return;
     setLoading(true);
-    Promise.all([loadStudents(selectedClassId), loadAnalytics(selectedClassId)])
+    Promise.all([loadStudents(selectedClassId), loadAnalytics(selectedClassId), loadAssignments(selectedClassId)])
       .catch((e) => setErr(e.message || "Yükleme hatası"))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClassId]);
+
+  const createAssignment = async () => {
+    if (!selectedClassId) return;
+    if (!assignmentForm.title || !assignmentForm.dueDate) {
+      setErr("Başlık ve tarih zorunludur"); return;
+    }
+    setLoading(true); setErr(""); setMsg("");
+    try {
+      const res = await fetch(`/api/classes/${selectedClassId}/assignments`, {
+        method: "POST", headers, body: JSON.stringify(assignmentForm),
+      });
+      const data = await readResponseJson(res);
+      if (!res.ok) throw new Error(data.error || "Ödev oluşturulamadı");
+      setMsg("Ödev başarıyla verildi!");
+      setAssignmentForm({ title: "", taskType: "general_practice", targetCount: 50, dueDate: "" });
+      await loadAssignments(selectedClassId);
+    } catch (e) { setErr(e.message); }
+    finally { setLoading(false); }
+  };
+  
+  const deleteAssignment = async (id) => {
+    if (!window.confirm("Görevi silmek istediğine emin misin?")) return;
+    setLoading(true); setErr(""); setMsg("");
+    try {
+      const res = await fetch(`/api/classes/${selectedClassId}/assignments/${id}`, { method: "DELETE", headers });
+      if (!res.ok) throw new Error("Silinemedi");
+      setMsg("Görev silindi.");
+      await loadAssignments(selectedClassId);
+    } catch (e) { setErr(e.message || "Hata"); }
+    finally { setLoading(false); }
+  };
 
   const createClass = async () => {
     if (!className.trim()) return;
@@ -265,6 +321,54 @@ export default function ClassroomView({ user }) {
           </div>
 
           <div className="classroom-card">
+            <h3>Ödev / Görev Yönetimi</h3>
+            {!selectedClassId ? <p className="dash-muted">Önce sınıf seçin.</p> : (
+              <>
+                <div style={{ marginBottom: "1rem", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <label>Başlık <input value={assignmentForm.title} onChange={e=>setAssignmentForm(f=>({...f, title: e.target.value}))} placeholder="Örn: Hafta Sonu Testi" /></label>
+                  <label>Görev Türü
+                    <select className="admin-select" value={assignmentForm.taskType} onChange={e=>setAssignmentForm(f=>({...f, taskType: e.target.value}))}>
+                      <option value="general_practice">Genel Pratik Çözme</option>
+                      <option value="speaking_practice">Speaking Pratiği</option>
+                    </select>
+                  </label>
+                  <label>Hedef Soru/Kelime Sayısı <input type="number" value={assignmentForm.targetCount} onChange={e=>setAssignmentForm(f=>({...f, targetCount: Number(e.target.value)}))} /></label>
+                  <label>Son Teslim <input type="datetime-local" value={assignmentForm.dueDate} onChange={e=>setAssignmentForm(f=>({...f, dueDate: e.target.value}))} /></label>
+                  <button type="button" onClick={createAssignment} disabled={loading} style={{ marginTop: "5px" }}>Görev Ver</button>
+                </div>
+                
+                <h4 style={{ marginTop: "1rem", marginBottom: "0.5rem" }}>Verilen Görevler</h4>
+                {assignments.length === 0 ? <p className="dash-muted">Aktif görev yok.</p> : assignments.map(a => (
+                  <div key={String(a._id)} style={{ border: "1px solid #444", padding: "12px", marginBottom: "12px", borderRadius: "8px", background: "rgba(255,255,255,0.02)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <strong style={{ fontSize: "1.1rem" }}>{a.title}</strong>
+                      <button onClick={()=>deleteAssignment(a._id)} style={{ padding: "4px 8px", fontSize: "0.8rem", background: "rgba(255,50,50,0.2)" }}>İptal Et</button>
+                    </div>
+                    <p className="dash-muted" style={{ margin: "5px 0" }}>{a.taskType === "general_practice" ? "Soru Çözme" : "Speaking Pratiği"} - Hedef: {a.targetCount}</p>
+                    <p className="dash-muted">Teslim: {new Date(a.dueDate).toLocaleString("tr-TR")}</p>
+                    
+                    <div style={{ marginTop: "12px" }}>
+                      <div className="classroom-row head"><span>Öğrenci</span><span>İlerleme durumu</span></div>
+                      {(a.progressList || []).map(p => (
+                        <div key={String(p._id)} className="classroom-row">
+                          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            {p.studentId?.avatar ? <img src={p.studentId.avatar} alt="a" style={{ width: 24, height: 24, borderRadius: "50%" }} /> : null}
+                            {p.studentId?.username}
+                          </span>
+                          <span style={{ color: p.isCompleted ? "#58cc02" : "#ccc", fontWeight: "bold" }}>
+                            {p.progress} / {a.targetCount} {p.isCompleted ? " (Bitti) ✅" : ""}
+                          </span>
+                        </div>
+                      ))}
+                      {(!a.progressList || a.progressList.length === 0) && <p className="dash-muted" style={{ fontSize: "0.85rem", padding: "4px 0" }}>Henüz ilerleme kaydeden yok.</p>}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+
+          <div className="classroom-card">
             <h3>Aktivite / Progress</h3>
             {!analytics ? (
               <p className="dash-muted">Analiz yok.</p>
@@ -309,6 +413,43 @@ export default function ClassroomView({ user }) {
             <button type="button" onClick={joinClass} disabled={loading}>
               Sınıfa katıl
             </button>
+          </div>
+
+          <div className="classroom-card">
+            <h3>Aktif Görevlerim</h3>
+            {assignments.filter(a => new Date(a.dueDate) > new Date()).length === 0 ? (
+              <p className="dash-muted">Harika! Şu an bekleyen bir ödevin yok.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "1rem" }}>
+                {assignments.filter(a => new Date(a.dueDate) > new Date()).map(a => {
+                  const prog = a.progress?.progress || 0;
+                  const pct = Math.min(100, Math.round((prog / a.targetCount) * 100));
+                  return (
+                    <div key={String(a._id)} style={{ border: "2px solid #333", padding: "16px", borderRadius: "16px", background: "var(--bg-card)", boxShadow: "0 4px 6px rgba(0,0,0,0.3)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                        <strong style={{ fontSize: "1.1rem", color: "#fff" }}>{a.title}</strong>
+                        <span style={{ fontSize: "0.85rem", color: "#888", display: "flex", alignItems: "center" }}>{a.className}</span>
+                      </div>
+                      <p className="dash-muted" style={{ margin: "0 0 16px 0", fontSize: "0.9rem" }}>
+                        {a.taskType === "general_practice" ? "🎯 Çoktan Seçmeli Kelime Çöz" : "🎙️ Telaffuz Macerası"} — Bitiş: {new Date(a.dueDate).toLocaleDateString("tr-TR")}
+                      </p>
+                      
+                      <div style={{ position: "relative", height: "26px", background: "#222", borderRadius: "13px", overflow: "hidden", border: "1px solid #444" }}>
+                        <div style={{ position: "absolute", top: 0, left: 0, height: "100%", width: `${pct}%`, background: a.progress?.isCompleted ? "#58cc02" : "linear-gradient(90deg, #1cb0f6, #1480b5)", transition: "width 0.5s ease" }} />
+                        <span style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", color: "#fff", fontSize: "0.85rem", lineHeight: "26px", fontWeight: "bold", textShadow: "0px 1px 3px rgba(0,0,0,0.8)" }}>
+                          {prog} / {a.targetCount}
+                        </span>
+                      </div>
+                      {a.progress?.isCompleted && (
+                        <p style={{ marginTop: "10px", color: "#58cc02", fontWeight: "bold", fontSize: "0.95rem", textAlign: "center", marginBottom: 0 }}>
+                          TEBRİKLER! Görevi tamamladın! 🎉
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="classroom-card">

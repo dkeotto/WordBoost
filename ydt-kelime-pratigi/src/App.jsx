@@ -2087,7 +2087,19 @@ function App() {
     localStorage.setItem("ydt_favorites_bundle", JSON.stringify(favorites));
   }, [favorites]);
 
+  const triggerAssignmentProgress = (taskType, amount = 1) => {
+    if (!user?.token) return;
+    fetch(apiUrl('/api/assignments/progress/increment'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': user.token },
+      body: JSON.stringify({ taskType, amount })
+    }).catch(() => {});
+  };
+
   const trackModuleAnswer = (moduleName, isCorrect, level) => {
+    if (moduleName === "speaking") triggerAssignmentProgress("speaking_practice", 1);
+    else if (moduleName === "phrasal" || moduleName === "synonyms") triggerAssignmentProgress("general_practice", 1);
+    
     setModuleStats((prev) => {
       const current = prev[moduleName] || {
         attempted: 0,
@@ -2415,6 +2427,7 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
 
   const handleAnswer = (isKnown) => {
     if (buttonCooldown) return;
+    triggerAssignmentProgress("general_practice", 1);
     
     const currentWord = practiceWords[currentWordIndex];
     
