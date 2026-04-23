@@ -23,9 +23,14 @@ export default function ClassroomView({ user }) {
   const [joinCode, setJoinCode] = useState("");
   const [myClasses, setMyClasses] = useState([]);
 
+  // Social & Leaderboard state
+  const [announcements, setAnnouncements] = useState([]);
+  const [newAnnouncement, setNewAnnouncement] = useState("");
+  const [leaderboard, setLeaderboard] = useState([]);
+
   // Assignment state
   const [assignments, setAssignments] = useState([]);
-  const [assignmentForm, setAssignmentForm] = useState({ title: "", taskType: "general_practice", targetCount: 50, dueDate: "" });
+  const [assignmentForm, setAssignmentForm] = useState({ title: "", taskType: "general_practice", targetCount: 50, rewardXp: 50, dueDate: "" });
 
   const headers = useMemo(
     () => ({
@@ -68,6 +73,7 @@ export default function ClassroomView({ user }) {
     setMyClasses(data.items || []);
 
     let allAssig = [];
+    let allAnn = [];
     for (const cls of (data.items || [])) {
        try {
          const aRes = await fetch(`/api/classes/${cls.id}/assignments`, { headers });
@@ -75,9 +81,16 @@ export default function ClassroomView({ user }) {
          if (aRes.ok && aData.items) {
             allAssig = [...allAssig, ...aData.items.map(x => ({ ...x, className: cls.name }))];
          }
+         
+         const annRes = await fetch(`/api/classes/${cls.id}/announcements`, { headers });
+         const annData = await readResponseJson(annRes);
+         if (annRes.ok && annData.items) {
+            allAnn = [...allAnn, ...annData.items.map(x => ({ ...x, className: cls.name }))];
+         }
        } catch (err) { console.error(err); }
     }
     setAssignments(allAssig);
+    setAnnouncements(allAnn.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)));
   };
 
   useEffect(() => {
@@ -86,6 +99,8 @@ export default function ClassroomView({ user }) {
     setTeacherClasses([]);
     setMyClasses([]);
     setAssignments([]);
+    setAnnouncements([]);
+    setLeaderboard([]);
     setSelectedClassId("");
     setClassStudents([]);
     if (!token) return;
@@ -108,10 +123,30 @@ export default function ClassroomView({ user }) {
     setAssignments(data.items || []);
   };
 
+  const loadLeaderboard = async (classId) => {
+    if (!token || !classId) return;
+    const res = await fetch(`/api/classes/${classId}/leaderboard`, { headers });
+    const data = await readResponseJson(res);
+    setLeaderboard(data.items || []);
+  };
+
+  const loadAnnouncements = async (classId) => {
+    if (!token || !classId) return;
+    const res = await fetch(`/api/classes/${classId}/announcements`, { headers });
+    const data = await readResponseJson(res);
+    setAnnouncements(data.items || []);
+  };
+
   useEffect(() => {
     if (!selectedClassId) return;
     setLoading(true);
-    Promise.all([loadStudents(selectedClassId), loadAnalytics(selectedClassId), loadAssignments(selectedClassId)])
+    Promise.all([
+      loadStudents(selectedClassId), 
+      loadAnalytics(selectedClassId), 
+      loadAssignments(selectedClassId),
+      loadLeaderboard(selectedClassId),
+      loadAnnouncements(selectedClassId)
+    ])
       .catch((e) => setErr(e.message || "Yükleme hatası"))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -130,7 +165,7 @@ export default function ClassroomView({ user }) {
       const data = await readResponseJson(res);
       if (!res.ok) throw new Error(data.error || "Ödev oluşturulamadı");
       setMsg("Ödev başarıyla verildi!");
-      setAssignmentForm({ title: "", taskType: "general_practice", targetCount: 50, dueDate: "" });
+      setAssignmentForm({ title: "", taskType: "general_practice", targetCount: 50, rewardXp: 50, dueDate: "" });
       await loadAssignments(selectedClassId);
     } catch (e) { setErr(e.message); }
     finally { setLoading(false); }
@@ -146,6 +181,32 @@ export default function ClassroomView({ user }) {
       await loadAssignments(selectedClassId);
     } catch (e) { setErr(e.message || "Hata"); }
     finally { setLoading(false); }
+  };
+
+  const createAnnouncement = async () => {
+    if (!selectedClassId || !newAnnouncement.trim()) return;
+    setLoading(true); setErr(""); setMsg("");
+    try {
+      const res = await fetch(`/api/classes/${selectedClassId}/announcements`, {
+        method: "POST", headers, body: JSON.stringify({ content: newAnnouncement })
+      });
+      const data = await readResponseJson(res);
+      if (!res.ok) throw new Error(data.error || "Duyuru paylaşılamadı");
+      setMsg("Duyuru başarıyla panoya asıldı!");
+      setNewAnnouncement("");
+      await loadAnnouncements(selectedClassId);
+    } catch(e) { setErr(e.message); } finally { setLoading(false); }
+  };
+  
+  const deleteAnnouncement = async (id) => {
+    if (!window.confirm("Duyuruyu silmek istediğine emin misin?")) return;
+    setLoading(true); setErr(""); setMsg("");
+    try {
+       const res = await fetch(`/api/classes/${selectedClassId}/announcements/${id}`, { method: "DELETE", headers });
+       if (!res.ok) throw new Error("Silinemedi");
+       setMsg("Duyuru silindi.");
+       await loadAnnouncements(selectedClassId);
+    } catch(e) { setErr(e.message); } finally { setLoading(false); }
   };
 
   const createClass = async () => {
@@ -286,36 +347,59 @@ export default function ClassroomView({ user }) {
           </div>
 
           <div className="classroom-card">
-            <h3>Öğrenciler</h3>
-            {selectedClassId && (
-              <p className="dash-muted">
-                Seçili sınıf:{" "}
-                <strong>
-                  {teacherClasses.find((c) => String(c._id) === String(selectedClassId))?.name || "—"}
-                </strong>
-              </p>
-            )}
-            {classStudents.length === 0 ? (
-              <p className="dash-muted">Öğrenci yok veya henüz yüklenmedi.</p>
-            ) : (
-              <div className="classroom-table">
-                <div className="classroom-row head">
-                  <span>Öğrenci</span>
-                  <span>Bildi</span>
-                  <span>Bilmedi</span>
-                  <span>Streak</span>
+            <h3>📢 Duyuru Paneli</h3>
+            {!selectedClassId ? <p className="dash-muted">Önce sınıf seçin.</p> : (
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "1rem" }}>
+                  <textarea rows={3} value={newAnnouncement} onChange={e=>setNewAnnouncement(e.target.value)} placeholder="Sınıfa bir mesaj veya duyuru yazın..." style={{ width: "100%", padding: "10px", borderRadius: "8px", background: "rgba(255,255,255,0.05)", border: "1px solid #444", color: "#fff" }} />
+                  <button type="button" onClick={createAnnouncement} disabled={loading || !newAnnouncement.trim()}>Duyuruyu Paylaş</button>
                 </div>
-                {classStudents.map((s) => (
-                  <div key={String(s._id)} className="classroom-row">
-                    <span className="classroom-user">
-                      {s.avatar ? <img src={s.avatar} alt="" /> : null}
-                      <span>{s.username}</span>
-                    </span>
-                    <span>{s.stats?.known ?? 0}</span>
-                    <span>{s.stats?.unknown ?? 0}</span>
-                    <span>{s.streak ?? 0}</span>
+                <h4 style={{ marginTop: "10px", marginBottom: "5px" }}>Geçmiş Duyurular</h4>
+                {announcements.length === 0 ? <p className="dash-muted">Henüz duyuru yok.</p> : announcements.map(ann => (
+                  <div key={String(ann._id)} style={{ borderLeft: "4px solid #1cb0f6", padding: "12px", marginBottom: "10px", background: "rgba(255,255,255,0.02)", borderRadius: "6px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <strong style={{ color: "#1cb0f6" }}>Öğretmen Mesajı</strong>
+                      <button onClick={()=>deleteAnnouncement(ann._id)} style={{ padding: "2px 6px", fontSize: "0.75rem", background: "rgba(255,50,50,0.2)" }}>Sil</button>
+                    </div>
+                    <p style={{ margin: "5px 0", fontSize: "0.95rem" }}>{ann.content}</p>
+                    <span style={{ fontSize: "0.75rem", color: "#888" }}>{new Date(ann.createdAt).toLocaleString("tr-TR")}</span>
                   </div>
                 ))}
+              </>
+            )}
+          </div>
+
+          <div className="classroom-card">
+            <h3>Sınıf Liderlik Tablosu 🏆</h3>
+            {!selectedClassId ? <p className="dash-muted">Önce sınıf seçin.</p> : leaderboard.length === 0 ? <p className="dash-muted">Sınıfta henüz öğrenci yok.</p> : (
+              <div className="classroom-table" style={{ background: "rgba(0,0,0,0.2)", borderRadius: "12px", overflow: "hidden", border: "1px solid #333" }}>
+                <div className="classroom-row head" style={{ background: "#222" }}>
+                  <span>Sıra</span>
+                  <span>Öğrenci</span>
+                  <span>Deneyim (XP)</span>
+                  <span>Doğru</span>
+                </div>
+                {leaderboard.map((s, idx) => {
+                  let rankIcon = `#${idx + 1}`;
+                  let rankColor = "#888";
+                  if (idx === 0) { rankIcon = "🥇"; rankColor = "#FFD700"; }
+                  else if (idx === 1) { rankIcon = "🥈"; rankColor = "#C0C0C0"; }
+                  else if (idx === 2) { rankIcon = "🥉"; rankColor = "#CD7F32"; }
+
+                  return (
+                    <div key={String(s._id)} className="classroom-row" style={{ borderBottom: "1px solid #333" }}>
+                      <span style={{ fontWeight: idx < 3 ? "bold" : "normal", fontSize: idx < 3 ? "1.2rem" : "1rem", color: rankColor }}>
+                        {rankIcon}
+                      </span>
+                      <span className="classroom-user" style={{ fontWeight: idx === 0 ? "bold" : "normal" }}>
+                        {s.avatar ? <img src={s.avatar} alt="avatar" style={{ border: `2px solid ${rankColor}` }} /> : null}
+                        <span>{s.username}</span>
+                      </span>
+                      <span style={{ color: "#1cb0f6", fontWeight: "bold" }}>{s.stats?.xp || 0} XP</span>
+                      <span style={{ color: "#58cc02" }}>{s.stats?.known || 0} Çözüldü</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -333,6 +417,7 @@ export default function ClassroomView({ user }) {
                     </select>
                   </label>
                   <label>Hedef Soru/Kelime Sayısı <input type="number" value={assignmentForm.targetCount} onChange={e=>setAssignmentForm(f=>({...f, targetCount: Number(e.target.value)}))} /></label>
+                  <label>Görev Ödülü (XP) <input type="number" value={assignmentForm.rewardXp} onChange={e=>setAssignmentForm(f=>({...f, rewardXp: Number(e.target.value)}))} /></label>
                   <label>Son Teslim <input type="datetime-local" value={assignmentForm.dueDate} onChange={e=>setAssignmentForm(f=>({...f, dueDate: e.target.value}))} /></label>
                   <button type="button" onClick={createAssignment} disabled={loading} style={{ marginTop: "5px" }}>Görev Ver</button>
                 </div>
@@ -345,6 +430,7 @@ export default function ClassroomView({ user }) {
                       <button onClick={()=>deleteAssignment(a._id)} style={{ padding: "4px 8px", fontSize: "0.8rem", background: "rgba(255,50,50,0.2)" }}>İptal Et</button>
                     </div>
                     <p className="dash-muted" style={{ margin: "5px 0" }}>{a.taskType === "general_practice" ? "Soru Çözme" : "Speaking Pratiği"} - Hedef: {a.targetCount}</p>
+                    <p style={{ color: "#FFD700", fontWeight: "bold", fontSize: "0.9rem", margin: "2px 0 5px 0" }}>Ödül: {a.rewardXp || 50} XP ⚡</p>
                     <p className="dash-muted">Teslim: {new Date(a.dueDate).toLocaleString("tr-TR")}</p>
                     
                     <div style={{ marginTop: "12px" }}>
@@ -416,6 +502,25 @@ export default function ClassroomView({ user }) {
           </div>
 
           <div className="classroom-card">
+            <h3>📢 Sınıf Duyuruları</h3>
+            {announcements.length === 0 ? (
+              <p className="dash-muted">Şu an için sınıfında yapılmış bir duyuru yok.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "1rem" }}>
+                {announcements.map(ann => (
+                  <div key={String(ann._id)} style={{ borderLeft: "4px solid #1cb0f6", padding: "12px", background: "rgba(255,255,255,0.02)", borderRadius: "6px", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <strong style={{ color: "#1cb0f6", fontSize: "0.95rem" }}>{ann.className} - {ann.teacherId?.username}</strong>
+                      <span style={{ fontSize: "0.75rem", color: "#888" }}>{new Date(ann.createdAt).toLocaleDateString("tr-TR")}</span>
+                    </div>
+                    <p style={{ margin: "0", fontSize: "1rem", lineHeight: "1.4" }}>{ann.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="classroom-card">
             <h3>Aktif Görevlerim</h3>
             {assignments.filter(a => new Date(a.dueDate) > new Date()).length === 0 ? (
               <p className="dash-muted">Harika! Şu an bekleyen bir ödevin yok.</p>
@@ -430,8 +535,11 @@ export default function ClassroomView({ user }) {
                         <strong style={{ fontSize: "1.1rem", color: "#fff" }}>{a.title}</strong>
                         <span style={{ fontSize: "0.85rem", color: "#888", display: "flex", alignItems: "center" }}>{a.className}</span>
                       </div>
-                      <p className="dash-muted" style={{ margin: "0 0 16px 0", fontSize: "0.9rem" }}>
+                      <p className="dash-muted" style={{ margin: "0 0 5px 0", fontSize: "0.9rem" }}>
                         {a.taskType === "general_practice" ? "🎯 Çoktan Seçmeli Kelime Çöz" : "🎙️ Telaffuz Macerası"} — Bitiş: {new Date(a.dueDate).toLocaleDateString("tr-TR")}
+                      </p>
+                      <p style={{ color: "#FFD700", fontWeight: "bold", fontSize: "0.95rem", margin: "0 0 16px 0" }}>
+                        Ödül: {a.rewardXp || 50} Deneyim Puanı (XP) ⚡
                       </p>
                       
                       <div style={{ position: "relative", height: "26px", background: "#222", borderRadius: "13px", overflow: "hidden", border: "1px solid #444" }}>

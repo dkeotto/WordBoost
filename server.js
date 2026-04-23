@@ -409,7 +409,8 @@ const UserSchema = new mongoose.Schema({
   stats: {
     studied: { type: Number, default: 0 },
     known: { type: Number, default: 0 },
-    unknown: { type: Number, default: 0 }
+    unknown: { type: Number, default: 0 },
+    xp: { type: Number, default: 0 }
   },
 
   streak: { type: Number, default: 0 },
@@ -868,6 +869,7 @@ const AssignmentSchema = new mongoose.Schema(
     title: { type: String, required: true },
     taskType: { type: String, enum: ["general_practice", "speaking_practice"], required: true },
     targetCount: { type: Number, required: true },
+    rewardXp: { type: Number, default: 50 },
     dueDate: { type: Date, required: true },
   },
   { timestamps: true }
@@ -886,10 +888,20 @@ const AssignmentProgressSchema = new mongoose.Schema(
 );
 AssignmentProgressSchema.index({ assignmentId: 1, studentId: 1 }, { unique: true });
 
+const AnnouncementSchema = new mongoose.Schema(
+  {
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: "Classroom", required: true },
+    teacherId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    content: { type: String, required: true }
+  },
+  { timestamps: true }
+);
+
 const Classroom = mongoose.model("Classroom", ClassroomSchema);
 const ClassMembership = mongoose.model("ClassMembership", ClassMembershipSchema);
 const Assignment = mongoose.model("Assignment", AssignmentSchema);
 const AssignmentProgress = mongoose.model("AssignmentProgress", AssignmentProgressSchema);
+const Announcement = mongoose.model("Announcement", AnnouncementSchema);
 const WordStat = mongoose.model("WordStat", WordStatSchema);
 
 async function startServer() {
@@ -2895,6 +2907,8 @@ app.post('/api/assignments/progress/increment', async (req, res) => {
           progressDoc.progress = assignment.targetCount;
           progressDoc.isCompleted = true;
           progressDoc.completedAt = new Date();
+          // AWARD XP
+          await User.findByIdAndUpdate(decoded.id, { $inc: { "stats.xp": assignment.rewardXp || 50 } });
         }
         await progressDoc.save();
         updatedCount++;
@@ -2906,6 +2920,69 @@ app.post('/api/assignments/progress/increment', async (req, res) => {
     console.error("Assignment increment error", err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// GET /api/classes/:id/leaderboard
+app.get('/api/classes/:id/leaderboard', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  try {
+    const classId = req.params.id;
+    const isTeacher = user.role === "teacher" || user.role === "admin";
+    if (!isTeacher) {
+      const membership = await ClassMembership.findOne({ classId, studentId: user._id });
+      if (!membership) return res.status(403).json({ error: "Erişim engellendi" });
+    }
+    
+    const memberships = await ClassMembership.find({ classId }).populate({
+       path: 'studentId',
+       select: 'username nickname avatar stats'
+    });
+    
+    const leaderboard = memberships
+      .map(m => m.studentId)
+      .filter(Boolean)
+      .sort((a, b) => (b.stats?.xp || 0) - (a.stats?.xp || 0));
+      
+    res.json({ items: leaderboard });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/classes/:id/announcements
+app.get('/api/classes/:id/announcements', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  try {
+    const classId = req.params.id;
+    const announcements = await Announcement.find({ classId }).sort({ createdAt: -1 }).populate("teacherId", "username avatar role");
+    res.json({ items: announcements });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/classes/:id/announcements
+app.post('/api/classes/:id/announcements', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (user.role !== "teacher" && user.role !== "admin") return res.status(403).json({ error: "Yetkisiz" });
+  try {
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ error: "Boş mesaj!" });
+    const announcement = await Announcement.create({ classId: req.params.id, teacherId: user._id, content });
+    res.json({ announcement });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/classes/:classId/announcements/:id
+app.delete('/api/classes/:classId/announcements/:id', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (user.role !== "teacher" && user.role !== "admin") return res.status(403).json({ error: "Yetkisiz" });
+  try {
+    await Announcement.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 // --- AI Mode (Groq veya Anthropic; AI_PROVIDER / GROQ_API_KEY → createAiProvider) ---
