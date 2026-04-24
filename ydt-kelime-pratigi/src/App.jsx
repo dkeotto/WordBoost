@@ -1922,7 +1922,6 @@ function App() {
     }
     setPracticeHistory(prev => [{ term: currentWord.term, known: isKnown, date: new Date().toISOString() }, ...prev].slice(0, 100));
     showFeedbackAnim(isKnown ? "correct" : "wrong");
-    if (isKnown && !isInRoom) speakWord(currentWord);
     setTimeout(() => { 
       if (currentWordIndex < practiceWords.length - 1) nextWord(); 
       else alert("Tebrikler! Tüm kelimeleri tamamladın."); 
