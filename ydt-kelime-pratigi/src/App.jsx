@@ -1727,16 +1727,20 @@ function App() {
 
   console.log(`WordBoost: App Render #${renderCounter.current}`);
   
-  return (
-    <div style={{ background: 'blue', color: 'white', padding: '100px', height: '100vh', fontFamily: 'sans-serif' }}>
-      <h1>WordBoost v1.0.32 - BLUE SCREEN OF STABILITY</h1>
-      <p>If you see this, the loop has STOPPED.</p>
-      <p>Render Count: {renderCounter.current}</p>
-      <button onClick={() => window.location.reload()} style={{ padding:'10px' }}>Hard Reload</button>
-    </div>
-  );
+  useEffect(() => {
+    console.log("WordBoost: App component mounted successfully.");
+  }, []);
 
-  // DEAD CODE FOLLOWS ...
+  if (renderCounter.current > 150) {
+    return (
+      <div style={{ background: 'red', color: 'white', padding: '50px', minHeight: '100vh' }}>
+        <h1>CRITICAL RENDER LOOP DETECTED</h1>
+        <p>The application has exceeded 150 renders in a single session. This is a safety halt.</p>
+        <p>Render count: {renderCounter.current}</p>
+        <button onClick={() => window.location.reload()}>Hard Reset</button>
+      </div>
+    );
+  }
   if (false && renderCounter.current > 100) {
     return (
       <div style={{ background: 'red', color: 'white', padding: '50px', minHeight: '100vh' }}>
@@ -1750,6 +1754,7 @@ function App() {
   // 1. STATE & REFS
   const [selectedLevel, setSelectedLevel] = useState("ALL");
   const [practiceLevel, setPracticeLevel] = useState("ALL");
+  const [currentFavTab, setCurrentFavTab] = useState('words');
   const [customDeckWords, setCustomDeckWords] = useState(null);
   const [isAutoAdvance, setIsAutoAdvance] = useState(false);
   const [words, setWords] = useState([]);
@@ -1974,10 +1979,25 @@ function App() {
     setCurrentView("practice");
   };
 
-  const leaveRoom = () => {
-    socket.emit('leave-room', { roomCode, username });
-    setIsInRoom(false); setIsHost(false); setRoomCode(''); setUsers([]); setRoomStats({}); setCurrentView('practice');
+  const toggleFavorite = (type, item) => {
+    if (!item?.term) return;
+    setFavorites(prev => {
+      const list = prev[type] || [];
+      const exists = list.some(i => i.term === item.term);
+      const next = exists ? list.filter(i => i.term !== item.term) : [...list, item];
+      return { ...prev, [type]: next };
+    });
   };
+
+  const onLogout = () => {
+    localStorage.removeItem('ydt_token');
+    setUser(null);
+    setCurrentView('practice');
+    setShowLogoutConfirm(false);
+  };
+
+  const toggleSynFavorite = (item) => toggleFavorite('synonyms', item);
+  const togglePhrasalFavorite = (item) => toggleFavorite('phrasal', item);
 
   // ── EFFECTS ──────────────────────────────────────────────────────────────────
 
@@ -2212,11 +2232,10 @@ function App() {
             const t = ["features", "about", "privacy", "terms"].includes(tab) ? tab : "features";
             setSiteInfoTab(t);
             setCurrentView("site-info");
-            window.history.pushState({}, "", `/bilgi#${t}`);
           }}
           isInRoom={isInRoom}
           wordsCount={words?.length || 0}
-          wrongWordsCount={wrongWordsCount || 0}
+          wrongWordsCount={wrongWords?.length || 0}
           favoritesCount={(favorites?.words?.length || 0) + (favorites?.synonyms?.length || 0) + (favorites?.phrasal?.length || 0)}
         />
     </header>
@@ -2231,35 +2250,22 @@ function App() {
           isPremium={isUserPremium(user)}
         >
           <PracticeView 
-            isInRoom={isInRoom}
-            stats={stats}
-            users={users}
-            roomStats={roomStats}
-            username={username}
-            currentWordIndex={currentWordIndex}
-            practiceWords={practiceWords}
+            practiceWords={practiceWords} 
+            currentWordIndex={currentWordIndex} 
             currentWord={currentWord}
-            handleAnswer={handleAnswer}
-            buttonCooldown={buttonCooldown}
-            prevWord={prevWord}
-            nextWord={nextWord}
-            resetStats={resetStats}
-            setPracticeLevel={setPracticeLevel}
-            practiceLevel={practiceLevel}
             isFlipped={isFlipped}
-            flipCard={flipCard}
-            showHint={showHint}
-            setShowHint={setShowHint}
-            showExample={showExample}
-            setShowExample={setShowExample}
-            feedback={feedback}
-            feedbackMessage={feedbackMessage}
-            favorites={favorites.words}
-            toggleFavorite={toggleFavorite}
+            setIsFlipped={setIsFlipped}
+            handleAnswer={handleAnswer}
+            nextWord={nextWord}
+            prevWord={() => setCurrentWordIndex(prev => Math.max(0, prev - 1))}
             speakWord={speakWord}
-            isHost={isHost}
-            isAutoAdvance={isAutoAdvance}
-            setIsAutoAdvance={setIsAutoAdvance}
+            toggleFavorite={toggleFavorite}
+            favorites={favorites.words}
+            loadingWords={loadingWords}
+            practiceLevel={practiceLevel}
+            setPracticeLevel={setPracticeLevel}
+            startCustomPractice={startCustomPractice}
+            buttonCooldown={buttonCooldown}
           />
         </PageWithAds>
       )}
@@ -2274,54 +2280,36 @@ function App() {
         </PageWithAds>
       )}
       {currentView === 'favorites' && (
-        <FavoritesView
+        <FavoritesView 
           wordFavorites={favorites.words}
           synonymFavorites={favorites.synonyms}
           phrasalFavorites={favorites.phrasal}
           toggleWordFavorite={toggleFavorite}
           toggleSynFavorite={toggleSynFavorite}
           togglePhrasalFavorite={togglePhrasalFavorite}
+          currentTab={currentFavTab}
+          setCurrentTab={setCurrentFavTab}
         />
       )}
       {currentView === 'matching-game' && <MatchingGameView words={words} setCurrentView={setCurrentView} />}
-      {currentView === 'profile' && <ProfileView user={user} setUser={setUser} logout={logout} setCurrentView={setCurrentView} />}
+      {currentView === 'profile' && <ProfileView user={user} setUser={setUser} logout={onLogout} setCurrentView={setCurrentView} />}
       {currentView === 'public-profile' && <PublicProfileView selectedUser={selectedUser} setCurrentView={setCurrentView} />}
       {currentView === 'leaderboard' && <LeaderboardView user={user} setCurrentView={setCurrentView} setSelectedUser={setSelectedUser} />}
       {currentView === 'dashboard' && (
-        <DashboardView
-          stats={stats}
+        <DashboardView 
+          stats={stats} 
           practiceHistory={practiceHistory}
           wrongWords={wrongWords}
           moduleStats={moduleStats}
           user={user}
+          onLevelSelect={(lvl) => { setPracticeLevel(lvl); setCurrentView('practice'); }}
+          onStartCustom={startCustomPractice}
+          onViewChange={setCurrentView}
         />
       )}
-      {currentView === 'pricing' && (
-        <PricingPage
-          user={user}
-          onBack={() => {
-            setCurrentView("practice");
-            window.history.replaceState({}, "", "/");
-          }}
-          onGoPremium={() => setShowPricing(true)}
-        />
-      )}
-      {currentView === 'terms' && (
-        <TermsPage
-          onBack={() => {
-            setCurrentView("practice");
-            window.history.replaceState({}, "", "/");
-          }}
-        />
-      )}
-      {currentView === 'privacy' && (
-        <PrivacyPage
-          onBack={() => {
-            setCurrentView("practice");
-            window.history.replaceState({}, "", "/");
-          }}
-        />
-      )}
+      {currentView === 'pricing' && <PricingPage user={user} onBack={() => setCurrentView('practice')} onGoPremium={() => setShowPricing(true)} />}
+      {currentView === 'terms' && <TermsPage onBack={() => setCurrentView('practice')} />}
+      {currentView === 'privacy' && <PrivacyPage onBack={() => setCurrentView('practice')} />}
       {currentView === "site-info" && (
         <SiteInfoPage
           tab={siteInfoTab}

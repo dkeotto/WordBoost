@@ -1,1 +1,0 @@
-async function s(t){const e=await t.text();if(!e)return{};try{return JSON.parse(e)}catch{const n=e.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,200),r=new Error(n?`Sunucu JSON yerine metin döndü (HTTP ${t.status}): ${n}`:`Geçersiz yanıt (HTTP ${t.status}). BACKEND_URL / API yolunu kontrol et.`);throw r.status=t.status,r}}export{s as r};
