@@ -39,7 +39,7 @@ const formatDayKey = (date) => {
 };
 
 // ── DashboardView ──────────────────────────────────────────────────────────
-const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }) => {
+const DashboardView = ({ stats, words = [], practiceHistory, wrongWords, moduleStats, user }) => {
   const [consentStatus, setConsentStatus] = useState(() => getConsentStatus().status);
   const [dailyGoal, setDailyGoal] = useState(() =>
     parseInt(localStorage.getItem("wb_daily_goal") || "20", 10)
@@ -97,6 +97,8 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
     });
   }, []);
 
+  const wordLevels = useMemo(() => new Map(words.map(w => [w.term, w.level])), [words]);
+
   const chartData = useMemo(() => {
     const map = new Map(last7Days.map((d) => [d.key, { ...d }]));
     practiceHistory.forEach((item) => {
@@ -106,7 +108,7 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
       const entry = map.get(formatDayKey(d));
       if (!entry) return;
       entry.studied++;
-      if (item.isKnown) entry.known++;
+      if (item.known) entry.known++;
     });
     return Array.from(map.values());
   }, [last7Days, practiceHistory]);
@@ -176,8 +178,10 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
   const cefrData = useMemo(() => {
     const counts = { A1:0, A2:0, B1:0, B2:0, C1:0, C2:0 };
     practiceHistory.forEach((item) => {
-      if (!item?.isKnown || !counts.hasOwnProperty(item.level)) return;
-      counts[item.level]++;
+      if (!item?.known) return;
+      const lvl = wordLevels.get(item.term) || "B1";
+      if (!counts.hasOwnProperty(lvl)) return;
+      counts[lvl]++;
     });
     const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
     return CEFR_LEVELS.map((lv) => ({
@@ -201,8 +205,9 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
   const hardestWords = useMemo(() => {
     const m = new Map();
     practiceHistory.forEach((item) => {
-      if (!item || item.isKnown || !item.term) return;
-      const e = m.get(item.term) || { term: item.term, level: item.level || "?", count: 0 };
+      if (!item || item.known || !item.term) return;
+      const lvl = wordLevels.get(item.term) || "?";
+      const e = m.get(item.term) || { term: item.term, level: lvl, count: 0 };
       e.count++;
       m.set(item.term, e);
     });

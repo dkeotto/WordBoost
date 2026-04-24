@@ -2337,6 +2337,7 @@ function App() {
       {currentView === 'dashboard' && (
         <DashboardView 
           stats={stats} 
+          words={words}
           practiceHistory={practiceHistory}
           wrongWords={wrongWords}
           moduleStats={moduleStats}
