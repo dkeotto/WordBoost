@@ -1699,6 +1699,10 @@ const RoomView = ({ roomCode, users, username, isHost, setCurrentView, leaveRoom
 };
 
 function App() {
+  console.log("WordBoost: App component executing...");
+  useEffect(() => {
+    console.log("WordBoost: App component mounted successfully.");
+  }, []);
 
   const [selectedLevel,setSelectedLevel] = useState("ALL")
   const [practiceLevel, setPracticeLevel] = useState("ALL");
