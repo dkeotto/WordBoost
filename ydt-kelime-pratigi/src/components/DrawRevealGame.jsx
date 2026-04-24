@@ -74,9 +74,11 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
   const [score, setScore] = useState(0);
   // imgLoaded: cache'de varsa hemen true
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const gridSize = 3;
   const totalTiles = gridSize * gridSize;
+  const fallbackUrl = "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?q=80&w=600&auto=format&fit=crop";
 
   const generateNextQuestion = useCallback(() => {
     if (words.length < 4) return;
@@ -104,6 +106,7 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
     // Cache'te varsa zaten yüklü → anında göster
     const alreadyCached = preloadCache.get(painting.url) === 'done';
     setImgLoaded(alreadyCached);
+    setImgError(false);
 
     setCurrentPainting(painting);
     setLastPaintingId(painting.id);
@@ -196,9 +199,10 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
         <div className="game-finished-overlay">
           <div className="game-finished-painting">
             <img
-              src={currentPainting.url}
+              src={imgError ? fallbackUrl : currentPainting.url}
               alt={currentPainting.title}
               onLoad={() => setImgLoaded(true)}
+              onError={() => { setImgLoaded(true); setImgError(true); }}
             />
           </div>
           <div className="finished-card">
@@ -234,10 +238,12 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
         <div className="painting-canvas" style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}>
           {currentPainting && (
             <img
-              src={currentPainting.url}
+              src={imgError ? fallbackUrl : currentPainting.url}
               alt="Keşfediliyor..."
               className="painting-image"
               onLoad={() => setImgLoaded(true)}
+              onError={() => { setImgLoaded(true); setImgError(true); }}
+              crossOrigin="anonymous"
             />
           )}
           {/* Sadece cache'de yoksa ve henüz yüklenmemişse spinner göster */}
