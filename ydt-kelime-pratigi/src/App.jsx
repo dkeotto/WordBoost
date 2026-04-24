@@ -1704,33 +1704,49 @@ function App() {
     console.log("WordBoost: App component mounted successfully.");
   }, []);
 
-  const [selectedLevel,setSelectedLevel] = useState("ALL")
+  // 1. STATE & REFS
+  const [selectedLevel, setSelectedLevel] = useState("ALL");
   const [practiceLevel, setPracticeLevel] = useState("ALL");
   const [customDeckWords, setCustomDeckWords] = useState(null);
   const [isAutoAdvance, setIsAutoAdvance] = useState(false);
   const [words, setWords] = useState([]);
-
-  const loadFromStorage = (key, defaultValue) => {
-    try {
-      const saved = localStorage.getItem(`ydt_${key}`);
-      if (!saved || saved === "null" || saved === "undefined") return defaultValue;
-      const parsed = JSON.parse(saved);
-      return (parsed === null || parsed === undefined) ? defaultValue : parsed;
-    } catch {
-      return defaultValue;
-    }
-  };
-
-  const shuffleArray = (arr) => {
-    // O(n) Fisher-Yates shuffle; sort(Math.random) gibi pahalı random-sort kullanmıyoruz.
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  };
   const [user, setUser] = useState(null);
+  const [currentView, setCurrentView] = useState(() => readInitialViewFromUrl());
+  const [siteInfoTab, setSiteInfoTab] = useState(() =>
+    readInitialViewFromUrl() === "site-info" ? readSiteInfoTabFromUrl() : "features"
+  );
+  const [loadingWords, setLoadingWords] = useState(true);
+  const [splashExiting, setSplashExiting] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [showExample, setShowExample] = useState(false);
+  const [buttonCooldown, setButtonCooldown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [feedback, setFeedback] = useState(null);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [roomCode, setRoomCode] = useState('');
+  const [username, setUsername] = useState('');
+  const [joinCode, setJoinCode] = useState('');
+  const [users, setUsers] = useState([]);
+  const [roomStats, setRoomStats] = useState({});
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [isInRoom, setIsInRoom] = useState(false);
+  const [isHost, setIsHost] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [synListLevel, setSynListLevel] = useState("ALL");
+  const [phrasalListLevel, setPhrasalListLevel] = useState("ALL");
+  const [synListSearch, setSynListSearch] = useState("");
+  const [phrasalListSearch, setPhrasalListSearch] = useState("");
+  const [showLogin, setShowLogin] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [newBadgeNotification, setNewBadgeNotification] = useState(null);
+
+  const splashStartRef = useRef(Date.now());
+  const syncTimeoutRef = useRef(null);
 
   const [favorites, setFavorites] = useState(() => {
     try {
@@ -1745,18 +1761,56 @@ function App() {
           };
         }
       }
-      const legacy = localStorage.getItem("ydt_favorites");
-      return {
-        words: legacy ? JSON.parse(legacy) : [],
-        synonyms: [],
-        phrasal: [],
-      };
-    } catch {
       return { words: [], synonyms: [], phrasal: [] };
-    }
+    } catch { return { words: [], synonyms: [], phrasal: [] }; }
   });
 
-  // ── HANDLERS & CORE LOGIC (Moved up to prevent TDZ issues) ────────────────
+  const [stats, setStats] = useState(() => loadFromStorage('stats', { studied: 0, known: 0, unknown: 0 }));
+  const [wrongWords, setWrongWords] = useState(() => loadFromStorage('wrongWords', []));
+  const [practiceHistory, setPracticeHistory] = useState(() => loadFromStorage('practiceHistory', []));
+  const [moduleStats, setModuleStats] = useState(() =>
+    loadFromStorage("moduleStats", {
+      synonyms: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+      phrasal: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+      speaking: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+    })
+  );
+
+  // 3. MEMOS & UTILS
+  const shuffleArray = (arr) => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
+  const practiceWords = useMemo(() => {
+    if (customDeckWords && customDeckWords.length > 0) return [...customDeckWords].sort(() => Math.random() - 0.5);
+    let filtered = words;
+    if (practiceLevel !== "ALL" && practiceLevel !== "CUSTOM") {
+      if (practiceLevel.includes("-")) {
+        const lvls = practiceLevel === "A1-A2" ? ["A1","A2"] : practiceLevel === "B1-B2" ? ["B1","B2"] : practiceLevel === "B1-C2" ? ["B1","B2","C1","C2"] : ["C1","C2"];
+        filtered = words.filter(w => lvls.includes(w.level));
+      } else filtered = words.filter(w => w.level === practiceLevel);
+    }
+    return [...filtered].sort(() => Math.random() - 0.5);
+  }, [words, practiceLevel, customDeckWords]);
+
+  const currentWord = practiceWords[currentWordIndex];
+  const uniqueWords = useMemo(() => [...new Map(words.map(w => [w.term, w])).values()], [words]);
+  const filteredWords = useMemo(() => {
+    let res = uniqueWords;
+    if (selectedLevel !== "ALL") res = res.filter(w => w.level === selectedLevel);
+    if (searchTerm) {
+      const s = searchTerm.toLowerCase();
+      res = res.filter(w => w.term.toLowerCase().includes(s) || w.meaning.toLowerCase().includes(s));
+    }
+    return res.sort((a,b) => a.term.localeCompare(b.term));
+  }, [uniqueWords, searchTerm, selectedLevel]);
+
+  // 4. HANDLERS
   const triggerCooldown = (duration = 800) => {
     setButtonCooldown(true);
     setTimeout(() => setButtonCooldown(false), duration);
@@ -1767,245 +1821,25 @@ function App() {
     const wrongMessages = ["📚 Öğreniyoruz", "💡 Çalışmaya devam", "🧠 Yeni kelime öğrendin", "📖 Bir dahaki sefere", "🔁 Tekrar edeceğiz", "✨ Sorun değil!"];
     const list = type === "correct" ? correctMessages : wrongMessages;
     setFeedbackMessage(list[Math.floor(Math.random() * list.length)]);
-    const id = Date.now();
-    setFeedback({ type, id });
-    setTimeout(() => { setFeedback(null); }, 800);
+    setFeedback({ type, id: Date.now() });
+    setTimeout(() => setFeedback(null), 800);
   };
 
   const nextWord = () => {
-    if (currentWordIndex < (practiceWords?.length || 0) - 1) {
-      const newIndex = currentWordIndex + 1;
-      setCurrentWordIndex(newIndex);
-      setIsFlipped(false);
-      setShowHint(false);
-      setShowExample(false);
-      if (isInRoom) socket.emit('change-word', { roomCode, wordIndex: newIndex });
-    }
-  };
-
-  const prevWord = () => {
-    if (currentWordIndex > 0) {
-      const newIndex = currentWordIndex - 1;
-      setCurrentWordIndex(newIndex);
-      setIsFlipped(false);
-      setShowHint(false);
-      setShowExample(false);
-      if (isInRoom) socket.emit('change-word', { roomCode, wordIndex: newIndex });
-    }
-  };
-
-  const flipCard = () => {
-    setIsFlipped(!isFlipped);
-    if (!isFlipped && isInRoom) {
-      // Flip event doesn't necessarily need to sync to avoid spam, but could if desired
+    if (currentWordIndex < practiceWords.length - 1) {
+      const ni = currentWordIndex + 1;
+      setCurrentWordIndex(ni);
+      setIsFlipped(false); setShowHint(false); setShowExample(false);
+      if (isInRoom) socket.emit('change-word', { roomCode, wordIndex: ni });
     }
   };
 
   const speakWord = (wordObj) => {
-    if (!wordObj || !wordObj.term) return;
-    try {
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(wordObj.term);
-        utter.lang = 'en-US';
-        utter.rate = 0.9;
-        window.speechSynthesis.speak(utter);
-      }
-    } catch { /**/ }
+    if (!wordObj?.term || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(wordObj.term); u.lang = 'en-US'; u.rate = 0.9;
+    window.speechSynthesis.speak(u);
   };
-
-  const resetStats = () => {
-    if (window.confirm("İstatistikleri sıfırlamak istediğine emin misin?")) {
-      const reset = { studied: 0, known: 0, unknown: 0 };
-      setStats(reset);
-      localStorage.setItem('ydt_stats', JSON.stringify(reset));
-      setPracticeHistory([]);
-      localStorage.setItem('ydt_practiceHistory', JSON.stringify([]));
-      alert("İstatistikler sıfırlandı.");
-    }
-  };
-
-  const toggleFavorite = (wordObj) => {
-    if (!wordObj) return;
-    setFavorites(prev => {
-      const existing = prev.words || [];
-      const isFav = existing.some(w => w.term === wordObj.term);
-      const newWords = isFav 
-        ? existing.filter(w => w.term !== wordObj.term)
-        : [...existing, wordObj];
-      return { ...prev, words: newWords };
-    });
-  };
-
-  const toggleSynFavorite = (synObj) => {
-    if (!synObj) return;
-    setFavorites(prev => {
-      const existing = prev.synonyms || [];
-      const isFav = existing.some(s => s.synonym === synObj.synonym && s.originalWord === synObj.originalWord);
-      const newSyns = isFav
-        ? existing.filter(s => !(s.synonym === synObj.synonym && s.originalWord === synObj.originalWord))
-        : [...existing, synObj];
-      return { ...prev, synonyms: newSyns };
-    });
-  };
-
-  const togglePhrasalFavorite = (phrasalObj) => {
-    if (!phrasalObj) return;
-    setFavorites(prev => {
-      const existing = prev.phrasal || [];
-      const isFav = existing.some(p => p.verb === phrasalObj.verb && p.meaning === phrasalObj.meaning);
-      const newPhrasals = isFav
-        ? existing.filter(p => !(p.verb === phrasalObj.verb && p.meaning === phrasalObj.meaning))
-        : [...existing, phrasalObj];
-      return { ...prev, phrasal: newPhrasals };
-    });
-  };
-
-  const handleAnswer = (isKnown) => {
-    if (buttonCooldown || !currentWord) return;
-    triggerAssignmentProgress("general_practice", 1);
-    const transitionDuration = 800;
-    triggerCooldown(transitionDuration);
-    
-    setStats(prev => ({
-      ...prev,
-      studied: prev.studied + 1,
-      known: isKnown ? prev.known + 1 : prev.known,
-      unknown: isKnown ? prev.unknown : prev.unknown + 1
-    }));
-
-    if (!isKnown) {
-      setWrongWords(prev => {
-        if (!prev.some(w => w.term === currentWord.term)) return [...prev, currentWord];
-        return prev;
-      });
-    } else {
-      setWrongWords(prev => prev.filter(w => w.term !== currentWord.term));
-    }
-
-    setPracticeHistory(prev => [{
-      term: currentWord.term,
-      known: isKnown,
-      date: new Date().toISOString()
-    }, ...prev].slice(0, 100));
-
-    showFeedbackAnim(isKnown ? "correct" : "wrong");
-    if (isKnown && window.speechSynthesis && !isInRoom) speakWord(currentWord);
-
-    setTimeout(() => {
-      if (currentWordIndex < practiceWords.length - 1) nextWord();
-      else alert("Tebrikler! Tüm kelimeleri tamamladın.");
-    }, transitionDuration);
-  };
-
-  useEffect(() => {
-    localStorage.setItem('ydt_stats', JSON.stringify(stats));
-  }, [stats]);
-
-  useEffect(() => {
-    localStorage.setItem('ydt_wrongWords', JSON.stringify(wrongWords));
-  }, [wrongWords]);
-
-  useEffect(() => {
-    localStorage.setItem('ydt_practiceHistory', JSON.stringify(practiceHistory));
-  }, [practiceHistory]);
-
-  useEffect(() => {
-    localStorage.setItem("ydt_moduleStats", JSON.stringify(moduleStats));
-  }, [moduleStats]);
-
-  // Cloud Sync Debounce
-  const syncTimeoutRef = useRef(null);
-  useEffect(() => {
-    if (!user || !user.token) return;
-    
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current);
-    }
-    
-    syncTimeoutRef.current = setTimeout(() => {
-      fetch(apiUrl('/api/profile/sync'), {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': user.token
-        },
-        body: JSON.stringify({
-          wrongWords,
-          favorites,
-          moduleStats,
-          practiceHistory
-        })
-      }).catch(err => console.error("Cloud sync err", err));
-    }, 2500);
-
-    return () => {
-      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-    };
-  }, [wrongWords, favorites, moduleStats, practiceHistory, user]);
-
-  useEffect(() => {
-    const openAdminShortcut = (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
-        e.preventDefault();
-        setCurrentView("admin");
-        window.location.hash = "admin";
-      }
-    };
-    window.addEventListener("keydown", openAdminShortcut);
-    return () => window.removeEventListener("keydown", openAdminShortcut);
-  }, []);
-
-  useEffect(() => {
-    const checkHashForAdmin = () => {
-      const hash = window.location.hash.replace("#", "").toLowerCase();
-      if (hash === "admin") {
-        setCurrentView("admin");
-      }
-    };
-    checkHashForAdmin();
-    window.addEventListener("hashchange", checkHashForAdmin);
-    return () => window.removeEventListener("hashchange", checkHashForAdmin);
-  }, []);
-
-  useEffect(() => {
-    const onPop = () => {
-      const v = readInitialViewFromUrl();
-      setCurrentView(v);
-      if (v === "site-info") setSiteInfoTab(readSiteInfoTabFromUrl());
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
-
-  useEffect(() => {
-    const onHash = () => {
-      if (readInitialViewFromUrl() === "site-info") {
-        setSiteInfoTab(readSiteInfoTabFromUrl());
-      }
-    };
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  }, []);
-
-  useEffect(() => {
-    const legal = { pricing: "/pricing", terms: "/terms", privacy: "/privacy" };
-    if (currentView === "site-info") return;
-    if (legal[currentView]) {
-      if (window.location.pathname !== legal[currentView]) {
-        window.history.pushState({ view: currentView }, "", legal[currentView]);
-      }
-      return;
-    }
-    const path = window.location.pathname.replace(/\/$/, "") || "/";
-    if (["/pricing", "/terms", "/privacy"].includes(path)) {
-      window.history.replaceState({}, "", "/");
-    }
-  }, [currentView]);
-
-  useEffect(() => {
-    localStorage.setItem("ydt_favorites_bundle", JSON.stringify(favorites));
-  }, [favorites]);
 
   const triggerAssignmentProgress = (taskType, amount = 1) => {
     if (!user?.token) return;
@@ -2016,208 +1850,30 @@ function App() {
     }).catch(() => {});
   };
 
-  const trackModuleAnswer = (moduleName, isCorrect, level) => {
-    if (moduleName === "speaking") triggerAssignmentProgress("speaking_practice", 1);
-    else if (moduleName === "phrasal" || moduleName === "synonyms") triggerAssignmentProgress("general_practice", 1);
-    
-    setModuleStats((prev) => {
-      const current = prev[moduleName] || {
-        attempted: 0,
-        correct: 0,
-        wrong: 0,
-        streak: 0,
-        bestStreak: 0,
-        byLevel: {},
-      };
-      const nextStreak = isCorrect ? current.streak + 1 : 0;
-      const currentLevel = current.byLevel[level] || { attempted: 0, correct: 0, wrong: 0 };
-      return {
-        ...prev,
-        [moduleName]: {
-          ...current,
-          attempted: current.attempted + 1,
-          correct: isCorrect ? current.correct + 1 : current.correct,
-          wrong: !isCorrect ? current.wrong + 1 : current.wrong,
-          streak: nextStreak,
-          bestStreak: Math.max(current.bestStreak, nextStreak),
-          byLevel: {
-            ...current.byLevel,
-            [level]: {
-              attempted: currentLevel.attempted + 1,
-              correct: isCorrect ? currentLevel.correct + 1 : currentLevel.correct,
-              wrong: !isCorrect ? currentLevel.wrong + 1 : currentLevel.wrong,
-            },
-          },
-        },
-      };
-    });
-
-    // Classroom analytics için backend'e lightweight event gönder
-    try {
-      const token = user?.token;
-      if (token) {
-        fetch(apiUrl("/api/progress/event"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: token },
-          body: JSON.stringify({
-            activityType: `${moduleName}_answer`,
-            module: moduleName,
-            level: String(level || ""),
-            deltaKnown: isCorrect ? 1 : 0,
-            deltaUnknown: !isCorrect ? 1 : 0,
-          }),
-        }).catch(() => {});
-      }
-    } catch (e) {
-      void e;
+  const handleAnswer = (isKnown) => {
+    if (buttonCooldown || !currentWord) return;
+    triggerAssignmentProgress("general_practice", 1);
+    triggerCooldown(800);
+    setStats(prev => ({ ...prev, studied: prev.studied + 1, known: isKnown ? prev.known + 1 : prev.known, unknown: isKnown ? prev.unknown : prev.unknown + 1 }));
+    if (!isKnown) {
+       setWrongWords(prev => prev.some(w => w.term === currentWord.term) ? prev : [...prev, currentWord]);
+    } else {
+       setWrongWords(prev => prev.filter(w => w.term !== currentWord.term));
     }
+    setPracticeHistory(prev => [{ term: currentWord.term, known: isKnown, date: new Date().toISOString() }, ...prev].slice(0, 100));
+    showFeedbackAnim(isKnown ? "correct" : "wrong");
+    if (isKnown && !isInRoom) speakWord(currentWord);
+    setTimeout(() => { if (currentWordIndex < practiceWords.length - 1) nextWord(); }, 800);
   };
-
-  useEffect(() => {
-    socket.on('connect_error', (err) => {
-      console.error('Socket bağlantı hatası:', err);
-      setError('Sunucuya bağlanılamıyor');
-      setLoading(false);
-    });
-
-    socket.on('connect', () => {
-      console.log('Socket bağlandı:', socket.id);
-    });
-
-    socket.on('room-joined', ({ roomCode, users, isHost: hostStatus }) => {
-      setRoomCode(roomCode);
-      setUsers(users || []);
-      setIsHost(hostStatus || false);
-      setIsInRoom(true);
-      setError('');
-      setLoading(false);
-      setCurrentView('room');
-    });
-
-    socket.on('user-joined', ({ username, socketId }) => {
-      setUsers(prev => {
-        if (!prev.find(u => u.username === username)) {
-          return [...prev, { username, socketId }];
-        }
-        return prev;
-      });
-    });
-
-    socket.on('user-left', ({ username }) => {
-      setUsers(prev => prev.filter(u => u.username !== username));
-    });
-
-    socket.on('sync-stats', ({ stats: newStats, users }) => {
-
-  setRoomStats({ ...newStats });
-
-  if (users) {
-    setUsers([...users]);
-  }
-
-});
-
-    socket.on('sync-word', ({ wordIndex }) => {
-      setCurrentWordIndex(wordIndex);
-      setIsFlipped(false);
-      setShowHint(false);
-      setShowExample(false);
-    });
-
-    socket.on('error', ({ message }) => {
-      setError(message);
-      setLoading(false);
-    });
-
-    return () => {
-      socket.off('connect_error');
-      socket.off('connect');
-      socket.off('room-joined');
-      socket.off('user-joined');
-      socket.off('user-left');
-      socket.off('sync-stats');
-      socket.off('sync-word');
-      socket.off('error');
-    };
-  }, []);
-
-  const uniqueWords = useMemo(() => {
-  return [...new Map(words.map(w => [w.term, w])).values()];
-}, [words]);
-
-const filteredWords = useMemo(() => {
-
- let result = uniqueWords;
-
- // LEVEL FILTER
- if (selectedLevel !== "ALL") {
-   result = result.filter(w => w.level === selectedLevel);
- }
-
- // SEARCH FILTER
- if (searchTerm) {
-   result = result.filter(w =>
-     w.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     w.meaning.toLowerCase().includes(searchTerm.toLowerCase())
-   );
- }
-
-return result.sort((a,b)=>a.term.localeCompare(b.term));
-
-}, [uniqueWords, searchTerm, selectedLevel]);
-
-// NOTE: Synonyms/Phrasal listleri ağır soru havuzlarını gerektirdiği için
-// bu hesaplar `synonyms-list` ve `phrasal-list` view'ları açılınca yapılır.
 
   const createRoom = () => {
     const usernameInput = document.getElementById("username-input");
     const usernameValue = usernameInput ? usernameInput.value.trim() : "";
-
-    if (!usernameValue) {
-      setError("Lütfen kullanıcı adı girin");
-      return;
-    }
-    if (usernameValue.length < 2) {
-      setError("Kullanıcı adı en az 2 karakter olmalı");
-      return;
-    }
-
-    if (!socket.connected) {
-      setError(
-        "Sunucuya bağlı değil (Socket). Sayfayı yenileyin. Vercel kullanıyorsan VITE_SOCKET_URL (Railway adresi) tanımlı olmalı."
-      );
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    setUsername(usernameValue);
-
-    let settled = false;
-    const timer = window.setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      setLoading(false);
-      setError("Oda oluşturma zaman aşımı. Backend ve Socket adresini kontrol et.");
-    }, 20000);
-
+    if (!usernameValue || !socket.connected) { setError("Ad gerekli veya bağlantı yok"); return; }
+    setLoading(true); setUsername(usernameValue);
     socket.emit("create-room", { username: usernameValue }, (data) => {
-      if (settled) return;
-      settled = true;
-      window.clearTimeout(timer);
       setLoading(false);
-
-      if (!data || !data.success) {
-        setError(data?.error || "Oda oluşturulamadı");
-        return;
-      }
-
-      setRoomCode(data.roomCode);
-      setUsers(data.users || []);
-      setRoomStats(data.stats || {});
-      setIsHost(true);
-      setIsInRoom(true);
-      setCurrentView("room");
+      if (data?.success) { setRoomCode(data.roomCode); setUsers(data.users || []); setRoomStats(data.stats || {}); setIsHost(true); setIsInRoom(true); setCurrentView("room"); }
     });
   };
 
@@ -2226,39 +1882,6 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     const joinCodeInput = document.getElementById("joincode-input");
     const usernameValue = usernameInput ? usernameInput.value.trim() : "";
     const codeValue = joinCodeInput ? joinCodeInput.value.trim() : "";
-
-    if (!usernameValue) {
-      setError("Lütfen kullanıcı adı girin");
-      return;
-    }
-    if (usernameValue.length < 2) {
-      setError("Kullanıcı adı en az 2 karakter olmalı");
-      return;
-    }
-    if (!codeValue || codeValue.length !== 6) {
-      setError("Lütfen geçerli 6 haneli oda kodu girin");
-      return;
-    }
-
-    if (!socket.connected) {
-      setError(
-        "Sunucuya bağlı değil (Socket). Sayfayı yenileyin. Vercel kullanıyorsan VITE_SOCKET_URL (Railway adresi) tanımlı olmalı."
-      );
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    setUsername(usernameValue);
-    setJoinCode(codeValue);
-
-    let settled = false;
-    const timer = window.setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      setLoading(false);
-      setError("Odaya katılma zaman aşımı. Kodu ve Socket bağlantısını kontrol et.");
-    }, 20000);
 
     socket.emit("join-room", { roomCode: codeValue, username: usernameValue }, (response) => {
       if (settled) return;
