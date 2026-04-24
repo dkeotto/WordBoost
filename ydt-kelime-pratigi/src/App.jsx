@@ -1739,8 +1739,8 @@ function App() {
     readInitialViewFromUrl() === "site-info" ? readSiteInfoTabFromUrl() : "features"
   );
   const [loadingWords, setLoadingWords] = useState(true);
-  const [splashExiting, setSplashExiting] = useState(false);
-  const [splashDone, setSplashDone] = useState(false);
+  const [splashExiting, setSplashExiting] = useState(true);
+  const [splashDone, setSplashDone] = useState(true); // Default to true for stability
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -2160,21 +2160,17 @@ function App() {
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("hashchange", onHash); };
   }, []);
 
-  // Popstate (back/forward)
+  // URL Popstate
   useEffect(() => {
-    const onPop = () => { const v = readInitialViewFromUrl(); setCurrentView(v); if (v === "site-info") setSiteInfoTab(readSiteInfoTabFromUrl()); };
+    const onPop = () => { 
+      const v = readInitialViewFromUrl(); 
+      setCurrentView(v); 
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  // URL sync for legal pages
-  useEffect(() => {
-    const legal = { pricing: "/pricing", terms: "/terms", privacy: "/privacy" };
-    if (currentView === "site-info") return;
-    if (legal[currentView]) { if (window.location.pathname !== legal[currentView]) window.history.pushState({ view: currentView }, "", legal[currentView]); return; }
-    const path = window.location.pathname.replace(/\/$/, "") || "/";
-    if (["/pricing", "/terms", "/privacy"].includes(path)) window.history.replaceState({}, "", "/");
-  }, [currentView]);
+  // Removed history.replaceState loop for safety
 
   console.log(`WordBoost Render: loadingWords=${loadingWords}, splashExiting=${splashExiting}, splashDone=${splashDone}, currentView=${currentView}`);
 
@@ -2492,10 +2488,12 @@ function App() {
         <div className="badge-notification-modal" onClick={e => e.stopPropagation()}>
           <h3>🎉 Yeni Rozet{newBadgeNotification.badges.length > 1 ? 'ler' : ''} Kazandın!</h3>
           <div className="badge-notification-list">
-            {newBadgeNotification.badges.map(b => {
-              const info = BADGES[b.id] || { icon: b.icon || '🏆', name: b.name || b.id, desc: b.desc || '' };
+            {newBadgeNotification.badges.map((b, idx) => {
+              if (!b) return null;
+              const bId = typeof b === 'string' ? b : (b.id || '');
+              const info = BADGES[bId] || { icon: b.icon || '🏆', name: b.name || bId || 'Yeni Rozet', desc: b.desc || '' };
               return (
-                <div key={b.id} className="badge-notification-item">
+                <div key={bId || idx} className="badge-notification-item">
                   <span className="badge-notification-icon">{info.icon}</span>
                   <div>
                     <strong>{info.name}</strong>

@@ -13,11 +13,7 @@ if (!rootEl) {
   console.log("WordBoost: Found #root, mounting App...");
   try {
     console.log("WordBoost: Attempting to create root and render App...");
-    createRoot(rootEl).render(
-      <StrictMode>
-        <App />
-      </StrictMode>
-    );
+createRoot(rootEl).render(<App />);
     console.log("WordBoost: Render call completed successfully.");
   } catch (error) {
     console.error("WordBoost: CRITICAL - Render failed:", error);
