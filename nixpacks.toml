@@ -2,13 +2,7 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = [
-  "npm install",
-  "cd ydt-kelime-pratigi && npm install --include=dev"
-]
-
-[phases.build]
-cmds = ["cd ydt-kelime-pratigi && npx vite build"]
+cmds = ["npm install"]
 
 [start]
 cmd = "node server.js"

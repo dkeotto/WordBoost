@@ -958,19 +958,13 @@ async function startServer() {
 
     const PORT = process.env.PORT || 3000;
     
-    server.listen(PORT, '0.0.0.0', () => {
-      console.log(`?? Server running on port ${PORT}`);
-    });
 
   } catch (err) {
     console.error("Mongo connection error:", err);
     process.exit(1);
   }
 }
-
-startServer();
-
-
+ 
 // CORS ve transport ayarlar?
 const io = new Server(server, {
   cors: {
@@ -998,6 +992,14 @@ app.use(
 );
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// DIAGNOSTIC LOGGER
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/') || req.url === '/' || req.url.endsWith('.js') || req.url.endsWith('.css')) {
+    console.log(`[DEBUG] ${req.method} ${req.url} - ${new Date().toISOString()}`);
+  }
+  next();
+});
 
 // Veri yap?lar?
 const rooms = new Map();        // roomCode -> room bilgileri
@@ -5162,12 +5164,45 @@ const initialStats = {
 }
 });
 
-// Static files (production i?in)
+// Static files (production için)
 const clientPath = path.join(__dirname, 'ydt-kelime-pratigi', 'dist');
-app.use(express.static(clientPath));
+console.log(`[DEBUG] Static Path: ${clientPath}`);
+const fs = require('fs');
+if (fs.existsSync(clientPath)) {
+  console.log(`[DEBUG] Static Path Exists: Yes. Files: ${fs.readdirSync(clientPath).slice(0, 5).join(', ')}`);
+} else {
+  console.log(`[DEBUG] Static Path Exists: NO!`);
+}
+
+app.use(express.static(clientPath, {
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    if (path.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
+    if (path.endsWith('.css')) res.setHeader('Content-Type', 'text/css');
+  }
+}));
 
 app.get('*', (req, res) => {
+  // Don't catch API calls here
+  if (req.url.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
   res.sendFile(path.join(clientPath, 'index.html'));
+});
+
+// Start Server call moved to the very end
+async function finalizeAndListen() {
+  await startServer();
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`?? WordBoost Server fully ready and listening on port ${PORT}`);
+  });
+}
+
+finalizeAndListen().catch(err => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
 });
 
 // Hata yakalama
