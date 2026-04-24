@@ -1752,288 +1752,147 @@ function App() {
     }
   });
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("wb_user");
-    setShowLogoutConfirm(false);
-    setCurrentView('practice'); 
-    window.location.reload(); 
+  // ── HANDLERS & CORE LOGIC (Moved up to prevent TDZ issues) ────────────────
+  const triggerCooldown = (duration = 800) => {
+    setButtonCooldown(true);
+    setTimeout(() => setButtonCooldown(false), duration);
   };
 
-  const [showLogin, setShowLogin] = useState(false);
-  const [showPricing, setShowPricing] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [newBadgeNotification, setNewBadgeNotification] = useState(null); // { badges: [{ id }] }
-  const [currentView, setCurrentView] = useState(() => readInitialViewFromUrl());
-  const [siteInfoTab, setSiteInfoTab] = useState(() =>
-    readInitialViewFromUrl() === "site-info" ? readSiteInfoTabFromUrl() : "features"
-  );
-  const [loadingWords, setLoadingWords] = useState(true);
-  const splashStartRef = useRef(Date.now());
-  const [splashExiting, setSplashExiting] = useState(false);
-  const [splashDone, setSplashDone] = useState(false);
+  const showFeedbackAnim = (type) => {
+    const correctMessages = ["🔥 Aferin!", "⚡ Süper!", "🚀 İyi gidiyorsun!", "💪 Harika!", "🎯 Tam isabet!", "👏 Çok iyi!"];
+    const wrongMessages = ["📚 Öğreniyoruz", "💡 Çalışmaya devam", "🧠 Yeni kelime öğrendin", "📖 Bir dahaki sefere", "🔁 Tekrar edeceğiz", "✨ Sorun değil!"];
+    const list = type === "correct" ? correctMessages : wrongMessages;
+    setFeedbackMessage(list[Math.floor(Math.random() * list.length)]);
+    const id = Date.now();
+    setFeedback({ type, id });
+    setTimeout(() => { setFeedback(null); }, 800);
+  };
 
-  /** Eski /auth/google yer işaretleri → /api/auth/google (aynı origin OAuth) */
-  useEffect(() => {
-    if (!import.meta.env.PROD) return;
-    const path = window.location.pathname || "";
-    if (path === "/auth/google" || path.startsWith("/auth/google")) {
-      window.location.replace(`/api/auth/google${window.location.search || ""}`);
+  const nextWord = () => {
+    if (currentWordIndex < (practiceWords?.length || 0) - 1) {
+      const newIndex = currentWordIndex + 1;
+      setCurrentWordIndex(newIndex);
+      setIsFlipped(false);
+      setShowHint(false);
+      setShowExample(false);
+      if (isInRoom) socket.emit('change-word', { roomCode, wordIndex: newIndex });
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    // Check for token in URL (Social Login Redirect)
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    const usernameParam = params.get('username');
-    const errorParam = params.get('error');
-
-    if (errorParam) {
-      if (errorParam === 'auth_cancel') {
-        alert("Giriş iptal edildi.");
-      } else {
-        alert("Giriş sırasında bir hata oluştu: " + errorParam + "\nLütfen tekrar deneyin.");
-      }
-      window.history.replaceState({}, document.title, "/");
-      return;
+  const prevWord = () => {
+    if (currentWordIndex > 0) {
+      const newIndex = currentWordIndex - 1;
+      setCurrentWordIndex(newIndex);
+      setIsFlipped(false);
+      setShowHint(false);
+      setShowExample(false);
+      if (isInRoom) socket.emit('change-word', { roomCode, wordIndex: newIndex });
     }
+  };
 
-    if (token && usernameParam) {
-      const userObj = { username: usernameParam, token };
-      localStorage.setItem("wb_user", JSON.stringify(userObj));
-
-      fetch(apiUrl("/api/profile"), {
-        headers: { Authorization: token }
-      })
-        .then(async (res) => {
-          const data = await readResponseJson(res);
-          if (!res.ok) {
-            throw new Error(data?.error || `Profil alınamadı (${res.status})`);
-          }
-          return data;
-        })
-        .then((data) => {
-          const fullUser = { ...data, token };
-          setUser(fullUser);
-          localStorage.setItem("wb_user", JSON.stringify(fullUser));
-          
-          if (data.favorites && Object.keys(data.favorites).length > 0) setFavorites(data.favorites);
-          if (data.wrongWords && data.wrongWords.length > 0) setWrongWords(data.wrongWords);
-          if (data.moduleStats && Object.keys(data.moduleStats).length > 0) setModuleStats(data.moduleStats);
-          if (data.practiceHistory && data.practiceHistory.length > 0) setPracticeHistory(data.practiceHistory);
-
-          window.history.replaceState({}, document.title, "/");
-        })
-        .catch((err) => {
-          console.error("Profile fetch error:", err);
-          alert(
-            `Oturum oluştu ama profil yüklenemedi: ${err?.message || err}\n\nVercel Production’da BACKEND_URL (Railway kökü) ve Railway’de FRONTEND_URL=https://wordboost.com.tr tanımlı olmalı.`
-          );
-          window.history.replaceState({}, document.title, "/");
-        });
-    } else {
-      const savedUser = localStorage.getItem("wb_user");
-      if (savedUser) {
-        try {
-          const parsedUser = JSON.parse(savedUser);
-          // Token kontrolü: Eğer token yoksa oturumu geçersiz say
-          if (parsedUser && parsedUser.token) {
-            setUser(parsedUser);
-            // Daha zengin kimlik/premium bilgisi için /api/me çek
-            fetch(apiUrl("/api/me"), { headers: { Authorization: parsedUser.token } })
-              .then(async (r) => readResponseJson(r))
-              .then((me) => {
-                if (me && me.ok && me.user) {
-                  const merged = { ...parsedUser, ...me.user, token: parsedUser.token };
-                  setUser(merged);
-                  localStorage.setItem("wb_user", JSON.stringify(merged));
-
-                  if (me.user.favorites && Object.keys(me.user.favorites).length > 0) setFavorites(me.user.favorites);
-                  if (me.user.wrongWords && me.user.wrongWords.length > 0) setWrongWords(me.user.wrongWords);
-                  if (me.user.moduleStats && Object.keys(me.user.moduleStats).length > 0) setModuleStats(me.user.moduleStats);
-                  if (me.user.practiceHistory && me.user.practiceHistory.length > 0) setPracticeHistory(me.user.practiceHistory);
-                }
-              })
-              .catch(() => {});
-          } else {
-            console.warn("Found user in storage but no token. Clearing.");
-            localStorage.removeItem("wb_user");
-            setUser(null);
-          }
-        } catch (e) {
-          console.error("Storage parse error", e);
-          localStorage.removeItem("wb_user");
-        }
-      }
+  const flipCard = () => {
+    setIsFlipped(!isFlipped);
+    if (!isFlipped && isInRoom) {
+      // Flip event doesn't necessarily need to sync to avoid spam, but could if desired
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    const cacheKey = "ydt_words_cache_v2";
-    const cacheMaxAgeMs = 12 * 60 * 60 * 1000; // 12 saat
-
-    // 1) Önce cache dene
+  const speakWord = (wordObj) => {
+    if (!wordObj || !wordObj.term) return;
     try {
-      const saved = localStorage.getItem(cacheKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const cachedWords = parsed?.words;
-        const ts = parsed?.ts;
-        if (Array.isArray(cachedWords) && typeof ts === "number" && Date.now() - ts < cacheMaxAgeMs) {
-          const cleaned = sanitizeWordList(cachedWords);
-          setWords(shuffleArray(cleaned));
-          setLoadingWords(false);
-          return;
-        }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(wordObj.term);
+        utter.lang = 'en-US';
+        utter.rate = 0.9;
+        window.speechSynthesis.speak(utter);
       }
-    } catch {
-      // cache bozuk olabilir, sessizce geç
+    } catch { /**/ }
+  };
+
+  const resetStats = () => {
+    if (window.confirm("İstatistikleri sıfırlamak istediğine emin misin?")) {
+      const reset = { studied: 0, known: 0, unknown: 0 };
+      setStats(reset);
+      localStorage.setItem('ydt_stats', JSON.stringify(reset));
+      setPracticeHistory([]);
+      localStorage.setItem('ydt_practiceHistory', JSON.stringify([]));
+      alert("İstatistikler sıfırlandı.");
     }
+  };
 
-    // 2) Cache yoksa API'den çek (daha uzun timeout, daha az UI donması)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
+  const toggleFavorite = (wordObj) => {
+    if (!wordObj) return;
+    setFavorites(prev => {
+      const existing = prev.words || [];
+      const isFav = existing.some(w => w.term === wordObj.term);
+      const newWords = isFav 
+        ? existing.filter(w => w.term !== wordObj.term)
+        : [...existing, wordObj];
+      return { ...prev, words: newWords };
+    });
+  };
 
-    fetch(apiUrl('/api/words'), { signal: controller.signal })
-      .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data)) {
-          const cleaned = sanitizeWordList(data);
-          const shuffled = shuffleArray(cleaned);
-          setWords(shuffled);
-          try {
-            localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), words: cleaned }));
-          } catch {
-            // localStorage dolu olabilir; umursama
-          }
-        } else {
-          console.error("API'den beklenen veri gelmedi:", data);
-          setWords([]); // Boş array set et
-        }
-        setLoadingWords(false);
-      })
-      .catch(err => {
-        console.error("Kelime yükleme hatası:", err);
-        setLoadingWords(false); // Hata olsa bile loading'i kapat
-      })
-      .finally(() => {
-        clearTimeout(timeoutId);
+  const toggleSynFavorite = (synObj) => {
+    if (!synObj) return;
+    setFavorites(prev => {
+      const existing = prev.synonyms || [];
+      const isFav = existing.some(s => s.synonym === synObj.synonym && s.originalWord === synObj.originalWord);
+      const newSyns = isFav
+        ? existing.filter(s => !(s.synonym === synObj.synonym && s.originalWord === synObj.originalWord))
+        : [...existing, synObj];
+      return { ...prev, synonyms: newSyns };
+    });
+  };
+
+  const togglePhrasalFavorite = (phrasalObj) => {
+    if (!phrasalObj) return;
+    setFavorites(prev => {
+      const existing = prev.phrasal || [];
+      const isFav = existing.some(p => p.verb === phrasalObj.verb && p.meaning === phrasalObj.meaning);
+      const newPhrasals = isFav
+        ? existing.filter(p => !(p.verb === phrasalObj.verb && p.meaning === phrasalObj.meaning))
+        : [...existing, phrasalObj];
+      return { ...prev, phrasal: newPhrasals };
+    });
+  };
+
+  const handleAnswer = (isKnown) => {
+    if (buttonCooldown || !currentWord) return;
+    triggerAssignmentProgress("general_practice", 1);
+    const transitionDuration = 800;
+    triggerCooldown(transitionDuration);
+    
+    setStats(prev => ({
+      ...prev,
+      studied: prev.studied + 1,
+      known: isKnown ? prev.known + 1 : prev.known,
+      unknown: isKnown ? prev.unknown : prev.unknown + 1
+    }));
+
+    if (!isKnown) {
+      setWrongWords(prev => {
+        if (!prev.some(w => w.term === currentWord.term)) return [...prev, currentWord];
+        return prev;
       });
-  }, []);
-
-  useEffect(() => {
-    if (!loadingWords) {
-      const minMs = 1300;
-      const wait = Math.max(0, minMs - (Date.now() - splashStartRef.current));
-      const t = setTimeout(() => setSplashExiting(true), wait);
-      return () => clearTimeout(t);
-    }
-  }, [loadingWords]);
-
-  useEffect(() => {
-    if (!splashExiting) return;
-    const t = setTimeout(() => setSplashDone(true), 780);
-    return () => clearTimeout(t);
-  }, [splashExiting]);
-
-  useEffect(() => {
-    if (!splashExiting) return;
-    const timer = setTimeout(() => {
-      setFeedback(null);
-      setFeedbackMessage('');
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [feedback]);
-
-  const practiceWords = useMemo(() => {
-    if (customDeckWords && customDeckWords.length > 0) {
-      return [...customDeckWords].sort(() => Math.random() - 0.5);
+    } else {
+      setWrongWords(prev => prev.filter(w => w.term !== currentWord.term));
     }
 
-    let filtered = words;
-    
-    if (practiceLevel !== "ALL") {
-      if (practiceLevel.includes("-")) {
-        // Range Logic (e.g. A1-A2)
-        const levels = [];
-        if (practiceLevel === "A1-A2") levels.push("A1", "A2");
-        if (practiceLevel === "B1-B2") levels.push("B1", "B2");
-        if (practiceLevel === "B1-C2") levels.push("B1", "B2", "C1", "C2");
-        if (practiceLevel === "C1-C2") levels.push("C1", "C2");
-        
-        filtered = words.filter(w => levels.includes(w.level));
-      } else {
-        filtered = words.filter(w => w.level === practiceLevel);
-      }
-    }
-    
-    // Shuffle filtered words on level change
-    return [...filtered].sort(() => Math.random() - 0.5);
-  }, [words, practiceLevel, customDeckWords]);
+    setPracticeHistory(prev => [{
+      term: currentWord.term,
+      known: isKnown,
+      date: new Date().toISOString()
+    }, ...prev].slice(0, 100));
 
-  // AUTO-ADVANCE EFFECT
-  useEffect(() => {
-    if (!isInRoom || !isHost || !isAutoAdvance || !(practiceWords && practiceWords.length)) return;
-    
-    const interval = setTimeout(() => {
-       nextWord();
-    }, 15000); // 15 seconds per word
+    showFeedbackAnim(isKnown ? "correct" : "wrong");
+    if (isKnown && window.speechSynthesis && !isInRoom) speakWord(currentWord);
 
-    return () => clearTimeout(interval);
-  }, [isInRoom, isHost, isAutoAdvance, currentWordIndex, practiceWords?.length]);
-
-  // Use practiceWords for index management
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const currentWord = practiceWords[currentWordIndex];
-
-  // Reset index when level changes
-  useEffect(() => {
-    setCurrentWordIndex(0);
-    setIsFlipped(false);
-    // Eğer seviye CUSTOM değilse (yani hoca destesinden normal modlara dönülüyorsa) temizle
-    if (practiceLevel !== "CUSTOM") {
-      setCustomDeckWords(null);
-    }
-  }, [practiceLevel]);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [showHint, setShowHint] = useState(false);
-  const [showExample, setShowExample] = useState(false);
-  const [stats, setStats] = useState(() => loadFromStorage('stats', { studied: 0, known: 0, unknown: 0 }));
-  const [wrongWords, setWrongWords] = useState(() => loadFromStorage('wrongWords', []));
-  const [practiceHistory, setPracticeHistory] = useState(() => loadFromStorage('practiceHistory', []));
-  const [moduleStats, setModuleStats] = useState(() =>
-    loadFromStorage("moduleStats", {
-      synonyms: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
-      phrasal: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
-      speaking: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
-    })
-  );
-  const wrongWordsCount = wrongWords.length; // Add this derived state
-  const [buttonCooldown, setButtonCooldown] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  const [feedback, setFeedback] = useState(null);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
-  
-  const [roomCode, setRoomCode] = useState('');
-  const [username, setUsername] = useState('');
-  // eslint-disable-next-line no-unused-vars
-  const [joinCode, setJoinCode] = useState('');
-  const [users, setUsers] = useState([]);
-  const [roomStats, setRoomStats] = useState({});
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isInRoom, setIsInRoom] = useState(false);
-  const [isHost, setIsHost] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [synListLevel, setSynListLevel] = useState("ALL");
-  const [phrasalListLevel, setPhrasalListLevel] = useState("ALL");
-  const [synListSearch, setSynListSearch] = useState("");
-  const [phrasalListSearch, setPhrasalListSearch] = useState("");
+    setTimeout(() => {
+      if (currentWordIndex < practiceWords.length - 1) nextWord();
+      else alert("Tebrikler! Tüm kelimeleri tamamladın.");
+    }, transitionDuration);
+  };
 
   useEffect(() => {
     localStorage.setItem('ydt_stats', JSON.stringify(stats));
@@ -2620,34 +2479,208 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
     localStorage.removeItem("ydt_moduleStats");
   };
 
-  const startCustomPractice = (terms = []) => {
-     if (!terms || terms.length === 0) return;
-     // Filter full word objects from the main 'words' array based on terms strings (case-insensitive)
-     const normalizedTerms = terms.map(t => t.toLowerCase());
-     const deckWords = words.filter(w => normalizedTerms.includes(w.term.toLowerCase()));
-     if (deckWords.length === 0) {
-        alert("Üzgünüm, bu destedeki hiçbir kelime veri havuzumuzda bulunamadı.");
-        return;
-     }
-     setCustomDeckWords(deckWords);
-     setPracticeLevel("CUSTOM");
-     setCurrentWordIndex(0);
-     setCurrentView("practice");
+  // ── DECLARED EARLIER IN RESTRUCTURING ────────
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("wb_user");
+    setShowLogoutConfirm(false);
+    setCurrentView('practice'); 
+    window.location.reload(); 
   };
 
-  const stopCustomPractice = () => {
-     setCustomDeckWords(null);
-     setCurrentWordIndex(0);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [newBadgeNotification, setNewBadgeNotification] = useState(null); // { badges: [{ id }] }
+
+  const [siteInfoTab, setSiteInfoTab] = useState(() =>
+    readInitialViewFromUrl() === "site-info" ? readSiteInfoTabFromUrl() : "features"
+  );
+  const [loadingWords, setLoadingWords] = useState(true);
+  const splashStartRef = useRef(Date.now());
+  const [splashExiting, setSplashExiting] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
+
+  // ── EFFECTS ───────────────────────────────────────────────────────────────
+  /** Eski /auth/google yer işaretleri → /api/auth/google (aynı origin OAuth) */
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+    const path = window.location.pathname || "";
+    if (path === "/auth/google" || path.startsWith("/auth/google")) {
+      window.location.replace(`/api/auth/google${window.location.search || ""}`);
+    }
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const usernameParam = params.get('username');
+    const errorParam = params.get('error');
+    if (errorParam) {
+      if (errorParam === 'auth_cancel') alert("Giriş iptal edildi.");
+      else alert("Giriş sırasında bir hata oluştu: " + errorParam);
+      window.history.replaceState({}, document.title, "/");
+      return;
+    }
+    if (token && usernameParam) {
+      const userObj = { username: usernameParam, token };
+      localStorage.setItem("wb_user", JSON.stringify(userObj));
+      fetch(apiUrl("/api/profile"), { headers: { Authorization: token } })
+        .then(async (res) => {
+          const data = await readResponseJson(res);
+          if (!res.ok) throw new Error(data?.error || `Profil alınamadı`);
+          return data;
+        })
+        .then((data) => {
+          const fullUser = { ...data, token };
+          setUser(fullUser);
+          localStorage.setItem("wb_user", JSON.stringify(fullUser));
+          if (data.favorites) setFavorites(data.favorites);
+          if (data.wrongWords) setWrongWords(data.wrongWords);
+          if (data.moduleStats) setModuleStats(data.moduleStats);
+          if (data.practiceHistory) setPracticeHistory(data.practiceHistory);
+          window.history.replaceState({}, document.title, "/");
+        })
+        .catch(() => window.history.replaceState({}, document.title, "/"));
+    } else {
+      const savedUser = localStorage.getItem("wb_user");
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          if (parsedUser && parsedUser.token) {
+            setUser(parsedUser);
+            fetch(apiUrl("/api/me"), { headers: { Authorization: parsedUser.token } })
+              .then(async (r) => readResponseJson(r))
+              .then((me) => {
+                if (me && me.user) {
+                  const merged = { ...parsedUser, ...me.user, token: parsedUser.token };
+                  setUser(merged);
+                  localStorage.setItem("wb_user", JSON.stringify(merged));
+                  if (me.user.favorites) setFavorites(me.user.favorites);
+                  if (me.user.wrongWords) setWrongWords(me.user.wrongWords);
+                  if (me.user.moduleStats) setModuleStats(me.user.moduleStats);
+                  if (me.user.practiceHistory) setPracticeHistory(me.user.practiceHistory);
+                }
+              }).catch(() => {});
+          }
+        } catch { localStorage.removeItem("wb_user"); }
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const cacheKey = "ydt_words_cache_v2";
+    try {
+      const saved = localStorage.getItem(cacheKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed?.words) && Date.now() - parsed.ts < 43200000) {
+          setWords(shuffleArray(sanitizeWordList(parsed.words)));
+          setLoadingWords(false);
+          return;
+        }
+      }
+    } catch { /**/ }
+    fetch(apiUrl('/api/words'))
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const cl = sanitizeWordList(data);
+          setWords(shuffleArray(cl));
+          try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), words: cl })); } catch { /**/ }
+        }
+        setLoadingWords(false);
+      })
+      .catch(() => setLoadingWords(false));
+  }, []);
+
+  useEffect(() => {
+    if (!loadingWords) {
+      const wait = Math.max(0, 1300 - (Date.now() - splashStartRef.current));
+      const t = setTimeout(() => setSplashExiting(true), wait);
+      return () => clearTimeout(t);
+    }
+  }, [loadingWords]);
+
+  useEffect(() => {
+    if (splashExiting) {
+      const t = setTimeout(() => setSplashDone(true), 780);
+      return () => clearTimeout(t);
+    }
+  }, [splashExiting]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFeedback(null);
+      setFeedbackMessage('');
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [feedback]);
+
+  // AUTO-ADVANCE EFFECT
+  useEffect(() => {
+    if (!isInRoom || !isHost || !isAutoAdvance || !(practiceWords && practiceWords.length)) return;
+    const interval = setTimeout(() => { nextWord(); }, 15000);
+    return () => clearTimeout(interval);
+  }, [isInRoom, isHost, isAutoAdvance, currentWordIndex, practiceWords?.length]);
+
+  useEffect(() => {
+    setCurrentWordIndex(0);
+    setIsFlipped(false);
+    if (practiceLevel !== "CUSTOM") setCustomDeckWords(null);
+  }, [practiceLevel]);
+
+  useEffect(() => {
+    localStorage.setItem('ydt_stats', JSON.stringify(stats));
+    localStorage.setItem('ydt_wrongWords', JSON.stringify(wrongWords));
+    localStorage.setItem('ydt_practiceHistory', JSON.stringify(practiceHistory));
+    localStorage.setItem("ydt_moduleStats", JSON.stringify(moduleStats));
+    localStorage.setItem("ydt_favorites_bundle", JSON.stringify(favorites));
+  }, [stats, wrongWords, practiceHistory, moduleStats, favorites]);
+
+  useEffect(() => {
+    if (!user?.token) return;
+    const t = setTimeout(() => {
+      fetch(apiUrl('/api/profile/sync'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': user.token },
+        body: JSON.stringify({ wrongWords, favorites, moduleStats, practiceHistory })
+      }).catch(() => {});
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [wrongWords, favorites, moduleStats, practiceHistory, user]);
+
+  useEffect(() => {
+    const h = () => { if (window.location.hash === "#admin") setCurrentView("admin"); };
+    h();
+    window.addEventListener("hashchange", h);
+    return () => window.removeEventListener("hashchange", h);
+  }, []);
+
+  useEffect(() => {
+    const onPop = () => {
+      const v = readInitialViewFromUrl();
+      setCurrentView(v);
+      if (v === "site-info") setSiteInfoTab(readSiteInfoTabFromUrl());
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  const startCustomPractice = (terms = []) => {
+    if (!terms?.length) return;
+    const norm = terms.map(t => t.toLowerCase());
+    const deck = words.filter(w => norm.includes(w.term.toLowerCase()));
+    if (!deck.length) return alert("Kelimeler bulunamadı.");
+    setCustomDeckWords(deck);
+    setPracticeLevel("CUSTOM");
+    setCurrentWordIndex(0);
+    setCurrentView("practice");
   };
 
   const leaveRoom = () => {
     socket.emit('leave-room', { roomCode, username });
-    setIsInRoom(false);
-    setIsHost(false);
-    setRoomCode('');
-    setUsers([]);
-    setRoomStats({});
-    setCurrentView('practice');
+    setIsInRoom(false); setIsHost(false); setRoomCode(''); setUsers([]); setRoomStats({}); setCurrentView('practice');
   };
 
   return (
