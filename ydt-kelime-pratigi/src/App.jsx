@@ -1936,6 +1936,208 @@ function App() {
     setIsInRoom(false); setIsHost(false); setRoomCode(''); setUsers([]); setRoomStats({}); setCurrentView('practice');
   };
 
+  // ── EFFECTS ──────────────────────────────────────────────────────────────────
+
+  // OAuth redirect fix
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+    const path = window.location.pathname || "";
+    if (path === "/auth/google" || path.startsWith("/auth/google")) {
+      window.location.replace(`/api/auth/google${window.location.search || ""}`);
+    }
+  }, []);
+
+  // Token/user restore on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const usernameParam = params.get('username');
+    const errorParam = params.get('error');
+    if (errorParam) {
+      if (errorParam === 'auth_cancel') alert("Giriş iptal edildi.");
+      else alert("Giriş sırasında bir hata oluştu: " + errorParam);
+      window.history.replaceState({}, document.title, "/");
+      return;
+    }
+    if (token && usernameParam) {
+      const userObj = { username: usernameParam, token };
+      localStorage.setItem("wb_user", JSON.stringify(userObj));
+      fetch(apiUrl("/api/profile"), { headers: { Authorization: token } })
+        .then(async (res) => { const data = await readResponseJson(res); if (!res.ok) throw new Error(data?.error); return data; })
+        .then((data) => {
+          const fullUser = { ...data, token };
+          setUser(fullUser);
+          localStorage.setItem("wb_user", JSON.stringify(fullUser));
+          if (data.favorites) setFavorites(data.favorites);
+          if (data.wrongWords) setWrongWords(data.wrongWords);
+          if (data.moduleStats) setModuleStats(data.moduleStats);
+          if (data.practiceHistory) setPracticeHistory(data.practiceHistory);
+          window.history.replaceState({}, document.title, "/");
+        })
+        .catch(() => window.history.replaceState({}, document.title, "/"));
+    } else {
+      const savedUser = localStorage.getItem("wb_user");
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          if (parsedUser && parsedUser.token) {
+            setUser(parsedUser);
+            fetch(apiUrl("/api/me"), { headers: { Authorization: parsedUser.token } })
+              .then(async (r) => readResponseJson(r))
+              .then((me) => {
+                if (me && me.user) {
+                  const merged = { ...parsedUser, ...me.user, token: parsedUser.token };
+                  setUser(merged);
+                  localStorage.setItem("wb_user", JSON.stringify(merged));
+                  if (me.user.favorites) setFavorites(me.user.favorites);
+                  if (me.user.wrongWords) setWrongWords(me.user.wrongWords);
+                  if (me.user.moduleStats) setModuleStats(me.user.moduleStats);
+                  if (me.user.practiceHistory) setPracticeHistory(me.user.practiceHistory);
+                }
+              }).catch(() => {});
+          }
+        } catch { localStorage.removeItem("wb_user"); }
+      }
+    }
+  }, []);
+
+  // Words loading from cache or API
+  useEffect(() => {
+    const cacheKey = "ydt_words_cache_v2";
+    // Safety: force exit loading after 8 seconds no matter what
+    const safetyTimer = setTimeout(() => setLoadingWords(false), 8000);
+    try {
+      const saved = localStorage.getItem(cacheKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed?.words) && Date.now() - parsed.ts < 43200000) {
+          setWords(shuffleArray(sanitizeWordList(parsed.words)));
+          setLoadingWords(false);
+          clearTimeout(safetyTimer);
+          return;
+        }
+      }
+    } catch { /**/ }
+    fetch(apiUrl('/api/words'))
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const cl = sanitizeWordList(data);
+          setWords(shuffleArray(cl));
+          try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), words: cl })); } catch { /**/ }
+        }
+        setLoadingWords(false);
+        clearTimeout(safetyTimer);
+      })
+      .catch(() => { setLoadingWords(false); clearTimeout(safetyTimer); });
+    return () => clearTimeout(safetyTimer);
+  }, []);
+
+  // Splash exit timing
+  useEffect(() => {
+    if (!loadingWords) {
+      const wait = Math.max(0, 1300 - (Date.now() - splashStartRef.current));
+      const t = setTimeout(() => setSplashExiting(true), wait);
+      return () => clearTimeout(t);
+    }
+  }, [loadingWords]);
+
+  useEffect(() => {
+    if (splashExiting) {
+      const t = setTimeout(() => setSplashDone(true), 780);
+      return () => clearTimeout(t);
+    }
+  }, [splashExiting]);
+
+  // Feedback auto-clear
+  useEffect(() => {
+    if (!feedback) return;
+    const t = setTimeout(() => { setFeedback(null); setFeedbackMessage(''); }, 1200);
+    return () => clearTimeout(t);
+  }, [feedback]);
+
+  // Auto-advance in room
+  useEffect(() => {
+    if (!isInRoom || !isHost || !isAutoAdvance || !practiceWords.length) return;
+    const t = setTimeout(() => nextWord(), 15000);
+    return () => clearTimeout(t);
+  }, [isInRoom, isHost, isAutoAdvance, currentWordIndex, practiceWords.length]);
+
+  // Reset on level change
+  useEffect(() => {
+    setCurrentWordIndex(0); setIsFlipped(false);
+    if (practiceLevel !== "CUSTOM") setCustomDeckWords(null);
+  }, [practiceLevel]);
+
+  // LocalStorage persistence
+  useEffect(() => {
+    localStorage.setItem('ydt_stats', JSON.stringify(stats));
+    localStorage.setItem('ydt_wrongWords', JSON.stringify(wrongWords));
+    localStorage.setItem('ydt_practiceHistory', JSON.stringify(practiceHistory));
+    localStorage.setItem("ydt_moduleStats", JSON.stringify(moduleStats));
+    localStorage.setItem("ydt_favorites_bundle", JSON.stringify(favorites));
+  }, [stats, wrongWords, practiceHistory, moduleStats, favorites]);
+
+  // Cloud sync debounce
+  useEffect(() => {
+    if (!user?.token) return;
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = setTimeout(() => {
+      fetch(apiUrl('/api/profile/sync'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': user.token },
+        body: JSON.stringify({ wrongWords, favorites, moduleStats, practiceHistory })
+      }).catch(() => {});
+    }, 2500);
+    return () => { if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current); };
+  }, [wrongWords, favorites, moduleStats, practiceHistory, user]);
+
+  // Socket events
+  useEffect(() => {
+    socket.on('connect', () => console.log('Socket connected'));
+    socket.on('connect_error', () => { setError('Sunucuya bağlanılamıyor'); setLoading(false); });
+    socket.on('room-joined', ({ roomCode: rc, users: us, isHost: ih }) => {
+      setRoomCode(rc); setUsers(us || []); setIsHost(ih || false); setIsInRoom(true); setError(''); setLoading(false); setCurrentView('room');
+    });
+    socket.on('user-joined', ({ username: un, socketId }) => {
+      setUsers(prev => prev.find(u => u.username === un) ? prev : [...prev, { username: un, socketId }]);
+    });
+    socket.on('user-left', ({ username: un }) => setUsers(prev => prev.filter(u => u.username !== un)));
+    socket.on('sync-stats', ({ stats: ns, users: us }) => { setRoomStats({ ...ns }); if (us) setUsers([...us]); });
+    socket.on('sync-word', ({ wordIndex }) => { setCurrentWordIndex(wordIndex); setIsFlipped(false); setShowHint(false); setShowExample(false); });
+    socket.on('error', ({ message }) => { setError(message); setLoading(false); });
+    return () => {
+      socket.off('connect'); socket.off('connect_error'); socket.off('room-joined');
+      socket.off('user-joined'); socket.off('user-left'); socket.off('sync-stats'); socket.off('sync-word'); socket.off('error');
+    };
+  }, []);
+
+  // Admin shortcut & hash nav
+  useEffect(() => {
+    const onKey = (e) => { if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") { e.preventDefault(); setCurrentView("admin"); window.location.hash = "admin"; } };
+    const onHash = () => { if (window.location.hash === "#admin") setCurrentView("admin"); };
+    onHash();
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("hashchange", onHash);
+    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("hashchange", onHash); };
+  }, []);
+
+  // Popstate (back/forward)
+  useEffect(() => {
+    const onPop = () => { const v = readInitialViewFromUrl(); setCurrentView(v); if (v === "site-info") setSiteInfoTab(readSiteInfoTabFromUrl()); };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // URL sync for legal pages
+  useEffect(() => {
+    const legal = { pricing: "/pricing", terms: "/terms", privacy: "/privacy" };
+    if (currentView === "site-info") return;
+    if (legal[currentView]) { if (window.location.pathname !== legal[currentView]) window.history.pushState({ view: currentView }, "", legal[currentView]); return; }
+    const path = window.location.pathname.replace(/\/$/, "") || "/";
+    if (["/pricing", "/terms", "/privacy"].includes(path)) window.history.replaceState({}, "", "/");
+  }, [currentView]);
+
   return (
     <>
       {!splashDone ? (
