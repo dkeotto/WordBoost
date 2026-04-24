@@ -4,46 +4,26 @@ import { apiUrl } from '../utils/apiUrl';
 
 // 400px thumbnails — hızlı yükleme, yeterli kalite
 const FAMOUS_PAINTINGS = [
-  {
-    id: 1, title: "Mona Lisa", artist: "Leonardo da Vinci",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/400px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg",
-  },
-  {
-    id: 2, title: "The Starry Night", artist: "Vincent van Gogh",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/400px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg",
-  },
-  {
-    id: 3, title: "Girl with a Pearl Earring", artist: "Johannes Vermeer",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/1665_Girl_with_a_Pearl_Earring.jpg/400px-1665_Girl_with_a_Pearl_Earring.jpg",
-  },
-  {
-    id: 4, title: "The Scream", artist: "Edvard Munch",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/The_Scream.jpg/400px-The_Scream.jpg",
-  },
-  {
-    id: 5, title: "The Birth of Venus", artist: "Sandro Botticelli",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project.jpg/400px-Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project.jpg",
-  },
-  {
-    id: 6, title: "The Night Watch", artist: "Rembrandt van Rijn",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/The_Night_Watch_-_HD.jpg/400px-The_Night_Watch_-_HD.jpg",
-  },
-  {
-    id: 7, title: "The Kiss", artist: "Gustav Klimt",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Art_Project.jpg/400px-The_Kiss_-_Gustav_Klimt_-_Google_Art_Project.jpg",
-  },
-  {
-    id: 8, title: "American Gothic", artist: "Grant Wood",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Grant_Wood_-_American_Gothic_-_Google_Art_Project.jpg/400px-Grant_Wood_-_American_Gothic_-_Google_Art_Project.jpg",
-  },
-  {
-    id: 9, title: "The Last Supper", artist: "Leonardo da Vinci",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Ultima_Cena_-_Restored_-_Lightened.jpg/400px-Ultima_Cena_-_Restored_-_Lightened.jpg",
-  },
-  {
-    id: 10, title: "Great Wave off Kanagawa", artist: "Hokusai",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/The_Great_Wave_off_Kanagawa.jpg/400px-The_Great_Wave_off_Kanagawa.jpg",
-  }
+  { id: 1, title: "Mona Lisa", artist: "Leonardo da Vinci", url: "https://images.unsplash.com/photo-1544731612-de7f96afe55f?q=80&w=600&auto=format&fit=crop" },
+  { id: 2, title: "Starry Night", artist: "Vincent van Gogh", url: "https://images.unsplash.com/photo-1541963463532-d68292c34b19?q=80&w=600&auto=format&fit=crop" },
+  { id: 3, title: "Girl with a Pearl Earring", artist: "Johannes Vermeer", url: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?q=80&w=600&auto=format&fit=crop" },
+  { id: 4, title: "The Scream", artist: "Edvard Munch", url: "https://images.unsplash.com/photo-1582531393041-37059c9966ca?q=80&w=600&auto=format&fit=crop" },
+  { id: 5, title: "The Kiss", artist: "Gustav Klimt", url: "https://images.unsplash.com/photo-1576016770956-debb63d910af?q=80&w=600&auto=format&fit=crop" },
+  { id: 6, title: "American Gothic", artist: "Grant Wood", url: "https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?q=80&w=600&auto=format&fit=crop" },
+  { id: 7, title: "The Great Wave", artist: "Hokusai", url: "https://images.unsplash.com/photo-1580136608079-72029d0de130?q=80&w=600&auto=format&fit=crop" },
+  { id: 8, title: "Persistence of Memory", artist: "Salvador Dalí", url: "https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?q=80&w=600&auto=format&fit=crop" },
+  { id: 9, title: "Sunflowers", artist: "Vincent van Gogh", url: "https://images.unsplash.com/photo-1594122230689-45899d9e6f69?q=80&w=600&auto=format&fit=crop" },
+  { id: 10, title: "Cafe Terrace at Night", artist: "Vincent van Gogh", url: "https://images.unsplash.com/photo-1578301978018-3005759f48f7?q=80&w=600&auto=format&fit=crop" },
+  { id: 11, title: "Impression, Sunrise", artist: "Claude Monet", url: "https://images.unsplash.com/photo-1554188248-986adbb73be4?q=80&w=600&auto=format&fit=crop" },
+  { id: 12, title: "A Sunday Afternoon", artist: "Georges Seurat", url: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=600&auto=format&fit=crop" },
+  { id: 13, title: "The School of Athens", artist: "Raphael", url: "https://images.unsplash.com/photo-1584727638096-042c4530faee?q=80&w=600&auto=format&fit=crop" },
+  { id: 14, title: "The Wanderer", artist: "Caspar David Friedrich", url: "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?q=80&w=600&auto=format&fit=crop" },
+  { id: 15, title: "Napoleon Crossing the Alps", artist: "Jacques-Louis David", url: "https://images.unsplash.com/photo-1576016770176-7876378e9067?q=80&w=600&auto=format&fit=crop" },
+  { id: 16, title: "Flaming June", artist: "Frederic Leighton", url: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?q=80&w=600&auto=format&fit=crop" },
+  { id: 17, title: "Arrangement in Grey and Black", artist: "James McNeill Whistler", url: "https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?q=80&w=600&auto=format&fit=crop" },
+  { id: 18, title: "The Swing", artist: "Jean-Honoré Fragonard", url: "https://images.unsplash.com/photo-1582201942988-13e60e4556ee?q=80&w=600&auto=format&fit=crop" },
+  { id: 19, title: "Las Meninas", artist: "Diego Velázquez", url: "https://images.unsplash.com/photo-1533158326339-7f3cf2404354?q=80&w=600&auto=format&fit=crop" },
+  { id: 20, title: "Liberty Leading the People", artist: "Eugène Delacroix", url: "https://images.unsplash.com/photo-1549490349-8643362247b5?q=80&w=600&auto=format&fit=crop" }
 ];
 
 // Tüm resimleri browser cache'ine preload eden singleton (component dışında — sadece 1 kez)
@@ -78,7 +58,7 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
 
   const gridSize = 3;
   const totalTiles = gridSize * gridSize;
-  const fallbackUrl = "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?q=80&w=600&auto=format&fit=crop";
+  const getFallback = (id) => `https://picsum.photos/seed/art${id}/600/600`;
 
   const generateNextQuestion = useCallback(() => {
     if (words.length < 4) return;
@@ -199,7 +179,7 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
         <div className="game-finished-overlay">
           <div className="game-finished-painting">
             <img
-              src={imgError ? fallbackUrl : currentPainting.url}
+              src={imgError ? getFallback(currentPainting?.id || 1) : currentPainting.url}
               alt={currentPainting.title}
               onLoad={() => setImgLoaded(true)}
               onError={() => { setImgLoaded(true); setImgError(true); }}
