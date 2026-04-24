@@ -1926,13 +1926,40 @@ function App() {
     if (buttonCooldown || !currentWord) return;
     triggerAssignmentProgress("general_practice", 1);
     triggerCooldown(800);
+    
+    // Update React local state
     setStats(prev => ({ ...prev, studied: prev.studied + 1, known: isKnown ? prev.known + 1 : prev.known, unknown: isKnown ? prev.unknown : prev.unknown + 1 }));
-    if (!isKnown) {
-       setWrongWords(prev => prev.some(w => w.term === currentWord.term) ? prev : [...prev, currentWord]);
-    } else {
-       setWrongWords(prev => prev.filter(w => w.term !== currentWord.term));
+    let newWrong = [...wrongWords];
+    if (!isKnown && !newWrong.some(w => w.term === currentWord.term)) {
+        newWrong = [...newWrong, currentWord];
+    } else if (isKnown) {
+        newWrong = newWrong.filter(w => w.term !== currentWord.term);
     }
-    setPracticeHistory(prev => [{ term: currentWord.term, known: isKnown, date: new Date().toISOString() }, ...prev].slice(0, 100));
+    setWrongWords(newWrong);
+    
+    const newHistory = [{ term: currentWord.term, known: isKnown, date: new Date().toISOString() }, ...practiceHistory].slice(0, 1500);
+    setPracticeHistory(newHistory);
+    
+    // Explicit Database Synchronization
+    if (user && user.token) {
+       fetch(apiUrl('/api/profile/sync'), {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json', 'Authorization': user.token },
+         body: JSON.stringify({ practiceHistory: newHistory, wrongWords: newWrong })
+       }).catch(() => {});
+       
+       fetch(apiUrl('/api/stats/update'), {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json', 'Authorization': user.token },
+         body: JSON.stringify({
+           studied: 1,
+           known: isKnown ? 1 : 0,
+           unknown: isKnown ? 0 : 1,
+           wordTerm: currentWord.term
+         })
+       }).catch(() => {});
+    }
+
     showFeedbackAnim(isKnown ? "correct" : "wrong");
     setTimeout(() => { 
       if (currentWordIndex < practiceWords.length - 1) nextWord(); 
@@ -2001,8 +2028,24 @@ function App() {
   };
 
   const onLogout = () => {
-    localStorage.removeItem('ydt_token');
+    localStorage.removeItem('wb_user');
+    localStorage.removeItem('ydt_stats');
+    localStorage.removeItem('ydt_wrongWords');
+    localStorage.removeItem('ydt_practiceHistory');
+    localStorage.removeItem('ydt_moduleStats');
+    localStorage.removeItem('ydt_favorites_bundle');
+    
     setUser(null);
+    setStats({ studied: 0, known: 0, unknown: 0 });
+    setWrongWords([]);
+    setPracticeHistory([]);
+    setModuleStats({
+      synonyms: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+      phrasal: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+      speaking: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
+    });
+    setFavorites({ words: [], synonyms: [], phrasal: [] });
+    
     setCurrentView('practice');
     setShowLogoutConfirm(false);
   };
@@ -2209,11 +2252,11 @@ function App() {
       fetch(apiUrl('/api/profile/sync'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': user.token },
-        body: JSON.stringify({ wrongWords, favorites, moduleStats, practiceHistory })
+        body: JSON.stringify({ wrongWords, favorites, moduleStats, practiceHistory, stats })
       }).catch(() => {});
     }, 2500);
     return () => { if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current); };
-  }, [wrongWords, favorites, moduleStats, practiceHistory, user]);
+  }, [wrongWords, favorites, moduleStats, practiceHistory, stats, user]);
 
   // Socket events
   useEffect(() => {
