@@ -263,6 +263,16 @@ const Navbar = ({
             👥 Oda {isInRoom ? '(Aktif)' : ''}
           </button>
 
+          {user?.isAdmin && (
+            <button
+              className={`nav-link ${currentView === 'admin' ? 'active' : ''}`}
+              onClick={() => handleNavClick('admin')}
+              style={{ color: '#FF5722', fontWeight: 'bold' }}
+            >
+              🛡️ Admin Paneli
+            </button>
+          )}
+
           <div className="nav-dropdown-divider" role="separator" aria-hidden />
 
           <button
