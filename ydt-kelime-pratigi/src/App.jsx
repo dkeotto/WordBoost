@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, lazy, Suspense, Component } from "react";
 import LoginModal from "./components/LoginModal";
 const AdminPanel = lazy(() => import("./components/AdminPanel"));
 import Navbar from "./components/Navbar";
@@ -157,6 +157,29 @@ const speakWord = (word) => {
  * Tablet (768-1023px): sağ sidebar + içerik altı
  * Mobil (<768px): içerik altında banner
  */
+
+// --- DIAGNOSTIC HELPERS ---
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, info) { console.error("WordBoost Critical Crash:", error, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: "50px", color: "white", background: "black", minHeight: "100vh", textAlign: "center" }}>
+          <h1 style={{ color: "#FF9F1C" }}>Ups! Bir hata oluştu.</h1>
+          <p>{this.state.error?.message || "Bilinmeyen bir hata."}</p>
+          <button onClick={() => window.location.reload()} style={{ padding: "10px 20px", marginTop: "20px" }}>Yenile</button>
+          <pre style={{ textAlign: "left", opacity: 0.5, margin: "20px auto", maxWidth: "800px", overflow: "auto" }}>
+            {this.state.error?.stack}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const PageWithAds = ({ children, slotLeft, slotRight, slotBottom, isPremium }) => {
   const adsClient = import.meta.env.VITE_ADSENSE_CLIENT;
   const hasLeft   = Boolean(adsClient && slotLeft);
@@ -2044,10 +2067,25 @@ function App() {
 
   useEffect(() => {
     if (splashExiting) {
-      const t = setTimeout(() => setSplashDone(true), 780);
+      console.log("WordBoost: Splash exiting triggered. Finishing in 780ms.");
+      const t = setTimeout(() => {
+        console.log("WordBoost: Splash DONE. Mounting App UI.");
+        setSplashDone(true);
+      }, 780);
       return () => clearTimeout(t);
     }
   }, [splashExiting]);
+
+  // Absolute safety: Splash must end eventually
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!splashDone) {
+        console.warn("WordBoost: EMERGENCY - Forcing splashDone after 15s absolute timeout.");
+        setSplashDone(true);
+      }
+    }, 15000);
+    return () => clearTimeout(t);
+  }, [splashDone]);
 
   // Feedback auto-clear
   useEffect(() => {
@@ -2138,8 +2176,10 @@ function App() {
     if (["/pricing", "/terms", "/privacy"].includes(path)) window.history.replaceState({}, "", "/");
   }, [currentView]);
 
+  console.log(`WordBoost Render: loadingWords=${loadingWords}, splashExiting=${splashExiting}, splashDone=${splashDone}, currentView=${currentView}`);
+
   return (
-    <>
+    <ErrorBoundary>
       {!splashDone ? (
         <StartupScreen exiting={splashExiting} />
       ) : (
@@ -2473,9 +2513,9 @@ function App() {
     )}
 
   </div>
-      )}
-      <ConsentBanner />
-    </>
+    )}
+    <ConsentBanner />
+    </ErrorBoundary>
   );
 }
 

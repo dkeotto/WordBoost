@@ -375,10 +375,10 @@ const Navbar = ({
             </div>
             <div className="user-controls-actions">
               <button className="nav-link profile-btn" onClick={() => handleNavClick('profile')}>
-                {user.avatar && (user.avatar.startsWith('http') || user.avatar.startsWith('data:')) ? (
+                {user.avatar && typeof user.avatar === 'string' && (user.avatar.startsWith('http') || user.avatar.startsWith('data:')) ? (
                   <img src={user.avatar} className="nav-avatar-img" alt="avatar" />
                 ) : (
-                  user.avatar || '👤'
+                  typeof user.avatar === 'string' ? user.avatar : '👤'
                 )}
                 <span className="nav-profile-name">{user.nickname || user.username}</span>
               </button>
