@@ -429,7 +429,7 @@ const UserSchema = new mongoose.Schema({
   },
 
   // Cloud Sync Fields
-  wrongWords: { type: [String], default: [] },
+  wrongWords: { type: Array, default: [] },
   favorites: { type: Object, default: {} },
   moduleStats: { type: Object, default: {} },
   practiceHistory: { type: Array, default: [] },
@@ -1908,7 +1908,7 @@ app.post('/api/profile/sync', async (req, res) => {
     if (!token) return res.status(401).json({ error: "Token gerekli" });
     const decoded = jwt.verify(getAuthTokenFromHeader(req), JWT_SECRET);
 
-    const { wrongWords, favorites, moduleStats, practiceHistory } = req.body;
+    const { wrongWords, favorites, moduleStats, practiceHistory, stats } = req.body;
 
     const user = await User.findById(decoded.id);
     if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı" });
@@ -1918,6 +1918,9 @@ app.post('/api/profile/sync', async (req, res) => {
     if (typeof moduleStats === "object" && moduleStats !== null) user.moduleStats = moduleStats;
     if (Array.isArray(practiceHistory)) {
       user.practiceHistory = practiceHistory.slice(-1000);
+    }
+    if (typeof stats === "object" && stats !== null) {
+      user.stats = { ...user.stats.toObject(), ...stats };
     }
 
     await user.save();
