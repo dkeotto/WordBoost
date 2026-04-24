@@ -2422,6 +2422,8 @@ function App() {
       {currentView === 'classroom' && <ClassroomView user={user} setCurrentView={setCurrentView} startCustomPractice={startCustomPractice} />}
       {currentView === 'pricing' && <PricingPage user={user} onBack={() => setCurrentView('practice')} onGoPremium={() => setShowPricing(true)} />}
       {currentView === 'profile' && <ProfileView user={user} setUser={setUser} logout={onLogout} setCurrentView={setCurrentView} />}
+      {currentView === 'public-profile' && <PublicProfileView selectedUser={selectedUser} setCurrentView={setCurrentView} />}
+      {currentView === 'leaderboard' && <LeaderboardView user={user} setCurrentView={setCurrentView} setSelectedUser={setSelectedUser} />}
       {currentView === 'matching-game' && <MatchingGameView words={words} setCurrentView={setCurrentView} />}
       {currentView === 'draw-reveal' && (
         <DrawRevealGame 
