@@ -261,7 +261,7 @@ const DrawRevealGame = ({ words, user, onUpdateStats, speakWord, favorites = [],
                 <div className="action-buttons">
                   <button className="game-action-btn speak" onClick={() => speakWord(currentQuestion)} title="Telaffuz">🔊</button>
                   <button className="game-action-btn favorite" onClick={() => toggleFavorite(currentQuestion)} title="Favorilere Ekle">
-                    {favorites.find(w => w.term === currentQuestion.term) ? '⭐' : '☆'}
+                    {(favorites || []).find(w => w.term === currentQuestion.term) ? '⭐' : '☆'}
                   </button>
                 </div>
                 <span className="question-level">{currentQuestion.level}</span>

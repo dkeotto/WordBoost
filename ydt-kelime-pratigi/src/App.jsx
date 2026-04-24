@@ -130,7 +130,7 @@ const generateOptions = (correctWord, allWords) => {
     if (!usedIndices.has(randomIndex)) {
       usedIndices.add(randomIndex);
       const wrongWord = otherWords[randomIndex];
-      if (!options.find(o => o.term === wrongWord.term)) {
+      if (!(options || []).find(o => o.term === wrongWord.term)) {
         options.push(wrongWord);
       }
     }
@@ -355,7 +355,7 @@ const WordListView = ({
               className="fav-btn"
               onClick={() => toggleFavorite(word)}
             >
-              {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
+              {(favorites || []).find(w => w.term === word.term) ? "⭐" : "☆"}
             </button>
 
             <button
@@ -1297,7 +1297,7 @@ const MatchingGameView = ({ words, setCurrentView }) => {
     };
 
     const handleCardClick = (card) => {
-        if (selectedCards.length === 2 || selectedCards.find(c => c.id === card.id) || matchedPairs.includes(card.pairId)) {
+        if ((selectedCards || []).length === 2 || (selectedCards || []).find(c => c.id === card.id) || (matchedPairs || []).includes(card.pairId)) {
           return;
         }
     
@@ -1374,7 +1374,7 @@ const MatchingGameView = ({ words, setCurrentView }) => {
 
               <div className="matching-grid">
                 {matchingCards.map((card) => {
-                  const isSelected = selectedCards.find(c => c.id === card.id);
+                  const isSelected = (selectedCards || []).find(c => c.id === card.id);
                   const isMatched = matchedPairs.includes(card.pairId);
                   
                   return (
@@ -1470,7 +1470,7 @@ const TestManager = ({ words, setCurrentView, setWrongWords }) => {
         } else {
           playSound('wrong');
           setWrongWords(prev => {
-            if (!prev.find(w => w.term === currentWord.term)) {
+            if (!(prev || []).find(w => w.term === currentWord.term)) {
               return [...prev, currentWord];
             }
             return prev;
@@ -2209,7 +2209,7 @@ function App() {
       setRoomCode(rc); setUsers(us || []); setIsHost(ih || false); setIsInRoom(true); setError(''); setLoading(false); setCurrentView('room');
     });
     socket.on('user-joined', ({ username: un, socketId }) => {
-      setUsers(prev => prev.find(u => u.username === un) ? prev : [...prev, { username: un, socketId }]);
+      setUsers(prev => (prev || []).find(u => u.username === un) ? prev : [...(prev || []), { username: un, socketId }]);
     });
     socket.on('user-left', ({ username: un }) => setUsers(prev => prev.filter(u => u.username !== un)));
     socket.on('sync-stats', ({ stats: ns, users: us }) => { setRoomStats({ ...ns }); if (us) setUsers([...us]); });
@@ -2429,7 +2429,7 @@ function App() {
           user={user} 
           onUpdateStats={trackModuleAnswer} 
           speakWord={speakWord} 
-          favorites={favorites.words} 
+          favorites={favorites?.words || []} 
           toggleFavorite={toggleFavorite} 
           playSound={playSound}
         />
