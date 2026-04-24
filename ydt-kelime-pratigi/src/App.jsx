@@ -162,7 +162,18 @@ const speakWord = (word) => {
 class ErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
-  componentDidCatch(error, info) { console.error("WordBoost Critical Crash:", error, info); }
+  componentDidCatch(error, info) {
+    console.error("WordBoost Critical Crash:", error, info);
+    // Auto-refresh for Vite chunk load errors (deploy issues)
+    if (error && error.message && (/Failed to fetch dynamically imported module/i.test(error.message) || /Importing a module script failed/i.test(error.message))) {
+      const hasReloaded = sessionStorage.getItem('wb_chunk_retry');
+      if (!hasReloaded) {
+        sessionStorage.setItem('wb_chunk_retry', 'true');
+        window.location.reload();
+        return;
+      }
+    }
+  }
   render() {
     if (this.state.hasError) {
       return (
