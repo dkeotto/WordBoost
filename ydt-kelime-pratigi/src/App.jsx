@@ -1748,6 +1748,16 @@ function App() {
   const splashStartRef = useRef(Date.now());
   const syncTimeoutRef = useRef(null);
 
+  // 2. STORAGE HELPER - Must be defined BEFORE useState calls that use it
+  const loadFromStorage = (key, defaultValue) => {
+    try {
+      const saved = localStorage.getItem(`ydt_${key}`);
+      if (!saved || saved === "null" || saved === "undefined") return defaultValue;
+      const parsed = JSON.parse(saved);
+      return (parsed === null || parsed === undefined) ? defaultValue : parsed;
+    } catch { return defaultValue; }
+  };
+
   const [favorites, setFavorites] = useState(() => {
     try {
       const savedBundle = localStorage.getItem("ydt_favorites_bundle");
@@ -1775,6 +1785,8 @@ function App() {
       speaking: { attempted: 0, correct: 0, wrong: 0, streak: 0, bestStreak: 0, byLevel: {} },
     })
   );
+
+  const wrongWordsCount = wrongWords.length;
 
   // 3. MEMOS & UTILS
   const shuffleArray = (arr) => {
