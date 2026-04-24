@@ -1996,6 +1996,38 @@ function App() {
     setShowLogoutConfirm(false);
   };
 
+  const trackModuleAnswer = (type, isCorrect, level) => {
+    if (user && user.token) {
+      fetch(apiUrl('/api/stats/update'), {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': user.token
+        },
+        body: JSON.stringify({
+          studied: 1,
+          known: isCorrect ? 1 : 0,
+          unknown: isCorrect ? 0 : 1,
+          module: type,
+          level: level
+        })
+      }).then(async r => {
+        const data = await readResponseJson(r);
+        if (data.success) {
+          setUser(prev => ({ ...prev, stats: data.stats, streak: data.streak, badges: data.badges }));
+          if (data.newBadges && data.newBadges.length > 0) {
+            setNewBadgeNotification({ badges: data.newBadges });
+          }
+        }
+      }).catch(err => console.error("Module stats update failed:", err));
+    }
+    setStats(prev => ({
+      studied: prev.studied + 1,
+      known: isCorrect ? prev.known + 1 : prev.known,
+      unknown: isCorrect ? prev.unknown : prev.unknown + 1
+    }));
+  };
+
   const toggleSynFavorite = (item) => toggleFavorite('synonyms', item);
   const togglePhrasalFavorite = (item) => toggleFavorite('phrasal', item);
 
@@ -2244,10 +2276,10 @@ function App() {
       <Suspense fallback={<div style={{ padding: "50px", textAlign: "center", color: "var(--text-color)" }}>Yükleniyor...</div>}>
       {currentView === 'practice' && (
         <PageWithAds
+          isPremium={isUserPremium(user)}
           slotLeft={import.meta.env.VITE_ADSENSE_SLOT_PRACTICE_LEFT}
           slotRight={import.meta.env.VITE_ADSENSE_SLOT_PRACTICE_RIGHT}
           slotBottom={import.meta.env.VITE_ADSENSE_SLOT_PRACTICE_BOTTOM}
-          isPremium={isUserPremium(user)}
         >
           <PracticeView 
             isInRoom={isInRoom}
@@ -2284,32 +2316,13 @@ function App() {
           />
         </PageWithAds>
       )}
+
       {currentView === 'test' && (
-        <PageWithAds
-          slotLeft={import.meta.env.VITE_ADSENSE_SLOT_TEST_LEFT}
-          slotRight={import.meta.env.VITE_ADSENSE_SLOT_TEST_RIGHT}
-          slotBottom={import.meta.env.VITE_ADSENSE_SLOT_TEST_BOTTOM}
-          isPremium={isUserPremium(user)}
-        >
+        <PageWithAds isPremium={isUserPremium(user)}>
           <TestManager words={words} setCurrentView={setCurrentView} setWrongWords={setWrongWords} />
         </PageWithAds>
       )}
-      {currentView === 'favorites' && (
-        <FavoritesView 
-          wordFavorites={favorites.words}
-          synonymFavorites={favorites.synonyms}
-          phrasalFavorites={favorites.phrasal}
-          toggleWordFavorite={toggleFavorite}
-          toggleSynFavorite={toggleSynFavorite}
-          togglePhrasalFavorite={togglePhrasalFavorite}
-          currentTab={currentFavTab}
-          setCurrentTab={setCurrentFavTab}
-        />
-      )}
-      {currentView === 'matching-game' && <MatchingGameView words={words} setCurrentView={setCurrentView} />}
-      {currentView === 'profile' && <ProfileView user={user} setUser={setUser} logout={onLogout} setCurrentView={setCurrentView} />}
-      {currentView === 'public-profile' && <PublicProfileView selectedUser={selectedUser} setCurrentView={setCurrentView} />}
-      {currentView === 'leaderboard' && <LeaderboardView user={user} setCurrentView={setCurrentView} setSelectedUser={setSelectedUser} />}
+
       {currentView === 'dashboard' && (
         <DashboardView 
           stats={stats} 
@@ -2322,41 +2335,25 @@ function App() {
           onViewChange={setCurrentView}
         />
       )}
-      {currentView === 'pricing' && <PricingPage user={user} onBack={() => setCurrentView('practice')} onGoPremium={() => setShowPricing(true)} />}
-      {currentView === 'terms' && <TermsPage onBack={() => setCurrentView('practice')} />}
-      {currentView === 'privacy' && <PrivacyPage onBack={() => setCurrentView('practice')} />}
-      {currentView === "site-info" && (
-        <SiteInfoPage
-          tab={siteInfoTab}
-          onTabChange={(t) => {
-            const x = ["features", "about", "privacy", "terms"].includes(t) ? t : "features";
-            setSiteInfoTab(x);
-            window.history.replaceState({}, "", `/bilgi#${x}`);
-          }}
-          onBack={() => {
-            setCurrentView("practice");
-            window.history.replaceState({}, "", "/");
-          }}
-        />
-      )}
-      {currentView === 'synonyms' && <SynonymsView words={words} playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
-      {currentView === 'phrasal-verbs' && <PhrasalVerbsView words={words} playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
-      {currentView === 'speaking' && (
-        <SpeakingView
-          words={words}
-          playSound={playSound}
-          onTrackAnswer={trackModuleAnswer}
-          favorites={favorites}
+
+      {currentView === 'favorites' && (
+        <FavoritesView 
+          wordFavorites={favorites.words}
+          synonymFavorites={favorites.synonyms}
+          phrasalFavorites={favorites.phrasal}
           toggleWordFavorite={toggleFavorite}
           toggleSynFavorite={toggleSynFavorite}
           togglePhrasalFavorite={togglePhrasalFavorite}
+          currentTab={currentFavTab}
+          setCurrentTab={setCurrentFavTab}
         />
       )}
+
       {currentView === 'word-list' && (
-        <WordListView
-          words={uniqueWords}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
+        <WordListView 
+          words={uniqueWords} 
+          searchTerm={searchTerm} 
+          setSearchTerm={setSearchTerm} 
           filteredWords={filteredWords}
           favorites={favorites.words}
           toggleFavorite={toggleFavorite}
@@ -2365,6 +2362,7 @@ function App() {
           speakWord={speakWord}
         />
       )}
+
       {currentView === 'synonyms-list' && (
         <SynonymListView
           words={words}
@@ -2377,6 +2375,7 @@ function App() {
           speakWord={speakWord}
         />
       )}
+
       {currentView === 'phrasal-list' && (
         <PhrasalListView
           words={words}
@@ -2389,70 +2388,66 @@ function App() {
           speakWord={speakWord}
         />
       )}
+
       {currentView === 'wrong-words' && <WrongWordsView wrongWords={wrongWords} />}
+
       {currentView === 'ai-writing' && (
-        <AiWritingView
-          user={user}
-          onGoPremium={() => {
-            setShowPricing(true);
-          }}
-          onGoChat={() => setCurrentView("ai-chat")}
+        <AiWritingView 
+          user={user} 
+          onGoPremium={() => setShowPricing(true)} 
+          onGoChat={() => setCurrentView('ai-chat')} 
         />
       )}
-      {currentView === "ai-chat" && (
-        <AiChatView
-          user={user}
-          onGoPremium={() => setShowPricing(true)}
-          onGoWriting={() => setCurrentView("ai-writing")}
+      
+      {currentView === 'ai-chat' && (
+        <AiChatView 
+          user={user} 
+          onGoPremium={() => setShowPricing(true)} 
+          onGoWriting={() => setCurrentView('ai-writing')} 
+        />
+      )}
+
+      {currentView === 'synonyms' && <SynonymsView words={words} playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
+      {currentView === 'phrasal-verbs' && <PhrasalVerbsView words={words} playSound={playSound} onTrackAnswer={trackModuleAnswer} />}
+      {currentView === 'speaking' && (
+        <SpeakingView 
+          words={words} 
+          playSound={playSound} 
+          onTrackAnswer={trackModuleAnswer} 
+          favorites={favorites} 
+          toggleWordFavorite={toggleFavorite}
+          toggleSynFavorite={toggleSynFavorite}
+          togglePhrasalFavorite={togglePhrasalFavorite}
         />
       )}
       {currentView === 'classroom' && <ClassroomView user={user} setCurrentView={setCurrentView} startCustomPractice={startCustomPractice} />}
+      {currentView === 'pricing' && <PricingPage user={user} onBack={() => setCurrentView('practice')} onGoPremium={() => setShowPricing(true)} />}
+      {currentView === 'profile' && <ProfileView user={user} setUser={setUser} logout={onLogout} setCurrentView={setCurrentView} />}
+      {currentView === 'matching-game' && <MatchingGameView words={words} setCurrentView={setCurrentView} />}
       {currentView === 'draw-reveal' && (
         <DrawRevealGame 
-          key={currentView}
           words={words} 
           user={user} 
-          favorites={favorites.words}
-          toggleFavorite={toggleFavorite}
-          onUpdateStats={(isKnown, wordTerm) => {
-            // Minimal stats update for the game
-            if (user && user.token) {
-              fetch(apiUrl('/api/stats/update'), {
-                method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': user.token
-                },
-                body: JSON.stringify({
-                  studied: 1,
-                  known: isKnown ? 1 : 0,
-                  unknown: isKnown ? 0 : 1,
-                  wordTerm: wordTerm
-                })
-              }).then(async r => {
-                const data = await readResponseJson(r);
-                if (data.success) {
-                  setUser(prev => ({ ...prev, stats: data.stats, streak: data.streak, badges: data.badges }));
-                  if (data.newBadges && data.newBadges.length > 0) {
-                    setNewBadgeNotification({ badges: data.newBadges });
-                  }
-                }
-              }).catch(err => console.error("Game stats update failed:", err));
-            }
-            // Also update local stats if needed (optional for game)
-            setStats(prev => ({
-              studied: prev.studied + 1,
-              known: isKnown ? prev.known + 1 : prev.known,
-              unknown: isKnown ? prev.unknown : prev.unknown + 1
-            }));
-          }} 
+          onUpdateStats={trackModuleAnswer} 
           speakWord={speakWord} 
+          favorites={favorites.words} 
+          toggleFavorite={toggleFavorite} 
           playSound={playSound}
         />
       )}
       {currentView === 'room-menu' && <RoomMenuView username={username} createRoom={createRoom} joinRoom={joinRoom} loading={loading} error={error} />}
-      {currentView === 'room' && <RoomView roomCode={roomCode} users={users} username={username} isHost={isHost} setCurrentView={setCurrentView} leaveRoom={leaveRoom} />}
-      {currentView === 'admin' && <AdminPanel setCurrentView={setCurrentView} />}
+      {currentView === 'room' && <RoomView roomCode={roomCode} users={users} username={username} isHost={isHost} setCurrentView={setCurrentView} leaveRoom={() => setIsInRoom(false)} />}
+      {currentView === 'admin' && user?.isAdmin && <AdminPanel onLogout={onLogout} />}
+      {currentView === "site-info" && (
+        <SiteInfoPage
+          tab={siteInfoTab}
+          onTabChange={(t) => {
+            const x = ["features", "about", "privacy", "terms"].includes(t) ? t : "features";
+            setSiteInfoTab(x);
+          }}
+          onBack={() => setCurrentView("practice")}
+        />
+      )}
       </Suspense>
     </main>
 
@@ -2461,7 +2456,6 @@ function App() {
         onLogin={(u) => {
           setUser(u);
           localStorage.setItem("wb_user", JSON.stringify(u));
-          // Premium/role bilgisi için /api/me çek
           if (u && u.token) {
             fetch(apiUrl("/api/me"), { headers: { Authorization: u.token } })
               .then(async (r) => readResponseJson(r))
@@ -2492,15 +2486,8 @@ function App() {
         <div className="logout-modal">
           <h3>Çıkış yapmak istediğine emin misin?</h3>
           <div className="logout-buttons">
-            <button onClick={logout}>
-              Evet, çıkış yap
-            </button>
-            <button
-              className="cancel-btn"
-              onClick={() => setShowLogoutConfirm(false)}
-            >
-              Vazgeç
-            </button>
+            <button className="confirm-btn" onClick={onLogout}>Evet, çıkış yap</button>
+            <button className="cancel-btn" onClick={() => setShowLogoutConfirm(false)}>Vazgeç</button>
           </div>
         </div>
       </div>
