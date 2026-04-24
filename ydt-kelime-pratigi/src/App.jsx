@@ -1722,10 +1722,30 @@ const RoomView = ({ roomCode, users, username, isHost, setCurrentView, leaveRoom
 };
 
 function App() {
-  console.log("WordBoost: App component executing...");
-  useEffect(() => {
-    console.log("WordBoost: App component mounted successfully.");
-  }, []);
+  const renderCounter = useRef(0);
+  renderCounter.current++;
+
+  console.log(`WordBoost: App Render #${renderCounter.current}`);
+  
+  return (
+    <div style={{ background: 'blue', color: 'white', padding: '100px', height: '100vh', fontFamily: 'sans-serif' }}>
+      <h1>WordBoost v1.0.32 - BLUE SCREEN OF STABILITY</h1>
+      <p>If you see this, the loop has STOPPED.</p>
+      <p>Render Count: {renderCounter.current}</p>
+      <button onClick={() => window.location.reload()} style={{ padding:'10px' }}>Hard Reload</button>
+    </div>
+  );
+
+  // DEAD CODE FOLLOWS ...
+  if (false && renderCounter.current > 100) {
+    return (
+      <div style={{ background: 'red', color: 'white', padding: '50px', minHeight: '100vh' }}>
+        <h1>INFINITE RENDER LOOP DETECTED</h1>
+        <p>Render count: {renderCounter.current}</p>
+        <button onClick={() => window.location.reload()}>Reload</button>
+      </div>
+    );
+  }
 
   // 1. STATE & REFS
   const [selectedLevel, setSelectedLevel] = useState("ALL");
