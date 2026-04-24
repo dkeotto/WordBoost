@@ -1709,7 +1709,9 @@ function App() {
   const loadFromStorage = (key, defaultValue) => {
     try {
       const saved = localStorage.getItem(`ydt_${key}`);
-      return saved ? JSON.parse(saved) : defaultValue;
+      if (!saved || saved === "null" || saved === "undefined") return defaultValue;
+      const parsed = JSON.parse(saved);
+      return (parsed === null || parsed === undefined) ? defaultValue : parsed;
     } catch {
       return defaultValue;
     }
@@ -2669,8 +2671,8 @@ return result.sort((a,b)=>a.term.localeCompare(b.term));
             window.history.pushState({}, "", `/bilgi#${t}`);
           }}
           isInRoom={isInRoom}
-          wordsCount={words.length}
-          wrongWordsCount={wrongWordsCount}
+          wordsCount={words?.length || 0}
+          wrongWordsCount={wrongWordsCount || 0}
           favoritesCount={(favorites?.words?.length || 0) + (favorites?.synonyms?.length || 0) + (favorites?.phrasal?.length || 0)}
         />
     </header>
