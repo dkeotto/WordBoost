@@ -98,7 +98,7 @@ function speakTextWithVoice(text, voiceURI, rate = 0.82) {
   u.lang = "en-US";
   u.rate = rate;
   if (voiceURI) {
-    const v = window.speechSynthesis.getVoices().find((x) => x.voiceURI === voiceURI);
+    const v = (window.speechSynthesis.getVoices() || []).find((x) => x.voiceURI === voiceURI);
     if (v) u.voice = v;
   }
   window.speechSynthesis.speak(u);
@@ -645,7 +645,7 @@ const SpeakingView = ({
           <div className="syn-meta">
             <span className="syn-level-badge">{question.level}</span>
             <span className="syn-qno">Soru {questionNo}/{pool.length}</span>
-            <span className="sp-mode-badge">{MODES.find((m) => m.id === mode)?.icon} {mode}</span>
+            <span className="sp-mode-badge">{(MODES || []).find((m) => m.id === mode)?.icon} {mode}</span>
           </div>
 
           {/* Prompt */}

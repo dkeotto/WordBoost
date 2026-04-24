@@ -38,7 +38,7 @@ const Flashcard = memo(({
                 toggleFavorite(word);
               }}
             >
-              {favorites.find(w => w.term === word.term) ? "⭐" : "☆"}
+              {(favorites || []).find(w => w.term === word.term) ? "⭐" : "☆"}
             </button>
 
             <h2>{word.term}</h2>

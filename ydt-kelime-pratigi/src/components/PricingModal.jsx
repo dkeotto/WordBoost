@@ -36,7 +36,7 @@ export default function PricingModal({ user, onClose }) {
   }, [manual, plans.length, paddleMerged, fallbackList, loading, err]);
 
   const selected = useMemo(
-    () => (canPaddleCheckout ? paddleMerged.find((p) => p.tier === tier) : null) || null,
+    () => (canPaddleCheckout ? (paddleMerged || []).find((p) => p.tier === tier) : null) || null,
     [canPaddleCheckout, paddleMerged, tier]
   );
 

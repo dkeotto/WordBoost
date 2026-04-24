@@ -286,7 +286,7 @@ export default function ClassroomView({ user, setCurrentView, startCustomPractic
 
   const deleteClass = async () => {
     if (!selectedClassId) return;
-    const cls = teacherClasses.find(c => String(c._id) === String(selectedClassId));
+    const cls = (teacherClasses || []).find(c => String(c._id) === String(selectedClassId));
     if (!window.confirm(`"${cls?.name}" sınıfını ve içindeki TÜM verileri (ödevler, üyelikler) silmek istediğine emin misin? Bu işlem geri alınamaz.`)) return;
     
     setLoading(true); setErr(""); setMsg("");
@@ -742,7 +742,7 @@ export default function ClassroomView({ user, setCurrentView, startCustomPractic
                             } else {
                               if (a.customDeckId) {
                                 // Try to find the deck terms if we have them loaded
-                                const deck = customDecks.find(d => d._id === a.customDeckId);
+                                const deck = (customDecks || []).find(d => d._id === a.customDeckId);
                                 if (deck && deck.terms) {
                                   startCustomPractice(deck.terms);
                                 } else {

@@ -782,7 +782,7 @@ export default function AiChatView({ user, onGoPremium, onGoWriting }) {
               type="button"
               className="ai-chat-link-btn ai-chat-link-btn--compact"
               onClick={() => {
-                const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+                const lastAssistant = [...(messages || [])].reverse().find((m) => m.role === "assistant");
                 if (!lastAssistant) return;
                 downloadPdf(threadTitle || "AI sohbet", lastAssistant.content || "");
               }}
