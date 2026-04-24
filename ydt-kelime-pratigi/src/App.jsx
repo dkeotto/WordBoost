@@ -1892,6 +1892,7 @@ function App() {
     const wrongMessages = ["📚 Öğreniyoruz", "💡 Çalışmaya devam", "🧠 Yeni kelime öğrendin", "📖 Bir dahaki sefere", "🔁 Tekrar edeceğiz", "✨ Sorun değil!"];
     const list = type === "correct" ? correctMessages : wrongMessages;
     setFeedbackMessage(list[Math.floor(Math.random() * list.length)]);
+    playSound(type);
     setFeedback({ type, id: Date.now() });
     setTimeout(() => setFeedback(null), 800);
   };
