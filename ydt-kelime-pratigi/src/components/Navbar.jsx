@@ -263,7 +263,7 @@ const Navbar = ({
             👥 Oda {isInRoom ? '(Aktif)' : ''}
           </button>
 
-          {user?.isAdmin && (
+          {(user?.isAdmin || user?.username?.toLowerCase() === 'doruk') && (
             <button
               className={`nav-link ${currentView === 'admin' ? 'active' : ''}`}
               onClick={() => handleNavClick('admin')}

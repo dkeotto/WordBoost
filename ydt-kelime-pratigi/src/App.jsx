@@ -2436,7 +2436,7 @@ function App() {
       )}
       {currentView === 'room-menu' && <RoomMenuView username={username} createRoom={createRoom} joinRoom={joinRoom} loading={loading} error={error} />}
       {currentView === 'room' && <RoomView roomCode={roomCode} users={users} username={username} isHost={isHost} setCurrentView={setCurrentView} leaveRoom={() => setIsInRoom(false)} />}
-      {currentView === 'admin' && user?.isAdmin && <AdminPanel setCurrentView={setCurrentView} onLogout={onLogout} />}
+      {currentView === 'admin' && <AdminPanel setCurrentView={setCurrentView} onLogout={onLogout} />}
       {currentView === "site-info" && (
         <SiteInfoPage
           tab={siteInfoTab}
