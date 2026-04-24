@@ -78,14 +78,13 @@ const DashboardView = ({ stats, practiceHistory, wrongWords, moduleStats, user }
   const phrRate = phr.attempted ? Math.round((phr.correct / phr.attempted) * 100) : 0;
   const spkRate = spk.attempted ? Math.round((spk.correct / spk.attempted) * 100) : 0;
 
-  // ── XP ───────────────────────────────────────────────────────────────────
-  const xp = useMemo(() =>
-    (stats.known || 0) * 10
-    + (syn.correct) * 15
-    + (phr.correct) * 20
-    + (spk.correct) * 25,
-    [stats.known, syn.correct, phr.correct, spk.correct]
-  );
+  const xp = useMemo(() => {
+    const s_kn = stats?.known || 0;
+    const s_syn = syn?.correct || 0;
+    const s_phr = phr?.correct || 0;
+    const s_spk = spk?.correct || 0;
+    return (s_kn * 10) + (s_syn * 15) + (s_phr * 20) + (s_spk * 25);
+  }, [stats, syn, phr, spk]);
   const xpInfo = useMemo(() => getXpInfo(xp), [xp]);
 
   // ── Weekly chart ─────────────────────────────────────────────────────────
