@@ -2078,6 +2078,7 @@ function App() {
           if (data.wrongWords) setWrongWords(data.wrongWords);
           if (data.moduleStats) setModuleStats(data.moduleStats);
           if (data.practiceHistory) setPracticeHistory(data.practiceHistory);
+          if (data.stats) setStats(data.stats);
           window.history.replaceState({}, document.title, "/");
         })
         .catch(() => window.history.replaceState({}, document.title, "/"));
@@ -2099,6 +2100,7 @@ function App() {
                   if (me.user.wrongWords) setWrongWords(me.user.wrongWords);
                   if (me.user.moduleStats) setModuleStats(me.user.moduleStats);
                   if (me.user.practiceHistory) setPracticeHistory(me.user.practiceHistory);
+                  if (me.user.stats) setStats(me.user.stats);
                 }
               }).catch(() => {});
           }
@@ -2478,6 +2480,11 @@ function App() {
                   const merged = { ...u, ...me.user, token: u.token };
                   setUser(merged);
                   localStorage.setItem("wb_user", JSON.stringify(merged));
+                  if (me.user.favorites) setFavorites(me.user.favorites);
+                  if (me.user.wrongWords) setWrongWords(me.user.wrongWords);
+                  if (me.user.moduleStats) setModuleStats(me.user.moduleStats);
+                  if (me.user.practiceHistory) setPracticeHistory(me.user.practiceHistory);
+                  if (me.user.stats) setStats(me.user.stats);
                 }
               })
               .catch(() => {});
