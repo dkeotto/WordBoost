@@ -2250,22 +2250,37 @@ function App() {
           isPremium={isUserPremium(user)}
         >
           <PracticeView 
-            practiceWords={practiceWords} 
-            currentWordIndex={currentWordIndex} 
+            isInRoom={isInRoom}
+            stats={stats}
+            users={users}
+            roomStats={roomStats}
+            username={username}
+            currentWordIndex={currentWordIndex}
+            practiceWords={practiceWords}
             currentWord={currentWord}
-            isFlipped={isFlipped}
-            setIsFlipped={setIsFlipped}
             handleAnswer={handleAnswer}
-            nextWord={nextWord}
-            prevWord={() => setCurrentWordIndex(prev => Math.max(0, prev - 1))}
-            speakWord={speakWord}
-            toggleFavorite={toggleFavorite}
-            favorites={favorites.words}
-            loadingWords={loadingWords}
-            practiceLevel={practiceLevel}
-            setPracticeLevel={setPracticeLevel}
-            startCustomPractice={startCustomPractice}
             buttonCooldown={buttonCooldown}
+            prevWord={() => setCurrentWordIndex(prev => Math.max(0, prev - 1))}
+            nextWord={nextWord}
+            resetStats={() => setStats({ studied: 0, known: 0, unknown: 0 })}
+            setPracticeLevel={setPracticeLevel}
+            practiceLevel={practiceLevel}
+            isFlipped={isFlipped}
+            flipCard={() => setIsFlipped(!isFlipped)}
+            showHint={showHint}
+            setShowHint={setShowHint}
+            showExample={showExample}
+            setShowExample={setShowExample}
+            feedback={feedback}
+            feedbackMessage={feedbackMessage}
+            favorites={favorites.words}
+            toggleFavorite={toggleFavorite}
+            speakWord={speakWord}
+            isHost={isHost}
+            isAutoAdvance={isAutoAdvance}
+            setIsAutoAdvance={setIsAutoAdvance}
+            startCustomPractice={startCustomPractice}
+            loadingWords={loadingWords}
           />
         </PageWithAds>
       )}
